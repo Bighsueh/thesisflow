@@ -13,3 +13,4 @@ WHERE table_name = 'highlights'
 ORDER BY ordinal_position;
 
 
+

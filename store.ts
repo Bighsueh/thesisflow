@@ -8,6 +8,7 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
   getOutgoers,
+  getIncomers,
 } from 'reactflow';
 import {
   AppNode,
@@ -131,6 +132,7 @@ interface AppState {
   addLog: (eventType: string, details: any) => void;
   startFlow: () => void;
   navigateNext: () => void;
+  navigatePrev: () => void;
 
   submitTaskA: (docId: string, content: TaskAContent) => Promise<void>;
   updateTaskBRow: (index: number, field: keyof ComparisonRow | 'doc1Claim' | 'doc2Claim', value: any) => void;
@@ -816,6 +818,23 @@ export const useStore = create<AppState>((set, get) => ({
     // 若沒有連出去的邊，嘗試選擇下一個非 start 節點，避免流程卡住
     const fallback = nodes.find((n) => n.id !== currentStepId && n.type !== 'startNode') || nodes.find((n) => n.id !== currentStepId);
     if (fallback) set({ currentStepId: fallback.id });
+  },
+
+  navigatePrev: () => {
+    const { nodes, edges, currentStepId } = get();
+    if (!currentStepId) return;
+    const currentNode = nodes.find((n) => n.id === currentStepId);
+    if (!currentNode) return;
+    // 如果是 start 節點，不允許後退
+    if (currentNode.type === 'startNode' || currentNode.data?.type === 'start') return;
+    const incomers = getIncomers(currentNode, nodes, edges);
+    if (incomers.length > 0) {
+      set({ currentStepId: incomers[0].id });
+      return;
+    }
+    // 若沒有連進來的邊，嘗試選擇 start 節點
+    const startNode = nodes.find((n) => n.type === 'startNode' || (n as any).data?.type === 'start');
+    if (startNode) set({ currentStepId: startNode.id });
   },
 
   submitTaskA: async (docId: string, content: TaskAContent) => {

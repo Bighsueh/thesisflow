@@ -55,3 +55,4 @@ echo "1. 確保在專案根目錄有 .env 文件，或"
 echo "2. 確保在遠端主機上設置了環境變數，或"
 echo "3. 檢查 docker-compose.yml 中的環境變數配置"
 
+

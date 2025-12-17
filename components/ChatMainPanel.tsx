@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Send, Bot, Link as LinkIcon, ArrowRight, Menu, X } from 'lucide-react';
+import { Send, Bot, Link as LinkIcon, ArrowRight, Menu, X, ChevronLeft } from 'lucide-react';
+import { getIncomers, getOutgoers } from 'reactflow';
 import { useStore } from '../store';
 import { ChatMessage } from './ChatMessage';
 import { EvidenceCard } from './EvidenceCard';
@@ -43,6 +44,10 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
     submitTaskCCheck,
     initializeTaskBDataForNode,
     completeNode,
+    nodes,
+    edges,
+    navigateNext,
+    navigatePrev,
   } = useStore();
 
   const [inputMessage, setInputMessage] = useState('');
@@ -123,6 +128,45 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
   const allHighlights = documents.flatMap((d) =>
     (d.highlights || []).map((h) => ({ ...h, docTitle: d.title, document: d }))
   );
+
+  // 渲染導航按鈕組
+  const renderNavigationButtons = () => {
+    if (!currentNode) return null;
+    
+    const incomers = getIncomers(currentNode, nodes, edges);
+    const outgoers = getOutgoers(currentNode, nodes, edges);
+    const hasPrevious = incomers.length > 0 && currentNode.data.type !== 'start';
+    const hasNext = outgoers.length > 0 && currentNode.data.type !== 'end';
+
+    return (
+      <div className="card bg-base-100 border border-base-300 shadow-sm">
+        <div className="card-body p-4">
+          <div className="flex gap-2">
+            {hasPrevious && (
+              <button
+                className="btn btn-outline btn-sm flex-1 gap-2"
+                onClick={navigatePrev}
+              >
+                <ChevronLeft size={14} />
+                返回上一階段
+              </button>
+            )}
+            {hasNext && (
+              <button
+                className="btn btn-primary btn-sm flex-1 gap-2"
+                onClick={() => {
+                  completeNode(currentNode.id);
+                }}
+              >
+                進入下一階段
+                <ArrowRight size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // 根據節點類型渲染 Widget
   const renderWidget = () => {
@@ -227,6 +271,7 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
             onSubmit={handleSubmit}
             onSubmitLabel="提交檢核"
           />
+          {renderNavigationButtons()}
         </div>
       );
     }
@@ -284,6 +329,7 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
             onSubmit={handleSubmitB}
             onSubmitLabel="提交比較表"
           />
+          {renderNavigationButtons()}
         </div>
       );
     }
@@ -328,6 +374,7 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
             onSubmit={handleSubmitC}
             onSubmitLabel="提交綜合分析"
           />
+          {renderNavigationButtons()}
         </div>
       );
     }
@@ -343,24 +390,16 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
             minEvidence={minEvidence}
             currentEvidenceCount={currentCount}
           />
-          <div className="card bg-base-100 border border-base-300 shadow-sm">
-            <div className="card-body p-4">
-              <button
-                className="btn btn-primary btn-sm w-full gap-2"
-                onClick={() => {
-                  completeNode(currentNode.id);
-                }}
-              >
-                <ArrowRight size={14} />
-                進入下一階段
-              </button>
-              {minEvidence > 0 && currentCount < minEvidence && (
-                <p className="text-xs text-slate-500 mt-2 text-center">
+          {minEvidence > 0 && currentCount < minEvidence && (
+            <div className="card bg-base-100 border border-base-300 shadow-sm">
+              <div className="card-body p-4">
+                <p className="text-xs text-slate-500 text-center">
                   建議收集至少 {minEvidence} 則標記片段後再進入下一階段
                 </p>
-              )}
+              </div>
             </div>
-          </div>
+          )}
+          {renderNavigationButtons()}
         </div>
       );
     }
