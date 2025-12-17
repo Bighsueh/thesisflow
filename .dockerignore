@@ -1,7 +1,7 @@
 # Node modules
 node_modules
 npm-debug.log
-package-lock.json
+# package-lock.json 需要包含在 Docker 建置中，用於 npm ci
 
 # Build outputs
 dist
