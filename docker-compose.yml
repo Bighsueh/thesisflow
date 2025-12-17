@@ -2,12 +2,13 @@ services:
   postgres:
     image: postgres:16
     container_name: thesisflow-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: thesisflow
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -23,6 +24,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: thesisflow-backend
+    restart: unless-stopped
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
@@ -61,6 +63,7 @@ services:
       args:
         VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8000}
     container_name: thesisflow-frontend
+    restart: unless-stopped
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
