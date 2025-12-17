@@ -5,7 +5,19 @@ import boto3
 from botocore.client import Config
 from dotenv import load_dotenv
 
-load_dotenv("backend/env.local")
+# 嘗試多個可能的路徑來載入環境變數
+# 從 backend 目錄運行時使用 env.local
+# 從項目根目錄運行時使用 backend/env.local
+# Docker 容器中環境變數應通過 docker-compose.yml 傳遞，此處僅作為備用
+_env_paths = [
+    "env.local",
+    "backend/env.local",
+    os.path.join(os.path.dirname(__file__), "env.local"),
+]
+for _env_path in _env_paths:
+    if os.path.exists(_env_path):
+        load_dotenv(_env_path)
+        break
 
 
 # --- MinIO presign ---

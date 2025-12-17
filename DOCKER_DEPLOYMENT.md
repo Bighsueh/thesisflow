@@ -253,6 +253,57 @@ docker compose up -d
 - 確認 `.env` 檔案位於專案根目錄
 - 檢查環境變數名稱是否正確（區分大小寫）
 
+### 6. Azure OpenAI 部署名稱錯誤
+
+**問題：** 出現錯誤訊息「Azure OpenAI 部署 'gpt-4.1-mini' 不存在或無法訪問」。
+
+**可能原因：**
+1. **部署名稱不正確**：`gpt-4.1-mini` 只是範例名稱，您需要替換為您在 Azure OpenAI 中實際建立的部署名稱
+2. **環境變數未正確設置**：Docker 容器中沒有正確讀取到環境變數
+3. **部署名稱拼寫錯誤**：常見的 Azure OpenAI 部署名稱可能是 `gpt-4o-mini`、`gpt-4-turbo`、`gpt-35-turbo` 等
+
+**解決方案：**
+
+1. **確認您的 Azure OpenAI 部署名稱：**
+   - 登入 [Azure Portal](https://portal.azure.com)
+   - 前往您的 Azure OpenAI 資源
+   - 在左側選單選擇「部署 (Deployments)」
+   - 查看您實際建立的部署名稱（注意：部署名稱是您自己設定的，不一定與模型名稱相同）
+
+2. **檢查環境變數是否正確傳入容器：**
+   ```bash
+   # 檢查後端容器的環境變數
+   docker compose exec backend env | grep AZURE_OPENAI
+   ```
+   應該會顯示：
+   ```
+   AZURE_OPENAI_ENDPOINT=https://your-endpoint.cognitiveservices.azure.com
+   AZURE_OPENAI_API_KEY=your_api_key
+   AZURE_OPENAI_DEPLOYMENT=your-actual-deployment-name
+   AZURE_OPENAI_API_VERSION=2025-01-01-preview
+   ```
+
+3. **更新 `.env` 檔案：**
+   ```env
+   # 將部署名稱改為您在 Azure 中實際建立的部署名稱
+   AZURE_OPENAI_DEPLOYMENT=your-actual-deployment-name
+   ```
+
+4. **重新啟動服務：**
+   ```bash
+   docker compose down
+   docker compose up -d
+   ```
+
+5. **驗證配置：**
+   - 檢查後端日誌：`docker compose logs backend`
+   - 嘗試使用 AI 功能，確認錯誤訊息是否消失
+
+**注意事項：**
+- 部署名稱區分大小寫
+- 部署名稱可能與模型名稱不同（例如：模型可能是 `gpt-4o-mini`，但部署名稱可能是 `my-gpt4-deployment`）
+- 確保您的 Azure OpenAI 資源已啟用該模型，並且部署已成功建立
+
 ## 開發模式
 
 如果您想在開發模式下運行（支援熱重載），可以：
