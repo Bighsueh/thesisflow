@@ -259,6 +259,7 @@ thesisflow-ai-flow/
 ├── .dockerignore           # Docker 建置排除檔案
 ├── package.json            # Node.js 依賴
 ├── DOCKER_DEPLOYMENT.md    # Docker 部署詳細文檔
+├── AI_DOCUMENTATION_GUIDE.md # AI 文檔維護指南（給 AI 助手使用）
 └── README.md               # 本文件
 ```
 
