@@ -1,0 +1,78 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: thesisflow-postgres
+    environment:
+      POSTGRES_DB: thesisflow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d thesisflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - thesisflow-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: thesisflow-backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/thesisflow
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - FRONTEND_DOMAIN=${FRONTEND_DOMAIN:-}
+      - FRONTEND_PORT=${FRONTEND_PORT:-3000}
+      - BACKEND_DOMAIN=${BACKEND_DOMAIN:-}
+      - BACKEND_PORT=${BACKEND_PORT:-8000}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT:-}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY:-}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY:-}
+      - MINIO_BUCKET=${MINIO_BUCKET:-}
+      - MINIO_USE_SSL=${MINIO_USE_SSL:-false}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT:-}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY:-}
+      - AZURE_OPENAI_DEPLOYMENT=${AZURE_OPENAI_DEPLOYMENT:-}
+      - AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-}
+      - JWT_SECRET=${JWT_SECRET:-change-me}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - thesisflow-network
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:8000}
+    container_name: thesisflow-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    networks:
+      - thesisflow-network
+
+networks:
+  thesisflow-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+

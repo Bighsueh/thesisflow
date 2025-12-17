@@ -1,0 +1,5 @@
+{
+  "name": "ThesisFlow",
+  "description": "A dual-loop learning system for master's thesis literature review based on the SALSA framework.",
+  "requestFramePermissions": []
+}
