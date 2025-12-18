@@ -10,6 +10,7 @@ import { ChecklistSubmit } from './widgets/ChecklistSubmit';
 import { MatrixCompare } from './widgets/MatrixCompare';
 import { SynthesisWriter } from './widgets/SynthesisWriter';
 import { AppNode, Message, TaskAContent, ComparisonRow, TaskCContent } from '../types';
+import { useAutoSave } from '../hooks/useAutoSave';
 
 // 預設的 sections（向後相容用）
 const DEFAULT_SECTIONS = [
@@ -55,20 +56,23 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const autoSave = useAutoSave(1000);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatTimeline, isAiThinking]);
 
   // 當切換到 Comparison Node 時，根據 dimensions 初始化 taskBData
+  // 注意：只有在 taskBData 為空時才初始化，避免覆蓋已載入的保存數據
   useEffect(() => {
     if (currentNode?.data.type === 'task_comparison' && currentNode.data.config?.dimensions) {
       const dimensions = currentNode.data.config.dimensions;
-      if (dimensions.length > 0) {
+      // 只有在 taskBData 為空時才初始化，避免覆蓋已載入的保存數據
+      if (dimensions.length > 0 && taskBData.length === 0) {
         initializeTaskBDataForNode(currentNode.id, dimensions);
       }
     }
-  }, [currentStepId, currentNode?.data.config?.dimensions, initializeTaskBDataForNode]);
+  }, [currentStepId, currentNode?.data.config?.dimensions, initializeTaskBDataForNode, taskBData.length]);
 
   // ESC 鍵關閉抽屜
   useEffect(() => {
@@ -239,12 +243,13 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
             <select
               className="select select-bordered select-sm"
               value={widgetState.selectedDocId || ''}
-              onChange={(e) =>
+              onChange={(e) => {
                 updateWidgetState(currentNode.id, {
                   ...widgetState,
                   selectedDocId: e.target.value,
-                })
-              }
+                });
+                autoSave();
+              }}
             >
               <option value="" disabled>
                 請選擇目標文獻...

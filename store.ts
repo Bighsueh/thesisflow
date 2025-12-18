@@ -145,6 +145,8 @@ interface AppState {
   getFileUrl: (objectKey: string) => Promise<string>;
   getCachedFileUrl: (objectKey: string) => Promise<string>;
   initializeTaskBDataForNode: (nodeId: string, dimensions: string[]) => void;
+  saveWorkflowState: () => Promise<void>;
+  loadWorkflowState: (projectId: string) => Promise<void>;
   
   // Chat 相關方法
   addChatMessage: (message: Message) => void;
@@ -158,6 +160,18 @@ const genId = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : `node_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+// Debounce 函數用於自動保存
+let saveTimeout: NodeJS.Timeout | null = null;
+const debouncedSave = (saveFn: () => Promise<void>, delay: number = 1000) => {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+  saveTimeout = setTimeout(() => {
+    saveFn().catch(console.error);
+    saveTimeout = null;
+  }, delay);
+};
 
 export const useStore = create<AppState>((set, get) => ({
   nodes: [],
@@ -613,6 +627,8 @@ export const useStore = create<AppState>((set, get) => ({
     const startNode = get().nodes.find((n) => n.type === 'startNode') || get().nodes[0];
     set({ currentStepId: startNode ? startNode.id : null });
     await get().loadDocuments(projectId);
+    // 載入保存的 workflow 狀態
+    await get().loadWorkflowState(projectId);
   },
   exitProject: () => set({ activeProjectId: null, currentStepId: null, nodes: [], edges: [] }),
 
@@ -872,12 +888,15 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  updateTaskBRow: (index, field, value) =>
+  updateTaskBRow: (index, field, value) => {
     set((state) => {
       const newData = [...state.taskBData];
       newData[index] = { ...newData[index], [field]: value } as any;
       return { taskBData: newData };
-    }),
+    });
+    // 使用 debounce 自動保存
+    debouncedSave(() => get().saveWorkflowState());
+  },
   addTaskBRow: () =>
     set((state) => ({
       taskBData: [
@@ -919,7 +938,11 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  updateTaskC: (field, value) => set((state) => ({ taskCData: { ...state.taskCData, [field]: value } })),
+  updateTaskC: (field, value) => {
+    set((state) => ({ taskCData: { ...state.taskCData, [field]: value } }));
+    // 使用 debounce 自動保存
+    debouncedSave(() => get().saveWorkflowState());
+  },
   submitTaskCCheck: async () => {
     const state = get();
     if (!state.activeProjectId) throw new Error('尚未選擇專案');
@@ -1009,10 +1032,13 @@ export const useStore = create<AppState>((set, get) => ({
       chatMessages: [...state.chatMessages, message],
     })),
 
-  updateWidgetState: (nodeId: string, widgetData: any) =>
+  updateWidgetState: (nodeId: string, widgetData: any) => {
     set((state) => ({
       currentWidgetState: { ...state.currentWidgetState, [nodeId]: widgetData },
-    })),
+    }));
+    // 使用 debounce 自動保存
+    debouncedSave(() => get().saveWorkflowState());
+  },
 
   sendCoachMessage: async (message: string, context?: any) => {
     const state = get();
@@ -1167,5 +1193,49 @@ export const useStore = create<AppState>((set, get) => ({
     }));
 
     set({ taskBData: newTaskBData });
+  },
+
+  saveWorkflowState: async () => {
+    const state = get();
+    if (!state.activeProjectId || !state.currentStepId) return;
+    
+    try {
+      const payload = {
+        project_id: state.activeProjectId,
+        node_id: state.currentStepId,
+        widget_state: state.currentWidgetState,
+        task_b_data: state.taskBData,
+        task_c_data: state.taskCData,
+      };
+      await api('/api/workflow-state', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      console.error('保存 workflow 狀態失敗:', error);
+      // 不拋出錯誤，避免影響用戶體驗
+    }
+  },
+
+  loadWorkflowState: async (projectId: string) => {
+    try {
+      const state = await api(`/api/workflow-state/${projectId}`);
+      if (state) {
+        set({
+          currentStepId: state.node_id || null,
+          currentWidgetState: state.widget_state || {},
+          taskBData: state.task_b_data || [],
+          taskCData: state.task_c_data || {
+            c1_theme: { text: '', snippetIds: [] },
+            c2_evidence: { text: '', snippetIds: [] },
+            c3_boundary: { text: '', snippetIds: [] },
+            c4_gap: { text: '', snippetIds: [] },
+          },
+        });
+      }
+    } catch (error) {
+      console.error('載入 workflow 狀態失敗:', error);
+      // 不拋出錯誤，如果沒有保存的狀態就使用預設值
+    }
   },
 }));

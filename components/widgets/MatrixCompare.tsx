@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Trash2, Link as LinkIcon, X } from 'lucide-react';
 import { ComparisonRow, FieldWithEvidence } from '../../types';
 import { useStore } from '../../store';
+import { useAutoSave } from '../../hooks/useAutoSave';
 
 interface MatrixCompareProps {
   nodeId: string;
@@ -21,6 +22,7 @@ export const MatrixCompare: React.FC<MatrixCompareProps> = ({
   documents,
 }) => {
   const { documents: allDocuments } = useStore();
+  const autoSave = useAutoSave(1000);
   
   // 獲取所有 highlights
   const allHighlights = allDocuments.flatMap((d) =>
@@ -39,6 +41,7 @@ export const MatrixCompare: React.FC<MatrixCompareProps> = ({
       : [...currentClaim.snippetIds, highlightId];
 
     onUpdateRow(rowIndex, field, { ...currentClaim, snippetIds: newSnippetIds });
+    autoSave();
   };
 
   return (
@@ -60,7 +63,10 @@ export const MatrixCompare: React.FC<MatrixCompareProps> = ({
               className="input input-sm input-bordered w-full mb-3"
               placeholder="維度名稱 (例如：研究方法)"
               value={row.dimension}
-              onChange={(e) => onUpdateRow(idx, 'dimension', e.target.value)}
+              onChange={(e) => {
+                onUpdateRow(idx, 'dimension', e.target.value);
+                autoSave();
+              }}
             />
 
             <div className="grid grid-cols-2 gap-4 mb-3">
@@ -69,7 +75,10 @@ export const MatrixCompare: React.FC<MatrixCompareProps> = ({
                 <select
                   className="select select-bordered select-xs w-full mb-2"
                   value={row.doc1Id}
-                  onChange={(e) => onUpdateRow(idx, 'doc1Id', e.target.value)}
+                  onChange={(e) => {
+                    onUpdateRow(idx, 'doc1Id', e.target.value);
+                    autoSave();
+                  }}
                 >
                   <option value="">選擇文獻...</option>
                   {documents.map((d) => (
@@ -81,9 +90,10 @@ export const MatrixCompare: React.FC<MatrixCompareProps> = ({
                 <textarea
                   className="textarea textarea-bordered textarea-xs w-full h-20 mb-2"
                   value={row.doc1Claim.text}
-                  onChange={(e) =>
-                    onUpdateRow(idx, 'doc1Claim', { ...row.doc1Claim, text: e.target.value })
-                  }
+                  onChange={(e) => {
+                    onUpdateRow(idx, 'doc1Claim', { ...row.doc1Claim, text: e.target.value });
+                    autoSave();
+                  }}
                 />
                 <EvidenceSelector
                   selectedIds={row.doc1Claim.snippetIds}
@@ -97,7 +107,10 @@ export const MatrixCompare: React.FC<MatrixCompareProps> = ({
                 <select
                   className="select select-bordered select-xs w-full mb-2"
                   value={row.doc2Id}
-                  onChange={(e) => onUpdateRow(idx, 'doc2Id', e.target.value)}
+                  onChange={(e) => {
+                    onUpdateRow(idx, 'doc2Id', e.target.value);
+                    autoSave();
+                  }}
                 >
                   <option value="">選擇文獻...</option>
                   {documents.map((d) => (
@@ -109,9 +122,10 @@ export const MatrixCompare: React.FC<MatrixCompareProps> = ({
                 <textarea
                   className="textarea textarea-bordered textarea-xs w-full h-20 mb-2"
                   value={row.doc2Claim.text}
-                  onChange={(e) =>
-                    onUpdateRow(idx, 'doc2Claim', { ...row.doc2Claim, text: e.target.value })
-                  }
+                  onChange={(e) => {
+                    onUpdateRow(idx, 'doc2Claim', { ...row.doc2Claim, text: e.target.value });
+                    autoSave();
+                  }}
                 />
                 <EvidenceSelector
                   selectedIds={row.doc2Claim.snippetIds}
@@ -126,13 +140,19 @@ export const MatrixCompare: React.FC<MatrixCompareProps> = ({
                 className="input input-xs input-bordered"
                 placeholder="相同點 (一句話)"
                 value={row.similarity}
-                onChange={(e) => onUpdateRow(idx, 'similarity', e.target.value)}
+                onChange={(e) => {
+                  onUpdateRow(idx, 'similarity', e.target.value);
+                  autoSave();
+                }}
               />
               <input
                 className="input input-xs input-bordered"
                 placeholder="不同點 (一句話)"
                 value={row.difference}
-                onChange={(e) => onUpdateRow(idx, 'difference', e.target.value)}
+                onChange={(e) => {
+                  onUpdateRow(idx, 'difference', e.target.value);
+                  autoSave();
+                }}
               />
             </div>
           </div>

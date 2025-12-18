@@ -246,6 +246,36 @@ class ChatResponse(BaseModel):
     role: str = "ai"
 
 
+class WorkflowStateCreate(BaseModel):
+    project_id: str
+    node_id: str
+    widget_state: dict = Field(default_factory=dict)
+    task_b_data: list = Field(default_factory=list)
+    task_c_data: dict = Field(default_factory=dict)
+
+
+class WorkflowStateUpdate(BaseModel):
+    node_id: Optional[str] = None
+    widget_state: Optional[dict] = None
+    task_b_data: Optional[list] = None
+    task_c_data: Optional[dict] = None
+
+
+class WorkflowStateOut(BaseModel):
+    id: str
+    project_id: str
+    user_id: str
+    node_id: str
+    widget_state: dict
+    task_b_data: list
+    task_c_data: dict
+    created_at: int
+    updated_at: int
+
+    class Config:
+        from_attributes = True
+
+
 # Rebuild forward refs
 DocumentOut.model_rebuild()
 HighlightOut.model_rebuild()

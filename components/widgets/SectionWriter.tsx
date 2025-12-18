@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle, Link as LinkIcon, X } from 'lucide-react';
 import { FieldWithEvidence, Highlight, Document } from '../../types';
 import { useStore } from '../../store';
 import { EvidenceCard } from '../EvidenceCard';
+import { useAutoSave } from '../../hooks/useAutoSave';
 
 interface SectionWriterProps {
   nodeId: string;
@@ -27,6 +28,7 @@ export const SectionWriter: React.FC<SectionWriterProps> = ({
   const { documents, activeEvidenceIds, setActiveEvidenceIds } = useStore();
   const [expandedSection, setExpandedSection] = useState<string | null>(sections[0]?.key || null);
   const [showEvidenceSelector, setShowEvidenceSelector] = useState<string | null>(null);
+  const autoSave = useAutoSave(1000);
 
   // 獲取所有 highlights
   const allHighlights = documents.flatMap((d) =>
@@ -40,6 +42,7 @@ export const SectionWriter: React.FC<SectionWriterProps> = ({
       : [...currentValue.snippetIds, highlightId];
     
     onUpdate(sectionKey, { ...currentValue, snippetIds: newSnippetIds });
+    autoSave();
   };
 
   const getSectionStatus = (sectionKey: string) => {
@@ -106,9 +109,10 @@ export const SectionWriter: React.FC<SectionWriterProps> = ({
                     className="textarea textarea-bordered textarea-sm w-full resize-none"
                     placeholder={section.placeholder || '請輸入內容...'}
                     value={value.text}
-                    onChange={(e) =>
-                      onUpdate(section.key, { ...value, text: e.target.value })
-                    }
+                    onChange={(e) => {
+                      onUpdate(section.key, { ...value, text: e.target.value });
+                      autoSave();
+                    }}
                     rows={4}
                   />
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link as LinkIcon, X } from 'lucide-react';
 import { TaskCContent, FieldWithEvidence } from '../../types';
 import { useStore } from '../../store';
+import { useAutoSave } from '../../hooks/useAutoSave';
 
 interface SynthesisWriterProps {
   nodeId: string;
@@ -22,6 +23,7 @@ export const SynthesisWriter: React.FC<SynthesisWriterProps> = ({
   onUpdate,
 }) => {
   const { documents } = useStore();
+  const autoSave = useAutoSave(1000);
   
   // 獲取所有 highlights
   const allHighlights = documents.flatMap((d) =>
@@ -35,6 +37,7 @@ export const SynthesisWriter: React.FC<SynthesisWriterProps> = ({
       : [...currentValue.snippetIds, highlightId];
     
     onUpdate(key, { ...currentValue, snippetIds: newSnippetIds });
+    autoSave();
   };
 
   return (
@@ -69,7 +72,10 @@ export const SynthesisWriter: React.FC<SynthesisWriterProps> = ({
                 className="textarea textarea-bordered textarea-sm w-full resize-none mb-3"
                 placeholder={slot.placeholder || '請輸入內容...'}
                 value={value.text}
-                onChange={(e) => onUpdate(slot.key, { ...value, text: e.target.value })}
+                onChange={(e) => {
+                  onUpdate(slot.key, { ...value, text: e.target.value });
+                  autoSave();
+                }}
                 rows={4}
               />
 

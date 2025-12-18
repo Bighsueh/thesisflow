@@ -141,3 +141,21 @@ class CohortMember(Base):
 
     __table_args__ = (UniqueConstraint("cohort_id", "user_id", name="uq_cohort_member"),)
 
+
+class WorkflowState(Base):
+    __tablename__ = "workflow_states"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    node_id = Column(String, nullable=False)  # 當前節點 ID
+    widget_state = Column(JSONB, default=dict)  # Widget 狀態
+    task_b_data = Column(JSONB, default=list)  # Task B 數據
+    task_c_data = Column(JSONB, default=dict)  # Task C 數據
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    project = relationship("Project")
+    user = relationship("User")
+
+    __table_args__ = (UniqueConstraint("project_id", "user_id", name="uq_workflow_state"),)
+
