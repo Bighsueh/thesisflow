@@ -738,7 +738,10 @@ export default function TeacherInterface() {
           </div>
           <div className="flex-1 flex items-center gap-4">
             <div className="flex flex-col">
-              <span className="font-bold text-lg text-slate-800">ThesisFlow 流程設計器</span>
+              <span className="font-bold text-lg text-slate-800">
+                ThesisFlow
+                <span className="ml-1 text-xs font-normal text-slate-500">文獻探討輔助平台</span>
+              </span>
               <span className="badge badge-outline border-slate-300 text-slate-500 mt-1 w-fit">教師端</span>
             </div>
             <div className="flex items-center gap-2">

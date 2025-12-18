@@ -44,7 +44,10 @@ export default function LoginPage() {
       <div className="bg-white shadow-xl rounded-2xl w-full max-w-lg p-8 border border-slate-200">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <div className="text-sm text-slate-500">ThesisFlow</div>
+            <div className="text-sm text-slate-500">
+              ThesisFlow
+              <span className="ml-1 text-xs text-slate-400">文獻探討輔助平台</span>
+            </div>
             <h1 className="text-2xl font-bold text-slate-800">{mode === 'login' ? '登入' : '註冊'}</h1>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>

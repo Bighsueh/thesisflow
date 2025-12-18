@@ -198,7 +198,7 @@ export default function StudentHome() {
               ThesisFlow
             </span>
             <span className="text-sm font-semibold text-slate-800">
-              學生端工作臺
+              文獻探討輔助平台 · 學生端工作臺
             </span>
           </div>
           {user && (

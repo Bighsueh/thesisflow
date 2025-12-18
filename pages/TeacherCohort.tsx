@@ -65,7 +65,10 @@ export default function TeacherCohort() {
     <div className="min-h-screen flex bg-slate-50">
       {/* 與教師首頁共用風格的側邊欄，並維持「學生群組管理」為目前作用中的區塊 */}
       <aside className="w-64 bg-slate-900 text-white flex flex-col">
-        <div className="h-16 flex items-center px-4 font-bold text-lg border-b border-slate-800">ThesisFlow</div>
+        <div className="h-16 flex items-center px-4 font-bold text-lg border-b border-slate-800">
+          ThesisFlow
+          <span className="ml-1 text-xs font-normal text-slate-300">文獻探討輔助平台</span>
+        </div>
         <nav className="flex-1 px-2 py-4 space-y-2">
           <button
             className="btn btn-ghost w-full justify-start gap-3 text-slate-100"
