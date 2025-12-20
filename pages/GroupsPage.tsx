@@ -130,7 +130,7 @@ export function GroupsPage() {
                   <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-sm">
                     <span className="text-gray-500">
                       群組代碼：{' '}
-                      <span className="font-mono font-medium text-gray-900 bg-gray-50 px-2 py-1 rounded">
+                      <span className="font-mono font-medium text-gray-900 bg-white/70 backdrop-blur-xl border border-white/60 px-2 py-1 rounded shadow-sm">
                         {group.code}
                       </span>
                     </span>

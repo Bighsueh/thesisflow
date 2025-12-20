@@ -117,7 +117,7 @@ export default function LoginPage() {
                     角色
                   </label>
                   <select
-                    className="w-full bg-white/50 backdrop-blur-sm border border-white/60 rounded-xl px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all duration-200 shadow-sm"
+                    className="w-full bg-white/70 backdrop-blur-xl border border-white/80 rounded-xl px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all duration-200 shadow-lg shadow-violet-500/5"
                     value={role}
                     onChange={(e) => setRole(e.target.value as 'teacher' | 'student')}
                   >

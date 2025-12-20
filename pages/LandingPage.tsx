@@ -21,7 +21,7 @@ export function LandingPage() {
           transition={{
             duration: 0.5,
           }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 backdrop-blur-sm border border-white/60 shadow-sm text-sm font-medium text-violet-700 mb-4"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/70 backdrop-blur-xl border border-white/80 shadow-lg shadow-violet-500/10 text-sm font-medium text-violet-700 mb-4"
         >
           <Sparkles size={16} />
           <span>AI 驅動的研究助手</span>

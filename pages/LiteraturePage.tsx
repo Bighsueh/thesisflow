@@ -326,7 +326,7 @@ export function LiteraturePage() {
                 onChange={(e) => setNewTitle(e.target.value)}
               />
               <textarea
-                className="w-full bg-white/50 backdrop-blur-sm border border-white/60 rounded-xl px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all duration-200 shadow-sm min-h-[120px]"
+                className="w-full bg-white/70 backdrop-blur-xl border border-white/80 rounded-xl px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all duration-200 shadow-lg shadow-violet-500/5 min-h-[120px]"
                 placeholder="貼上文字內容..."
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
@@ -347,7 +347,7 @@ export function LiteraturePage() {
       {/* Preview Modal */}
       {previewId && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+          <div className="bg-white/90 backdrop-blur-2xl border border-white/80 rounded-xl shadow-2xl shadow-violet-500/10 w-full max-w-2xl max-h-[80vh] overflow-hidden">
             {(() => {
               const doc = documents.find((d) => d.id === previewId)
               if (!doc) {
