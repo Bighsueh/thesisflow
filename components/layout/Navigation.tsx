@@ -19,8 +19,8 @@ export function Navigation() {
   const isLanding = location.pathname === '/'
   const isLogin = location.pathname === '/login'
   
-  // 只顯示導航給已登入的用戶
-  if (isLogin || !user) {
+  // 登入頁面不顯示導航
+  if (isLogin) {
     return null
   }
 
@@ -55,9 +55,9 @@ export function Navigation() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-4">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/60 rounded-2xl shadow-sm px-6 py-3 flex items-center justify-between">
+        <div className="bg-white/80 backdrop-blur-2xl border border-white/80 rounded-2xl shadow-lg shadow-violet-500/10 px-6 py-3 flex items-center justify-between">
           {/* Logo */}
-          <Link to="/dashboard" className="flex items-center gap-2 group">
+          <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2 group">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:shadow-violet-500/30 transition-all">
               T
             </div>
@@ -66,8 +66,8 @@ export function Navigation() {
             </span>
           </Link>
 
-          {/* Desktop Nav */}
-          {!isLanding && (
+          {/* Desktop Nav - 只顯示給已登入用戶 */}
+          {!isLanding && user && (
             <div className="hidden md:flex items-center gap-1">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path
@@ -101,7 +101,7 @@ export function Navigation() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-3">
-            {isLanding ? (
+            {!user || isLanding ? (
               <>
                 <Link to="/login">
                   <Button variant="ghost" size="sm">

@@ -7,11 +7,11 @@ interface LayoutProps {
 }
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen font-sans text-gray-900">
+    <div className="min-h-screen font-sans text-gray-900 relative">
       <GradientBackground />
       <Navigation />
 
-      <main className="pt-28 pb-16 px-4 min-h-screen">
+      <main className="relative z-10 pt-28 pb-16 px-4 min-h-screen">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{
