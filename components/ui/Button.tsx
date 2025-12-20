@@ -22,7 +22,7 @@ export function Button({
     primary:
       'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 border border-transparent',
     secondary:
-      'bg-white/80 backdrop-blur-sm text-gray-800 border border-white/60 shadow-sm hover:bg-white',
+      'bg-white/80 backdrop-blur-xl text-gray-800 border border-white/80 shadow-lg shadow-violet-500/5 hover:bg-white/90 hover:shadow-xl hover:shadow-violet-500/10',
     ghost: 'bg-transparent text-gray-600 hover:bg-white/40 hover:text-gray-900',
     danger: 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100',
   }

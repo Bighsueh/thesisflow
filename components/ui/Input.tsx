@@ -26,8 +26,8 @@ export function Input({
         )}
         <input
           className={`
-            w-full bg-white/50 backdrop-blur-sm
-            border border-white/60 
+            w-full bg-white/70 backdrop-blur-xl
+            border border-white/80 
             rounded-xl
             px-4 py-2.5
             text-gray-900 placeholder-gray-400

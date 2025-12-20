@@ -30,16 +30,18 @@ export function GlassCard({
       onClick={onClick}
       className={`
         relative overflow-hidden
-        bg-white/60 backdrop-blur-xl 
-        border border-white/60 
-        shadow-[0_8px_30px_rgb(0,0,0,0.04)]
+        bg-white/70 backdrop-blur-2xl 
+        border border-white/80 
+        shadow-[0_8px_30px_rgb(0,0,0,0.06)]
+        shadow-violet-500/5
         rounded-3xl
         ${hoverEffect || onClick ? 'cursor-pointer' : ''}
         ${className}
       `}
     >
       {/* Subtle shine effect overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-white/20 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-violet-50/20 via-transparent to-transparent pointer-events-none" />
       <div className="relative z-10">{children}</div>
     </motion.div>
   )
