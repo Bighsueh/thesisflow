@@ -56,3 +56,5 @@ echo "2. 確保在遠端主機上設置了環境變數，或"
 echo "3. 檢查 docker-compose.yml 中的環境變數配置"
 
 
+
+
