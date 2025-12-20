@@ -8,6 +8,7 @@ import {
   User,
   LogOut,
   Sparkles,
+  Home,
 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { useAuthStore } from '../../authStore'
@@ -57,18 +58,41 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto">
         <div className="bg-white/80 backdrop-blur-2xl border border-white/80 rounded-2xl shadow-lg shadow-violet-500/10 px-6 py-3 flex items-center justify-between">
           {/* Logo */}
-          <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2 group">
+          <Link to="/" className="flex items-center gap-2 group">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:shadow-violet-500/30 transition-all">
               T
             </div>
-            <span className="font-bold text-xl text-gray-900 tracking-tight">
+            <span className="font-bold text-xl text-gray-900 tracking-tight group-hover:text-violet-600 transition-colors">
               Theis<span className="text-violet-600">Flow</span>
             </span>
           </Link>
 
-          {/* Desktop Nav - 只顯示給已登入用戶 */}
-          {!isLanding && user && (
+          {/* Desktop Nav - 顯示給已登入用戶 */}
+          {user && (
             <div className="hidden md:flex items-center gap-1">
+              {/* 首頁連結 */}
+              <Link to="/">
+                <div
+                  className={`
+                    relative px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200
+                    ${location.pathname === '/' ? 'text-violet-700' : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'}
+                  `}
+                >
+                  {location.pathname === '/' && (
+                    <motion.div
+                      layoutId="nav-pill"
+                      className="absolute inset-0 bg-violet-100/50 rounded-xl -z-10"
+                      transition={{
+                        type: 'spring',
+                        bounce: 0.2,
+                        duration: 0.6,
+                      }}
+                    />
+                  )}
+                  <Home size={18} />
+                  <span>首頁</span>
+                </div>
+              </Link>
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path
                 return (
@@ -101,7 +125,7 @@ export function Navigation() {
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-3">
-            {!user || isLanding ? (
+            {!user ? (
               <>
                 <Link to="/login">
                   <Button variant="ghost" size="sm">
