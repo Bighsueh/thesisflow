@@ -1,52 +1,143 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Sparkles, Brain, Zap, Users } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { GlassCard } from '../components/ui/GlassCard'
 import { motion } from 'framer-motion'
+import Lottie from 'lottie-react'
+
 export function LandingPage() {
+  const [animationData, setAnimationData] = useState<any>(null)
+
+  useEffect(() => {
+    // 從 public 資料夾載入本地 JSON 檔案
+    fetch('/animations/Businessman flies up with rocket.json')
+      .then(res => res.json())
+      .then(data => setAnimationData(data))
+      .catch(err => console.error('載入動畫失敗:', err))
+  }, [])
+
   return (
     <div className="space-y-24">
       {/* Hero Section */}
-      <section className="text-center space-y-8 pt-12">
-        <motion.div
-          initial={{
-            opacity: 0,
-            scale: 0.9,
-          }}
-          animate={{
-            opacity: 1,
-            scale: 1,
-          }}
-          transition={{
-            duration: 0.5,
-          }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/70 backdrop-blur-xl border border-white/80 shadow-lg shadow-violet-500/10 text-sm font-medium text-violet-700 mb-4"
-        >
-          <Sparkles size={16} />
-          <span>AI 驅動的研究助手</span>
-        </motion.div>
+      <section className="relative">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center pt-12">
+          {/* Left Side - Text Content */}
+          <div className="text-center lg:text-left space-y-8">
+            <motion.div
+              initial={{
+                opacity: 0,
+                scale: 0.9,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+              }}
+              transition={{
+                duration: 0.5,
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/70 backdrop-blur-xl border border-white/80 shadow-lg shadow-violet-500/10 text-sm font-medium text-violet-700 mb-4"
+            >
+              <Sparkles size={16} />
+              <span>AI 驅動的研究助手</span>
+            </motion.div>
 
-        <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-gray-900 max-w-4xl mx-auto leading-tight">
-          加速您的 <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600">
-            文獻探討
-          </span>
-        </h1>
+            <motion.h1
+              initial={{
+                opacity: 0,
+                y: 20,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.6,
+                delay: 0.2,
+              }}
+              className="text-5xl md:text-7xl font-bold tracking-tight text-gray-900 leading-tight"
+            >
+              加速您的 <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600">
+                文獻探討
+              </span>
+            </motion.h1>
 
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-          TheisFlow 協助研究者和學生運用 AI 的力量，組織、分析與綜合學術文獻。
-        </p>
+            <motion.p
+              initial={{
+                opacity: 0,
+                y: 20,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.6,
+                delay: 0.4,
+              }}
+              className="text-xl text-gray-600 leading-relaxed"
+            >
+              TheisFlow 協助研究者和學生運用 AI 的力量，組織、分析與綜合學術文獻。
+            </motion.p>
 
-        <div className="flex items-center justify-center gap-4 pt-4">
-          <Link to="/login">
-            <Button size="lg" leftIcon={<Zap size={18} />}>
-              開始研究
-            </Button>
-          </Link>
-          <Button variant="secondary" size="lg">
-            查看示範
-          </Button>
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: 20,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.6,
+                delay: 0.6,
+              }}
+              className="flex items-center justify-center lg:justify-start gap-4 pt-4"
+            >
+              <Link to="/login">
+                <Button size="lg" leftIcon={<Zap size={18} />}>
+                  開始研究
+                </Button>
+              </Link>
+              <Button variant="secondary" size="lg">
+                查看示範
+              </Button>
+            </motion.div>
+          </div>
+
+          {/* Right Side - Lottie Animation */}
+          <motion.div
+            initial={{
+              opacity: 0,
+              scale: 0.8,
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.3,
+            }}
+            className="flex items-center justify-center"
+          >
+            <div className="w-full max-w-lg mx-auto">
+              {animationData ? (
+                <Lottie
+                  animationData={animationData}
+                  loop={true}
+                  autoplay={true}
+                  className="w-full h-auto"
+                />
+              ) : (
+                <div className="w-full h-64 flex items-center justify-center text-gray-400">
+                  <div className="text-sm">載入動畫中...</div>
+                </div>
+              )}
+            </div>
+          </motion.div>
         </div>
       </section>
 

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../authStore'
 import { GlassCard } from '../components/ui/GlassCard'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { GradientBackground } from '../components/ui/GradientBackground'
-import { Mail, Lock, User, Sparkles } from 'lucide-react'
+import { Mail, Lock, User, Sparkles, ArrowLeft } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function LoginPage() {
@@ -56,16 +56,30 @@ export default function LoginPage() {
           className="w-full max-w-md"
         >
           <GlassCard className="p-8">
+            {/* Back to Landing Page Button */}
+            <div className="mb-6">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-violet-600 transition-colors group"
+              >
+                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                <span>返回首頁</span>
+              </Link>
+            </div>
+
             {/* Logo and Title */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 mb-4 group cursor-pointer"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg group-hover:shadow-violet-500/30 transition-all">
                   T
                 </div>
-                <span className="font-bold text-2xl text-gray-900 tracking-tight">
+                <span className="font-bold text-2xl text-gray-900 tracking-tight group-hover:text-violet-600 transition-colors">
                   Theis<span className="text-violet-600">Flow</span>
                 </span>
-              </div>
+              </Link>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {mode === 'login' ? '歡迎回來' : '建立帳號'}
               </h1>
