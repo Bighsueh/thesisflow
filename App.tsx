@@ -28,13 +28,9 @@ export function App() {
         <Route
           path="/"
           element={
-            user ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <Layout>
-                <LandingPage />
-              </Layout>
-            )
+            <Layout>
+              <LandingPage />
+            </Layout>
           }
         />
         <Route path="/login" element={<LoginPage />} />
