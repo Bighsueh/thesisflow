@@ -67,8 +67,8 @@ export function Navigation() {
             </span>
           </Link>
 
-          {/* Desktop Nav - 顯示給已登入用戶 */}
-          {user && (
+          {/* Desktop Nav - 只顯示給已登入的學生 */}
+          {user && user.role === 'student' && (
             <div className="hidden md:flex items-center gap-1">
               {/* 首頁連結 */}
               <Link to="/">
