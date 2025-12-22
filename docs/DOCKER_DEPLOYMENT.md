@@ -163,16 +163,18 @@ BACKEND_PORT=8000
 
 資料庫 schema 會在後端服務啟動時自動建立。後端使用 SQLAlchemy 的 `Base.metadata.create_all()` 自動建立所有必要的表格。
 
-### 手動執行 Migration
+### 自動 Migration
 
-如果需要執行額外的 migration（例如 `migration_add_highlight_fields.sql`），可以透過以下方式：
+系統會在後端啟動時自動執行 migration。`db_migration.py` 中的 `auto_migrate_highlights_table()` 會自動檢查並添加缺少的欄位到 `highlights` 表格。
+
+如果需要手動執行 migration，可以透過以下方式：
 
 ```bash
 # 進入後端容器
 docker compose exec backend bash
 
-# 在容器內執行 migration
-psql postgresql://postgres:postgres@postgres:5432/thesisflow -f /app/migration_add_highlight_fields.sql
+# 在容器內執行 Python migration 腳本
+python -c "from db_migration import auto_migrate_highlights_table; auto_migrate_highlights_table()"
 ```
 
 ### 備份資料庫
