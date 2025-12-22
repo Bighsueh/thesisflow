@@ -12,7 +12,7 @@ import LoginPage from './pages/LoginPage'
 import TeacherHome from './pages/TeacherHome'
 import TeacherCohort from './pages/TeacherCohort'
 import TeacherInterface from './components/TeacherInterface'
-import StudentInterface from './components/StudentInterface'
+import StudentInterface from './components/student/StudentInterface'
 import { useAuthStore } from './authStore'
 
 export function App() {
