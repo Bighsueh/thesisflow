@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from './components/layout/Layout'
+import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { LandingPage } from './pages/LandingPage'
 import { Dashboard } from './pages/Dashboard'
 import { ProjectsPage } from './pages/ProjectsPage'
@@ -39,80 +40,86 @@ export function App() {
         <Route
           path="/dashboard"
           element={
-            user ? (
+            <ProtectedRoute requiredRole="student">
               <Layout>
                 <Dashboard />
               </Layout>
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/projects"
           element={
-            user ? (
+            <ProtectedRoute requiredRole="student">
               <Layout>
                 <ProjectsPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/groups"
           element={
-            user ? (
+            <ProtectedRoute requiredRole="student">
               <Layout>
                 <GroupsPage />
               </Layout>
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/literature"
           element={
-            user ? (
+            <ProtectedRoute requiredRole="student">
               <Layout>
                 <LiteraturePage />
               </Layout>
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/profile"
           element={
-            user ? (
+            <ProtectedRoute>
               <Layout>
                 <ProfilePage />
               </Layout>
-            ) : (
-              <Navigate to="/login" replace />
-            )
+            </ProtectedRoute>
           }
         />
         <Route
           path="/student/project"
-          element={user ? <StudentInterface /> : <Navigate to="/login" replace />}
+          element={
+            <ProtectedRoute requiredRole="student">
+              <StudentInterface />
+            </ProtectedRoute>
+          }
         />
 
         {/* Teacher Routes (without Layout) */}
         <Route
           path="/teacher/designer"
-          element={user ? <TeacherInterface /> : <Navigate to="/login" replace />}
+          element={
+            <ProtectedRoute requiredRole="teacher">
+              <TeacherInterface />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/teacher"
-          element={user ? <TeacherHome /> : <Navigate to="/login" replace />}
+          element={
+            <ProtectedRoute requiredRole="teacher">
+              <TeacherHome />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/teacher/cohorts/:cohortId"
-          element={user ? <TeacherCohort /> : <Navigate to="/login" replace />}
+          element={
+            <ProtectedRoute requiredRole="teacher">
+              <TeacherCohort />
+            </ProtectedRoute>
+          }
         />
 
         {/* Legacy student route redirect */}
