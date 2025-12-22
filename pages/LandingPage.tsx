@@ -78,7 +78,7 @@ export function LandingPage() {
               }}
               className="text-xl text-gray-600 leading-relaxed"
             >
-              TheisFlow 協助研究者和學生運用 AI 的力量，組織、分析與綜合學術文獻。
+              ThesisFlow 協助研究者和學生運用 AI 的力量，組織、分析與綜合學術文獻。
             </motion.p>
 
             <motion.div

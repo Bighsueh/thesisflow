@@ -43,7 +43,7 @@ export function TeacherSidebar({
             T
           </div>
           <span className="font-bold text-xl text-gray-900 tracking-tight group-hover:text-violet-600 transition-colors">
-            Theis<span className="text-violet-600">Flow</span>
+            Thesis<span className="text-violet-600">Flow</span>
           </span>
         </Link>
       </div>

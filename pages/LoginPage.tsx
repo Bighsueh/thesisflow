@@ -77,14 +77,14 @@ export default function LoginPage() {
                   T
                 </div>
                 <span className="font-bold text-2xl text-gray-900 tracking-tight group-hover:text-violet-600 transition-colors">
-                  Theis<span className="text-violet-600">Flow</span>
+                  Thesis<span className="text-violet-600">Flow</span>
                 </span>
               </Link>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 {mode === 'login' ? '歡迎回來' : '建立帳號'}
               </h1>
               <p className="text-gray-500">
-                {mode === 'login' ? '登入以繼續您的研究旅程' : '開始使用 TheisFlow'}
+                {mode === 'login' ? '登入以繼續您的研究旅程' : '開始使用 ThesisFlow'}
               </p>
             </div>
 
