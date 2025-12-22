@@ -212,6 +212,9 @@ cp env.example env.local
 # 編輯 env.local 填入實際值
 # 注意：DATABASE_URL 應使用 localhost:5432 或 docker 服務名稱
 
+# 初始化資料庫（如果使用本地 postgres，需要先創建資料庫）
+python init_db.py
+
 # 啟動開發伺服器（支援熱重載）
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```

@@ -16,7 +16,11 @@ dist-ssr
 backend/.env
 backend/env.local
 backend/.venv
-backend/__pycache__
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
 
 # Editor directories and files
 .vscode/*

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Optional, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class FlowNodePayload(BaseModel):
@@ -139,8 +139,19 @@ class PresignResponse(BaseModel):
     object_key: str
 
 
+class PresignGetRequest(BaseModel):
+    object_key: str
+
+
 class PresignGetResponse(BaseModel):
     download_url: str
+    url: Optional[str] = None  # Alias for download_url for compatibility with frontend
+
+    @model_validator(mode='after')
+    def set_url_from_download_url(self):
+        """Ensure url field is always set to download_url value"""
+        self.url = self.download_url
+        return self
 
 
 class UserCreate(BaseModel):
