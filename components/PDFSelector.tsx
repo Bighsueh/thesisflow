@@ -112,6 +112,14 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (disabled) return;
+    
+    // 檢查是否點擊到已存在的標記
+    const target = e.target as HTMLElement;
+    if (target.dataset.isHighlight === 'true' || target.closest('[data-is-highlight="true"]')) {
+      // 點擊到標記，不開始選擇，讓標記的事件處理器處理
+      return;
+    }
+    
     e.preventDefault();
     e.stopPropagation();
     const coords = getRelativeCoordinates(e.clientX, e.clientY);

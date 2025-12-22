@@ -34,12 +34,12 @@ env.local
 .DS_Store
 Thumbs.db
 
-# Migration scripts (keep for reference but don't copy)
-migrate_highlights.py
-migration_add_highlight_fields.sql
+# Migration scripts (removed - functionality replaced by db_migration.py)
 
 # Other
 .cursor
+
+
 
 
 

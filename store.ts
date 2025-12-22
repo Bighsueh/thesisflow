@@ -28,27 +28,15 @@ import {
   UsageRecord,
   ChatContext,
 } from './types';
-import { useAuthStore } from './authStore';
-
-const API_BASE = ((import.meta as any).env?.VITE_API_BASE as string) || 'http://localhost:8000';
-
-async function api(path: string, options?: RequestInit) {
-  const token = useAuthStore.getState().token;
-  const url = `${API_BASE}${path}`;
-  const res = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    ...options,
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || res.statusText);
-  }
-  return res.json();
-}
+import { api } from './services/api';
+import { projectService } from './services/projectService';
+import { cohortService } from './services/cohortService';
+import { studentService } from './services/studentService';
+import { documentService } from './services/documentService';
+import { taskService } from './services/taskService';
+import { chatService } from './services/chatService';
+import { fileService } from './services/fileService';
+import { usageService } from './services/usageService';
 
 interface AppState {
   nodes: AppNode[];
@@ -189,7 +177,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   projects: [],
   loadProjects: async () => {
-    const projects = await api('/api/projects');
+    const projects = await projectService.loadProjects();
     set({ projects });
   },
   cohorts: [],
@@ -197,90 +185,79 @@ export const useStore = create<AppState>((set, get) => ({
   students: [],
   usageRecords: [],
   loadCohorts: async () => {
-    const data = await api('/api/cohorts');
-    set({ cohorts: data as Cohort[] });
+    const data = await cohortService.loadCohorts();
+    set({ cohorts: data });
   },
   createCohort: async (payload) => {
-    const created = await api('/api/cohorts', { method: 'POST', body: JSON.stringify(payload) });
-    set((s) => ({ cohorts: [...s.cohorts, created as Cohort] }));
+    const created = await cohortService.createCohort(payload);
+    set((s) => ({ cohorts: [...s.cohorts, created] }));
   },
   updateCohort: async (cohortId, payload) => {
-    const updated = await api(`/api/cohorts/${cohortId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+    const updated = await cohortService.updateCohort(cohortId, payload);
     set((s) => ({
-      cohorts: s.cohorts.map((c) => (c.id === cohortId ? (updated as Cohort) : c)),
+      cohorts: s.cohorts.map((c) => (c.id === cohortId ? updated : c)),
     }));
   },
   deleteCohort: async (cohortId) => {
-    await api(`/api/cohorts/${cohortId}`, { method: 'DELETE' });
+    await cohortService.deleteCohort(cohortId);
     set((s) => ({
       cohorts: s.cohorts.filter((c) => c.id !== cohortId),
       cohortMembers: Object.fromEntries(Object.entries(s.cohortMembers).filter(([k]) => k !== cohortId)),
     }));
   },
   loadCohortMembers: async (cohortId) => {
-    const members = (await api(`/api/cohorts/${cohortId}/members`)) as CohortMember[];
+    const members = await cohortService.loadCohortMembers(cohortId);
     set((s) => ({ cohortMembers: { ...s.cohortMembers, [cohortId]: members } }));
     return members;
   },
   addCohortMember: async (cohortId, userId) => {
-    await api(`/api/cohorts/${cohortId}/members`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+    await cohortService.addCohortMember(cohortId, userId);
     await get().loadCohortMembers(cohortId);
     await get().loadCohorts();
   },
   removeCohortMember: async (cohortId, userId) => {
-    await api(`/api/cohorts/${cohortId}/members/${userId}`, { method: 'DELETE' });
+    await cohortService.removeCohortMember(cohortId, userId);
     await get().loadCohortMembers(cohortId);
     await get().loadCohorts();
   },
   updateCohortMember: async (cohortId, userId, payload) => {
-    await api(`/api/cohorts/${cohortId}/members/${userId}`, { method: 'PATCH', body: JSON.stringify(payload) });
+    await cohortService.updateCohortMember(cohortId, userId, payload);
     await get().loadCohortMembers(cohortId);
   },
   loadStudents: async () => {
-    const students = (await api('/api/students')) as Student[];
+    const students = await studentService.loadStudents();
     set({ students });
   },
   createStudent: async (payload) => {
-    const created = (await api('/api/students', { method: 'POST', body: JSON.stringify(payload) })) as Student;
+    const created = await studentService.createStudent(payload);
     set((s) => ({ students: [created, ...s.students] }));
   },
   bulkCreateStudents: async (payload) => {
-    const created = (await api('/api/students/bulk', {
-      method: 'POST',
-      body: JSON.stringify({
-        start_no: payload.startNo,
-        end_no: payload.endNo,
-        name_prefix: payload.namePrefix,
-        email_prefix: payload.emailPrefix,
-        email_domain: payload.emailDomain,
-        password: payload.password,
-        zero_pad: payload.zeroPad ?? 2,
-      }),
-    })) as Student[];
+    const created = await studentService.bulkCreateStudents({
+      start_no: payload.startNo,
+      end_no: payload.endNo,
+      name_prefix: payload.namePrefix,
+      email_prefix: payload.emailPrefix,
+      email_domain: payload.emailDomain,
+      password: payload.password,
+      zero_pad: payload.zeroPad ?? 2,
+    });
     set((s) => ({ students: [...created, ...s.students] }));
   },
   joinCohortByCode: async (code: string) => {
-    await api('/api/cohorts/join_by_code', {
-      method: 'POST',
-      body: JSON.stringify({ code }),
-    });
-    // 重新載入群組與會員資料
+    await cohortService.joinCohortByCode(code);
     await get().loadCohorts();
   },
   updateStudent: async (studentId, payload) => {
-    const updated = (await api(`/api/students/${studentId}`, { method: 'PUT', body: JSON.stringify(payload) })) as Student;
+    const updated = await studentService.updateStudent(studentId, payload);
     set((s) => ({ students: s.students.map((st) => (st.id === studentId ? updated : st)) }));
   },
   deleteStudent: async (studentId) => {
-    await api(`/api/students/${studentId}`, { method: 'DELETE' });
+    await studentService.deleteStudent(studentId);
     set((s) => ({ students: s.students.filter((st) => st.id !== studentId) }));
   },
   loadUsageRecords: async (filters) => {
-    const params = new URLSearchParams();
-    if (filters?.cohortId) params.append('cohort_id', filters.cohortId);
-    if (filters?.projectId) params.append('project_id', filters.projectId);
-    if (filters?.userId) params.append('user_id', filters.userId);
-    const usage = (await api(`/api/usage${params.toString() ? `?${params.toString()}` : ''}`)) as UsageRecord[];
+    const usage = await usageService.loadUsageRecords(filters);
     set({ usageRecords: usage });
     return usage;
   },
@@ -312,9 +289,9 @@ export const useStore = create<AppState>((set, get) => ({
 
     let saved: Project;
     if (meta.id) {
-      saved = await api(`/api/projects/${meta.id}`, { method: 'PUT', body });
+      saved = await projectService.updateProject(meta.id, JSON.parse(body));
     } else {
-      saved = await api('/api/projects', { method: 'POST', body });
+      saved = await projectService.saveProject(JSON.parse(body));
     }
     set((s) => {
       const other = s.projects.filter((p) => p.id !== saved.id);
@@ -323,7 +300,7 @@ export const useStore = create<AppState>((set, get) => ({
     return saved;
   },
   deleteProject: async (projectId: string) => {
-    await api(`/api/projects/${projectId}`, { method: 'DELETE' });
+    await projectService.deleteProject(projectId);
     set((s) => ({ projects: s.projects.filter((p) => p.id !== projectId) }));
     // 若刪除的是目前進入的專案，重置流程狀態
     if (get().activeProjectId === projectId) {
@@ -639,112 +616,35 @@ export const useStore = create<AppState>((set, get) => ({
   currentDocId: null,
   loadDocuments: async (projectId?: string | null) => {
     try {
-      const url = projectId ? `/api/documents?project_id=${projectId}` : `/api/documents`;
-      const docs: Document[] = await api(url);
+      const docs = await documentService.loadDocuments(projectId);
       set({ documents: docs, currentDocId: docs[0]?.id || null });
     } catch (error: any) {
       throw error;
     }
   },
   bindDocumentsToProject: async (documentIds: string[], projectId: string) => {
-    await Promise.all(
-      documentIds.map((docId) =>
-        api(`/api/documents/${docId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ project_id: projectId }),
-        })
-      )
-    );
-    // 重新載入文檔
+    await documentService.bindDocumentsToProject(documentIds, projectId);
     await get().loadDocuments(projectId);
   },
   unbindDocumentsFromProject: async (documentIds: string[], projectId: string) => {
-    await Promise.all(
-      documentIds.map((docId) =>
-        api(`/api/documents/${docId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ project_id: null }),
-        })
-      )
-    );
-    // 重新載入文檔
+    await documentService.unbindDocumentsFromProject(documentIds, projectId);
     await get().loadDocuments(projectId);
   },
   uploadDocument: async (title: string, content: string) => {
-    const fileName = `${Date.now()}-${title || 'doc'}.txt`;
-    const presign = await api('/api/uploads/presign', {
-      method: 'POST',
-      body: JSON.stringify({ filename: fileName, content_type: 'text/plain' }),
-    });
-
-    await fetch(presign.upload_url, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'text/plain' },
-      body: content,
-    });
-
-    const created = await api('/api/documents', {
-      method: 'POST',
-      body: JSON.stringify({
-        project_id: null,
-        title,
-        object_key: presign.object_key,
-        content_type: 'text/plain',
-        size: content.length,
-        type: 'text',
-        raw_preview: content.slice(0, 2000),
-      }),
-    });
+    const created = await documentService.uploadDocument(title, content);
     set((state) => ({ documents: [...state.documents, created], currentDocId: created.id }));
   },
   uploadFileDocument: async (title: string, file: File) => {
-    const fileName = file.name || `${Date.now()}-${title || 'doc'}`;
-    const contentType = file.type || 'application/octet-stream';
-    const presign = await api('/api/uploads/presign', {
-      method: 'POST',
-      body: JSON.stringify({ filename: fileName, content_type: contentType }),
-    });
-
-    await fetch(presign.upload_url, {
-      method: 'PUT',
-      headers: { 'Content-Type': contentType },
-      body: file,
-    });
-
-    const created = await api('/api/documents', {
-      method: 'POST',
-      body: JSON.stringify({
-        project_id: null,
-        title,
-        object_key: presign.object_key,
-        content_type: contentType,
-        size: file.size,
-        type: contentType === 'application/pdf' ? 'pdf' : 'file',
-        raw_preview: undefined,
-      }),
-    });
+    const created = await documentService.uploadFileDocument(title, file);
     set((state) => ({ documents: [...state.documents, created], currentDocId: created.id }));
   },
   removeDocument: async (id: string) => {
-    await api(`/api/documents/${id}`, { method: 'DELETE' });
+    await documentService.removeDocument(id);
     set((state) => ({ documents: state.documents.filter((d) => d.id !== id), currentDocId: null }));
   },
   selectDocument: (docId: string) => set({ currentDocId: docId }),
   addHighlight: async (docId: string, text: string, options?: { name?: string; page?: number; x?: number; y?: number; width?: number; height?: number; evidence_type?: string }) => {
-    const res = await api('/api/highlights', {
-      method: 'POST',
-      body: JSON.stringify({
-        document_id: docId,
-        snippet: text,
-        name: options?.name,
-        page: options?.page,
-        x: options?.x,
-        y: options?.y,
-        width: options?.width,
-        height: options?.height,
-        evidence_type: options?.evidence_type,
-      }),
-    });
+    const res = await documentService.addHighlight(docId, text, options);
     set((state) => ({
       documents: state.documents.map((d) =>
         d.id === docId ? { ...d, highlights: [...(d.highlights || []), res as Highlight] } : d
@@ -752,7 +652,7 @@ export const useStore = create<AppState>((set, get) => ({
     }));
   },
   removeHighlight: async (highlightId: string) => {
-    await api(`/api/highlights/${highlightId}`, { method: 'DELETE' });
+    await documentService.removeHighlight(highlightId);
     set((state) => ({
       documents: state.documents.map((d) => ({
         ...d,
@@ -761,17 +661,14 @@ export const useStore = create<AppState>((set, get) => ({
     }));
   },
   updateHighlight: async (highlightId: string, payload: { snippet?: string; name?: string; page?: number; x?: number; y?: number; width?: number; height?: number; evidence_type?: string }) => {
-    const res = await api(`/api/highlights/${highlightId}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
-    });
+    const res = await documentService.updateHighlight(highlightId, payload);
     set((state) => {
       const updatedState = {
         documents: state.documents.map((d) => ({
           ...d,
           highlights: (d.highlights || []).map((h) => {
             if (h.id === highlightId) {
-              return res as Highlight;
+              return res;
             }
             return h;
           }),
@@ -782,7 +679,7 @@ export const useStore = create<AppState>((set, get) => ({
     return res;
   },
   removeAllHighlights: async (docId: string) => {
-    await api(`/api/documents/${docId}/highlights`, { method: 'DELETE' });
+    await documentService.removeAllHighlights(docId);
     set((state) => ({
       documents: state.documents.map((d) =>
         d.id === docId ? { ...d, highlights: [] } : d
@@ -858,10 +755,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (!state.activeProjectId) throw new Error('尚未選擇專案');
     set({ isAiThinking: true, isChatOpen: true });
     try {
-      const res = await api('/api/tasks', {
-        method: 'POST',
-        body: JSON.stringify({ project_id: state.activeProjectId, target_doc_id: docId, task_type: 'A', content }),
-      });
+      const res = await taskService.submitTaskA(state.activeProjectId, docId, content);
       set((s) => {
         const nextVersion = (s.taskAVersions.filter((v) => v.targetDocId === docId).length || 0) + 1;
         const newVersion: TaskVersion = {
@@ -910,10 +804,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (!state.activeProjectId) throw new Error('尚未選擇專案');
     set({ isAiThinking: true, isChatOpen: true });
     try {
-      const res = await api('/api/tasks', {
-        method: 'POST',
-        body: JSON.stringify({ project_id: state.activeProjectId, task_type: 'B', content: state.taskBData }),
-      });
+      const res = await taskService.submitTaskB(state.activeProjectId, state.taskBData);
       set((s) => {
         const newVersion: TaskVersion = {
           id: res.id,
@@ -948,10 +839,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (!state.activeProjectId) throw new Error('尚未選擇專案');
     set({ isAiThinking: true, isChatOpen: true });
     try {
-      const res = await api('/api/tasks', {
-        method: 'POST',
-        body: JSON.stringify({ project_id: state.activeProjectId, task_type: 'C', content: state.taskCData }),
-      });
+      const res = await taskService.submitTaskC(state.activeProjectId, state.taskCData);
       set((s) => {
         const newVersion: TaskVersion = {
           id: res.id,
@@ -993,8 +881,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   getFileUrl: async (objectKey: string) => {
-    const res = await api(`/api/uploads/presign/get?object_key=${encodeURIComponent(objectKey)}`);
-    return (res as { download_url: string }).download_url;
+    return fileService.getFileUrl(objectKey);
   },
 
   getCachedFileUrl: async (objectKey: string) => {
@@ -1102,15 +989,7 @@ export const useStore = create<AppState>((set, get) => ({
         ...context,
       };
 
-      const res = await api('/api/chat', {
-        method: 'POST',
-        body: JSON.stringify({
-          project_id: state.activeProjectId,
-          node_id: state.currentStepId,
-          message,
-          context: chatContext,
-        }),
-      });
+      const res = await chatService.sendMessage(state.activeProjectId, state.currentStepId!, message, chatContext);
 
       const aiMessage: Message = {
         id: genId(),
@@ -1207,10 +1086,7 @@ export const useStore = create<AppState>((set, get) => ({
         task_b_data: state.taskBData,
         task_c_data: state.taskCData,
       };
-      await api('/api/workflow-state', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      await projectService.saveWorkflowState(state.activeProjectId, payload);
     } catch (error) {
       console.error('保存 workflow 狀態失敗:', error);
       // 不拋出錯誤，避免影響用戶體驗
@@ -1219,7 +1095,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   loadWorkflowState: async (projectId: string) => {
     try {
-      const state = await api(`/api/workflow-state/${projectId}`);
+      const state = await projectService.loadWorkflowState(projectId);
       if (state) {
         set({
           currentStepId: state.node_id || null,

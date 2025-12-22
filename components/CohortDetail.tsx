@@ -1,6 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useAuthStore } from '../authStore';
-import { useStore } from '../store';
+import React, { useEffect, useMemo, useState } from 'react'
+import { useAuthStore } from '../authStore'
+import { useStore } from '../store'
+import { GlassCard } from './ui/GlassCard'
+import { Button } from './ui/Button'
+import { Input } from './ui/Input'
+import { X, Copy, Plus, RefreshCw } from 'lucide-react'
 
 interface CohortDetailProps {
   cohortId: string;
@@ -202,218 +206,210 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
   };
 
   if (loading) {
-    return <div className="text-slate-500">載入中...</div>;
+    return <div className="text-gray-500">載入中...</div>
   }
 
   if (error) {
     const friendly =
       typeof error === 'string' && error.includes('Cohort not found')
         ? '找不到這個學生群組，可能已被刪除或編號不正確。請在左側重新選擇其他群組。'
-        : error;
-    return <div className="alert alert-error mb-4 text-sm">{friendly}</div>;
+        : error
+    return (
+      <GlassCard className="p-4 border-red-200 bg-red-50">
+        <div className="text-sm text-red-600">{friendly}</div>
+      </GlassCard>
+    )
   }
 
   return (
-    <div className="space-y-6 max-h-[calc(100vh-220px)] overflow-y-auto pr-1">
-      <div className="card bg-white shadow-sm border border-slate-200">
-        <div className="card-body space-y-4">
-          <h2 className="text-lg font-bold text-slate-800">群組設定</h2>
-          {currentCohort && (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-slate-600">學生邀請碼：</span>
-              <span className="flex items-center gap-2">
-                <span className="font-mono tracking-[0.35em] text-base text-slate-900 bg-slate-100 px-3 py-1 rounded-md">
-                  {formattedCode || '尚未產生'}
-                </span>
-                {currentCohort.code && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-xs"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(currentCohort.code!);
-                        alert('邀請碼已複製到剪貼簿');
-                      } catch {
-                        alert('複製失敗，請手動選取文字複製');
-                      }
-                    }}
-                  >
-                    複製
-                  </button>
-                )}
+    <div className="space-y-6">
+      <GlassCard className="p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-6">群組設定</h2>
+        {currentCohort && (
+          <div className="flex flex-wrap items-center gap-3 mb-6 pb-6 border-b border-gray-200">
+            <span className="text-sm text-gray-600">學生邀請碼：</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono tracking-[0.35em] text-base text-gray-900 bg-white/70 backdrop-blur-xl border border-white/80 px-4 py-2 rounded-xl shadow-lg shadow-violet-500/5">
+                {formattedCode || '尚未產生'}
               </span>
-              <span className="text-xs text-slate-400">
-                學生可在登入後於首頁輸入此 9 位數編號自行加入群組。
-              </span>
+              {currentCohort.code && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  leftIcon={<Copy size={14} />}
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(currentCohort.code!)
+                      alert('邀請碼已複製到剪貼簿')
+                    } catch {
+                      alert('複製失敗，請手動選取文字複製')
+                    }
+                  }}
+                >
+                  複製
+                </Button>
+              )}
             </div>
-          )}
-          <div className="flex gap-3 items-center">
-            <label className="text-sm text-slate-600">綁定教學流程：</label>
-            <select
-              className="select select-bordered select-sm"
-              value={selectedProject || ''}
-              onChange={(e) => setSelectedProject(e.target.value || null)}
-            >
-              <option value="">未綁定</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title}
-                </option>
-              ))}
-            </select>
-            <button className="btn btn-sm btn-primary" onClick={handleSaveProject} disabled={savingProject}>
-              {savingProject ? '儲存中...' : '儲存設定'}
-            </button>
+            <span className="text-xs text-gray-400">
+              學生可在登入後於首頁輸入此 9 位數編號自行加入群組。
+            </span>
           </div>
+        )}
+        <div className="flex gap-3 items-center flex-wrap">
+          <label className="text-sm font-medium text-gray-700">綁定教學流程：</label>
+          <select
+            className="bg-white/70 backdrop-blur-xl border border-white/80 rounded-xl px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all duration-200 shadow-lg shadow-violet-500/5"
+            value={selectedProject || ''}
+            onChange={(e) => setSelectedProject(e.target.value || null)}
+          >
+            <option value="">未綁定</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
+          </select>
+          <Button size="sm" onClick={handleSaveProject} isLoading={savingProject} disabled={savingProject}>
+            儲存設定
+          </Button>
         </div>
-      </div>
+      </GlassCard>
 
-      <div className="card bg-white shadow-sm border border-slate-200">
-        <div className="card-body space-y-3 max-h-[420px] flex flex-col">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-bold text-slate-800">群組學生名單</h2>
-            <button
-              className="btn btn-sm btn-primary"
-              onClick={() => {
-                setIsAddStudentModalOpen(true);
-                setSelectedStudentIds([]);
-                setStudentSearch('');
-              }}
-              disabled={availableStudents.length === 0}
-            >
-              加入學生
-            </button>
-          </div>
-          {members.length === 0 ? (
-            <div className="text-slate-500 text-sm">尚未有學生加入此群組。</div>
-          ) : (
-            <div className="overflow-x-auto flex-1">
-              <table className="table table-zebra w-full">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-700">
-                    <th>姓名</th>
-                    <th>Email</th>
-                    <th>狀態</th>
-                    <th>進度</th>
-                    <th>操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {members.map((m) => (
-                    <tr key={m.user.id}>
-                      <td>{m.user.name}</td>
-                      <td className="text-sm text-slate-600">{m.user.email}</td>
-                      <td className="text-sm">{m.status || 'active'}</td>
-                      <td className="text-sm">{m.progress ?? 0}%</td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button className="btn btn-ghost btn-xs" onClick={() => handleUpdateStatus(m.user.id)}>
-                            狀態
-                          </button>
-                          <button className="btn btn-ghost btn-xs" onClick={() => handleUpdateProgress(m.user.id)}>
-                            進度
-                          </button>
-                          <button
-                            className="btn btn-ghost btn-xs text-red-500"
-                            onClick={() => removeCohortMember(cohortId, m.user.id)}
-                          >
-                            移除
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      <GlassCard className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900">群組學生名單</h2>
+          <Button
+            size="sm"
+            leftIcon={<Plus size={16} />}
+            onClick={() => {
+              setIsAddStudentModalOpen(true)
+              setSelectedStudentIds([])
+              setStudentSearch('')
+            }}
+            disabled={availableStudents.length === 0}
+          >
+            加入學生
+          </Button>
         </div>
-      </div>
+        {members.length === 0 ? (
+          <div className="text-gray-500 text-sm py-8 text-center">尚未有學生加入此群組。</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">姓名</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Email</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">狀態</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">進度</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((m) => (
+                  <tr key={m.user.id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                    <td className="py-3 px-4">{m.user.name}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{m.user.email}</td>
+                    <td className="py-3 px-4 text-sm">{m.status || 'active'}</td>
+                    <td className="py-3 px-4 text-sm">{m.progress ?? 0}%</td>
+                    <td className="py-3 px-4">
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleUpdateStatus(m.user.id)}>
+                          狀態
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleUpdateProgress(m.user.id)}>
+                          進度
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => removeCohortMember(cohortId, m.user.id)}
+                        >
+                          移除
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </GlassCard>
 
       {isAddStudentModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-slate-200 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800 text-lg">加入學生到此群組</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <GlassCard className="p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+              <h3 className="font-bold text-gray-900 text-lg">加入學生到此群組</h3>
               <button
-                className="btn btn-ghost btn-sm"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 onClick={() => !addingStudents && setIsAddStudentModalOpen(false)}
               >
-                關閉
+                <X size={20} />
               </button>
             </div>
-            <div className="p-4 space-y-4 overflow-auto">
+            <div className="space-y-4 overflow-auto flex-1">
               <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-                <div className="form-control w-full md:w-72">
-                  <label className="label">
-                    <span className="label-text text-sm text-slate-600">搜尋學生（姓名或 Email）</span>
-                  </label>
-                  <input
-                    className="input input-bordered input-sm w-full"
+                <div className="w-full md:w-72">
+                  <Input
+                    label="搜尋學生（姓名或 Email）"
                     placeholder="例如：王小明 或 student@example.com"
                     value={studentSearch}
                     onChange={(e) => setStudentSearch(e.target.value)}
                   />
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-gray-500">
                   已選擇 {selectedStudentIds.length} 位學生，可點擊左側列或勾選方塊，或拖曳到右側列表。
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 {/* 左側：尚未加入的學生 */}
-                <div className="border border-slate-200 rounded-lg bg-slate-50/60">
-                  <div className="px-3 py-2 border-b border-slate-200 flex items-center justify-between">
-                    <div className="text-xs font-semibold text-slate-600">
+                <div className="border border-gray-200 rounded-xl bg-gray-50/60">
+                  <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                    <div className="text-xs font-semibold text-gray-700">
                       尚未加入的學生（{filteredAvailableStudents.length}）
                     </div>
-                    <div className="flex items-center gap-1 text-[11px]">
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-xs"
-                        onClick={handleSelectAllVisible}
-                      >
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" onClick={handleSelectAllVisible}>
                         全選
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-xs"
-                        onClick={handleClearSelection}
-                      >
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={handleClearSelection}>
                         清除
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                  <div className="max-h-64 overflow-auto divide-y">
+                  <div className="max-h-64 overflow-auto divide-y divide-gray-100">
                     {filteredAvailableStudents.length === 0 ? (
-                      <div className="p-4 text-sm text-slate-500 text-center">沒有符合條件的學生。</div>
+                      <div className="p-4 text-sm text-gray-500 text-center">沒有符合條件的學生。</div>
                     ) : (
                       filteredAvailableStudents.map((s) => {
-                        const checked = selectedStudentIds.includes(s.id);
+                        const checked = selectedStudentIds.includes(s.id)
                         return (
                           <div
                             key={s.id}
-                            className={`flex items-center justify-between px-3 py-2 text-sm cursor-pointer transition ${
-                              checked ? 'bg-sky-50' : 'hover:bg-slate-100'
+                            className={`flex items-center justify-between px-4 py-3 text-sm cursor-pointer transition ${
+                              checked ? 'bg-violet-50' : 'hover:bg-gray-100'
                             }`}
                             draggable
                             onDragStart={(e) => {
-                              e.dataTransfer.setData('text/plain', s.id);
+                              e.dataTransfer.setData('text/plain', s.id)
                             }}
                             onClick={() => handleToggleStudent(s.id)}
                           >
                             <div className="flex-1 text-left">
-                              <div className="font-medium text-slate-800">{s.name}</div>
-                              <div className="text-xs text-slate-500">{s.email}</div>
+                              <div className="font-medium text-gray-900">{s.name}</div>
+                              <div className="text-xs text-gray-500">{s.email}</div>
                             </div>
                             <input
                               type="checkbox"
-                              className="checkbox checkbox-sm"
+                              className="w-4 h-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
                               readOnly
                               checked={checked}
                             />
                           </div>
-                        );
+                        )
                       })
                     )}
                   </div>
@@ -421,34 +417,34 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
 
                 {/* 右側：準備加入的學生（拖曳目標） */}
                 <div
-                  className={`border rounded-lg min-h-[160px] transition ${
-                    isDragOverTarget ? 'border-sky-500 bg-sky-50/60' : 'border-slate-200 bg-slate-50/40'
+                  className={`border rounded-xl min-h-[160px] transition ${
+                    isDragOverTarget ? 'border-violet-500 bg-violet-50/60' : 'border-gray-200 bg-gray-50/40'
                   }`}
                   onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragOverTarget(true);
+                    e.preventDefault()
+                    setIsDragOverTarget(true)
                   }}
                   onDragLeave={() => setIsDragOverTarget(false)}
                   onDrop={(e) => {
-                    e.preventDefault();
-                    setIsDragOverTarget(false);
-                    const id = e.dataTransfer.getData('text/plain');
+                    e.preventDefault()
+                    setIsDragOverTarget(false)
+                    const id = e.dataTransfer.getData('text/plain')
                     if (id && availableStudents.some((s) => s.id === id)) {
-                      handleToggleStudent(id);
+                      handleToggleStudent(id)
                     }
                   }}
                 >
-                  <div className="px-3 py-2 border-b border-slate-200 flex items-center justify-between">
-                    <div className="text-xs font-semibold text-slate-600">
+                  <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                    <div className="text-xs font-semibold text-gray-700">
                       已選擇的學生（{selectedStudentIds.length}）
                     </div>
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-[11px] text-gray-400">
                       可拖曳學生到此處，或在左側勾選後集中顯示於此
                     </div>
                   </div>
-                  <div className="max-h-64 overflow-auto divide-y">
+                  <div className="max-h-64 overflow-auto divide-y divide-gray-100">
                     {selectedStudentIds.length === 0 ? (
-                      <div className="p-4 text-sm text-slate-500 text-center">
+                      <div className="p-4 text-sm text-gray-500 text-center">
                         將學生拖曳到此處，或在左側點擊「+」加入到本群組。
                       </div>
                     ) : (
@@ -458,19 +454,19 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                         .map((s) => (
                           <div
                             key={s.id}
-                            className="flex items-center justify-between px-3 py-2 text-sm hover:bg-slate-100"
+                            className="flex items-center justify-between px-4 py-3 text-sm hover:bg-gray-100"
                           >
                             <div>
-                              <div className="font-medium text-slate-800">{s.name}</div>
-                              <div className="text-xs text-slate-500">{s.email}</div>
+                              <div className="font-medium text-gray-900">{s.name}</div>
+                              <div className="text-xs text-gray-500">{s.email}</div>
                             </div>
-                            <button
-                              type="button"
-                              className="btn btn-ghost btn-xs text-red-500"
+                            <Button
+                              variant="danger"
+                              size="sm"
                               onClick={() => handleToggleStudent(s.id)}
                             >
                               移除
-                            </button>
+                            </Button>
                           </div>
                         ))
                     )}
@@ -478,64 +474,67 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                 </div>
               </div>
             </div>
-            <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-2">
-              <button
-                className="btn btn-ghost btn-sm"
+            <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
+              <Button
+                variant="ghost"
                 disabled={addingStudents}
                 onClick={() => setIsAddStudentModalOpen(false)}
               >
                 取消
-              </button>
-              <button
-                className="btn btn-primary btn-sm"
+              </Button>
+              <Button
                 disabled={addingStudents || selectedStudentIds.length === 0}
                 onClick={handleConfirmAddStudents}
+                isLoading={addingStudents}
               >
                 {addingStudents ? '加入中...' : `加入 ${selectedStudentIds.length} 位學生`}
-              </button>
+              </Button>
             </div>
-          </div>
+          </GlassCard>
         </div>
       )}
 
-      <div className="card bg-white shadow-sm border border-slate-200">
-        <div className="card-body">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="text-lg font-bold text-slate-800">使用紀錄</h2>
-            <button className="btn btn-sm" onClick={() => cohortId && loadUsageRecords({ cohortId })}>
-              重新整理
-            </button>
-          </div>
-          {usageForCohort.length === 0 ? (
-            <div className="text-sm text-slate-500">目前沒有使用紀錄。</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="table table-zebra w-full text-sm">
-                <thead>
-                  <tr>
-                    <th>學生</th>
-                    <th>流程</th>
-                    <th>任務</th>
-                    <th>時間</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usageForCohort.map((u) => (
-                    <tr key={u.id}>
-                      <td>{u.user.name}</td>
-                      <td>{u.project_title || u.project_id}</td>
-                      <td>{u.task_type}</td>
-                      <td>{new Date(u.created_at).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+      <GlassCard className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900">使用紀錄</h2>
+          <Button
+            size="sm"
+            variant="secondary"
+            leftIcon={<RefreshCw size={16} />}
+            onClick={() => cohortId && loadUsageRecords({ cohortId })}
+          >
+            重新整理
+          </Button>
         </div>
-      </div>
+        {usageForCohort.length === 0 ? (
+          <div className="text-sm text-gray-500 py-8 text-center">目前沒有使用紀錄。</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">學生</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">流程</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">任務</th>
+                  <th className="text-left py-3 px-4 font-semibold text-gray-700">時間</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usageForCohort.map((u) => (
+                  <tr key={u.id} className="border-b border-gray-100 hover:bg-gray-50/50">
+                    <td className="py-3 px-4">{u.user.name}</td>
+                    <td className="py-3 px-4">{u.project_title || u.project_id}</td>
+                    <td className="py-3 px-4">{u.task_type}</td>
+                    <td className="py-3 px-4">{new Date(u.created_at).toLocaleString('zh-TW')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </GlassCard>
     </div>
-  );
+  )
 }
 
 

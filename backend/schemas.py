@@ -139,8 +139,13 @@ class PresignResponse(BaseModel):
     object_key: str
 
 
+class PresignGetRequest(BaseModel):
+    object_key: str
+
+
 class PresignGetResponse(BaseModel):
     download_url: str
+    url: str  # Alias for download_url for compatibility with frontend
 
 
 class UserCreate(BaseModel):
