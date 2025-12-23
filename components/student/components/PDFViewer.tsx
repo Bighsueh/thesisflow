@@ -66,7 +66,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     return (
       <div
         ref={pdfContainerRef}
-        className="border border-base-200 rounded-md overflow-auto max-h-[70vh] bg-white pointer-events-auto"
+        className="border border-base-200 rounded-md overflow-auto max-h-[calc(100vh-280px)] bg-white pointer-events-auto"
       >
         <PdfDocument
           file={previewUrl}
@@ -95,7 +95,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
                   pageNumber={pageNum}
                   renderAnnotationLayer={false}
                   renderTextLayer={true}
-                  width={520 * zoom}
+                  width={680 * zoom}
                   onGetTextSuccess={(text) => {
                     const current = pdfPageTexts.current.get(pageNum) || {};
                     pdfPageTexts.current.set(pageNum, { ...current, text });
