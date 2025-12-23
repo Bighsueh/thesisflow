@@ -1,6 +1,9 @@
 from __future__ import annotations
-from typing import List, Optional, Any
-from pydantic import BaseModel, Field, model_validator
+from typing import List, Optional, Any, TYPE_CHECKING
+from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from typing import ForwardRef
 
 
 class FlowNodePayload(BaseModel):
@@ -147,11 +150,11 @@ class PresignGetResponse(BaseModel):
     download_url: str
     url: Optional[str] = None  # Alias for download_url for compatibility with frontend
 
-    @model_validator(mode='after')
-    def set_url_from_download_url(self):
-        """Ensure url field is always set to download_url value"""
-        self.url = self.download_url
-        return self
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Ensure url field is always set to download_url value
+        if self.url is None:
+            self.url = self.download_url
 
 
 class UserCreate(BaseModel):
@@ -195,13 +198,28 @@ class UserOut(BaseModel):
     role: str
 
     class Config:
-        from_attributes = True
+        # Pydantic v2 uses from_attributes, v1 uses orm_mode
+        try:
+            from_attributes = True
+        except:
+            pass
+        orm_mode = True
+
+
+# Alias for compatibility
+UserResponse = UserOut
 
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+
+class TokenWithUser(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
 
 
 class CohortCreate(BaseModel):
@@ -287,9 +305,24 @@ class WorkflowStateOut(BaseModel):
         from_attributes = True
 
 
-# Rebuild forward refs
-DocumentOut.model_rebuild()
-HighlightOut.model_rebuild()
-ProjectOut.model_rebuild()
-TaskResponse.model_rebuild()
+# Rebuild forward refs (required for ForwardRef)
+# This must be called after all models are defined
+# Try Pydantic v2 method first, then fall back to v1
+try:
+    # Pydantic v2: use model_rebuild()
+    DocumentOut.model_rebuild()
+    HighlightOut.model_rebuild()
+    ProjectOut.model_rebuild()
+    TaskResponse.model_rebuild()
+except (AttributeError, TypeError):
+    # Pydantic v1: use update_forward_refs()
+    try:
+        DocumentOut.update_forward_refs()
+        HighlightOut.update_forward_refs()
+        ProjectOut.update_forward_refs()
+        TaskResponse.update_forward_refs()
+    except (AttributeError, TypeError) as e:
+        # If both fail, log but don't crash
+        import warnings
+        warnings.warn(f"Failed to rebuild forward refs: {e}")
 

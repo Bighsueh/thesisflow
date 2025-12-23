@@ -35,7 +35,7 @@ def get_s3_client():
             "addressing_style": "path"  # MinIO 通常使用 path-style
         }
     )
-    return boto3.client(
+    client = boto3.client(
         "s3",
         endpoint_url=endpoint_url,
         aws_access_key_id=os.getenv("MINIO_ACCESS_KEY"),
@@ -43,6 +43,7 @@ def get_s3_client():
         config=config,
         region_name="us-east-1",  # MinIO 需要一個區域，即使不使用 AWS
     )
+    return client
 
 
 def presign_upload(filename: str, content_type: str):
@@ -60,6 +61,14 @@ def presign_upload(filename: str, content_type: str):
 def presign_get(object_key: str):
     bucket = os.getenv("MINIO_BUCKET")
     client = get_s3_client()
+    
+    # 驗證文件是否存在
+    try:
+        client.head_object(Bucket=bucket, Key=object_key)
+    except Exception as e:
+        # 如果文件不存在，記錄錯誤但不阻止 URL 生成（讓前端處理 404）
+        print(f"Warning: File not found in MinIO: {object_key}, error: {e}")
+    
     url = client.generate_presigned_url(
         "get_object",
         Params={"Bucket": bucket, "Key": object_key},
