@@ -18,17 +18,31 @@ export const HighlightFloatingToolbar: React.FC<HighlightFloatingToolbarProps> =
 }) => {
   return (
     <div
-      style={{ top: `${position.y}%`, left: `${position.x}%` }}
-      className="absolute z-50 transform -translate-y-1/2 translate-x-2 bg-white shadow-xl rounded-full p-1.5 flex items-center space-x-2 border border-slate-200 animate-bounce-in"
+      style={{ 
+        top: `${position.y}%`, 
+        left: `${position.x}%`,
+        pointerEvents: 'auto',
+        cursor: 'default',
+        zIndex: 100,
+      }}
+      className="absolute transform -translate-y-1/2 translate-x-2 bg-white shadow-xl rounded-full p-1.5 flex items-center space-x-2 border border-slate-200 animate-bounce-in"
+      onMouseDown={(e) => e.stopPropagation()}
+      onMouseUp={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
     >
       {EVIDENCE_TYPES.map((typeDef) => (
         <button
           key={typeDef.type}
           onClick={(e) => {
             e.stopPropagation();
+            e.preventDefault();
             onSelectType(typeDef.type);
           }}
-          className={`w-6 h-6 rounded-full ${typeDef.color} border-2 border-white shadow-sm hover:scale-125 transition-transform`}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          className={`w-6 h-6 rounded-full ${typeDef.color} border-2 border-white shadow-sm hover:scale-125 transition-transform cursor-pointer`}
           title={`標記為：${typeDef.label}`}
         />
       ))}
@@ -36,9 +50,14 @@ export const HighlightFloatingToolbar: React.FC<HighlightFloatingToolbarProps> =
       <button
         onClick={(e) => {
           e.stopPropagation();
+          e.preventDefault();
           onEdit();
         }}
-        className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-full hover:bg-slate-100 transition-colors"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
         title="編輯詳情"
       >
         <Edit2 size={14} />
@@ -46,9 +65,14 @@ export const HighlightFloatingToolbar: React.FC<HighlightFloatingToolbarProps> =
       <button
         onClick={(e) => {
           e.stopPropagation();
+          e.preventDefault();
           onClose();
         }}
-        className="p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-slate-100 transition-colors"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+        className="p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
       >
         <X size={14} />
       </button>
