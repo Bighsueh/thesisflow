@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewPages, setPreviewPages] = useState<number>(0);
+  const loadingRef = useRef<string | null>(null); // 跟踪正在加载的 object_key
 
   const handleUpload = async () => {
     if (!newTitle && !selectedFile && !newContent) return;
@@ -109,21 +110,44 @@ export default function Dashboard() {
       setPreviewUrl(null);
       setPreviewLoading(false);
       setPreviewPages(0);
+      loadingRef.current = null;
       return;
     }
     const isImage = doc.content_type?.startsWith('image/');
     const isPdf = doc.type === 'pdf' || doc.content_type === 'application/pdf';
     if (isImage || isPdf) {
+      const objectKey = doc.object_key;
+      // 如果正在加载相同的 object_key，跳过重复请求
+      if (loadingRef.current === objectKey) {
+        return;
+      }
+      loadingRef.current = objectKey;
       setPreviewLoading(true);
-      getCachedFileUrl(doc.object_key)
-        .then((url) => setPreviewUrl(url))
-        .finally(() => setPreviewLoading(false));
+      getCachedFileUrl(objectKey)
+        .then((url) => {
+          // 只有在 object_key 仍然匹配时才更新 URL
+          if (loadingRef.current === objectKey) {
+            setPreviewUrl(url);
+          }
+        })
+        .finally(() => {
+          // 只有在 object_key 仍然匹配时才更新 loading 状态
+          if (loadingRef.current === objectKey) {
+            setPreviewLoading(false);
+            loadingRef.current = null;
+          }
+        });
     } else {
       setPreviewUrl(null);
       setPreviewLoading(false);
       setPreviewPages(0);
+      loadingRef.current = null;
     }
-  }, [previewId, documents, getFileUrl]);
+    // Cleanup: 当组件卸载或 previewId 变化时，重置 loading 状态
+    return () => {
+      loadingRef.current = null;
+    };
+  }, [previewId, documents, getCachedFileUrl]);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">

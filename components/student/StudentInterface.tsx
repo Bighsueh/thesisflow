@@ -1402,6 +1402,7 @@ const ReaderPanel = () => {
     const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
     const pdfPageTexts = useRef<Map<number, any>>(new Map()); // 存儲每頁的文本內容和頁面實例
     const pageRef = useRef<HTMLDivElement>(null);
+    const loadingRef = useRef<string | null>(null); // 跟踪正在加载的 object_key
     const doc = documents.find(d => d.id === currentDocId);
     
     // Convert highlights to ExtendedHighlight format
@@ -1633,22 +1634,45 @@ const ReaderPanel = () => {
             setPreviewLoading(false);
             setPageCount(0);
             setZoom(1.0);
+            loadingRef.current = null;
             return;
         }
         const isImage = doc.content_type?.startsWith('image/');
         const isPdf = doc.type === 'pdf' || doc.content_type === 'application/pdf';
         if (isImage || isPdf) {
+            const objectKey = doc.object_key;
+            // 如果正在加载相同的 object_key，跳过重复请求
+            if (loadingRef.current === objectKey) {
+                return;
+            }
+            loadingRef.current = objectKey;
             setPreviewLoading(true);
-            getCachedFileUrl(doc.object_key)
-                .then((url) => setPreviewUrl(url))
-                .finally(() => setPreviewLoading(false));
+            getCachedFileUrl(objectKey)
+                .then((url) => {
+                    // 只有在 object_key 仍然匹配时才更新 URL
+                    if (loadingRef.current === objectKey) {
+                        setPreviewUrl(url);
+                    }
+                })
+                .finally(() => {
+                    // 只有在 object_key 仍然匹配时才更新 loading 状态
+                    if (loadingRef.current === objectKey) {
+                        setPreviewLoading(false);
+                        loadingRef.current = null;
+                    }
+                });
         } else {
             setPreviewUrl(null);
             setPreviewLoading(false);
             setPageCount(0);
             setZoom(1.0);
+            loadingRef.current = null;
         }
-    }, [doc, getCachedFileUrl]);
+        // Cleanup: 当组件卸载或 doc 变化时，重置 loading 状态
+        return () => {
+            loadingRef.current = null;
+        };
+    }, [doc?.object_key, doc?.content_type, doc?.type]);
 
     // 自動計算 PDF 縮放比例
     const calculateAutoZoom = () => {
@@ -1838,6 +1862,20 @@ const ReaderPanel = () => {
               />
             )}
 
+            {/* Floating Creation Toolbar for PDF - 在最外層渲染，確保可點擊 */}
+            {toolbarRect && doc && (doc.type === 'pdf' || doc.content_type === 'application/pdf') && toolbarRect.page && (
+              <HighlightFloatingToolbar
+                position={{ x: toolbarRect.x, y: toolbarRect.y }}
+                onSelectType={handleQuickCreate}
+                onEdit={handleEditCreate}
+                onClose={() => {
+                  setToolbarRect(null);
+                  setCurrentRect(null);
+                  setPendingSelection(null);
+                }}
+              />
+            )}
+
             {/* PDF Content */}
             <div className="relative z-0 pointer-events-none">
               {previewLoading && <div className="text-slate-500 text-sm">預覽載入中...</div>}
@@ -2000,19 +2038,6 @@ const ReaderPanel = () => {
                         })}
                       </PdfDocument>
                     </div>
-                    {/* Floating Creation Toolbar - 在 PDF 容器外部渲染，避免被截斷 */}
-                    {toolbarRect && toolbarRect.page && (
-                      <HighlightFloatingToolbar
-                        position={{ x: toolbarRect.x, y: toolbarRect.y }}
-                        onSelectType={handleQuickCreate}
-                        onEdit={handleEditCreate}
-                        onClose={() => {
-                          setToolbarRect(null);
-                          setCurrentRect(null);
-                          setPendingSelection(null);
-                        }}
-                      />
-                    )}
                   </div>
                 )}
 
