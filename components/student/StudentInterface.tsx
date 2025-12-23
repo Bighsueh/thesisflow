@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStore } from '../store';
-import { useAuthStore } from '../authStore';
+import { useStore } from '../../store';
+import { useAuthStore } from '../../authStore';
 import {
   Bot,
   Send,
@@ -41,19 +41,19 @@ import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
 import { getIncomers, getOutgoers } from 'reactflow';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { ChatMessage } from './ChatMessage';
-import { InstructionCard } from './widgets/InstructionCard';
-import { SectionWriter } from './widgets/SectionWriter';
-import { ChecklistSubmit } from './widgets/ChecklistSubmit';
-import { MatrixCompare } from './widgets/MatrixCompare';
-import { SynthesisWriter } from './widgets/SynthesisWriter';
-import { useAutoSave } from '../hooks/useAutoSave';
-import { PDFSelector } from './PDFSelector';
-import { PDFHighlightOverlay } from './PDFHighlightOverlay';
-import { EvidenceListPanel } from './EvidenceListPanel';
-import { EvidenceCreateDialog } from './EvidenceCreateDialog';
-import { GradientBackground } from './ui/GradientBackground';
-import '../utils/pdfConfig';
+import { ChatMessage } from '../ChatMessage';
+import { InstructionCard } from '../widgets/InstructionCard';
+import { SectionWriter } from '../widgets/SectionWriter';
+import { ChecklistSubmit } from '../widgets/ChecklistSubmit';
+import { MatrixCompare } from '../widgets/MatrixCompare';
+import { SynthesisWriter } from '../widgets/SynthesisWriter';
+import { useAutoSave } from '../../hooks/useAutoSave';
+import { PDFSelector } from '../PDFSelector';
+import { PDFHighlightOverlay } from '../PDFHighlightOverlay';
+import { EvidenceListPanel } from '../EvidenceListPanel';
+import { EvidenceCreateDialog } from '../EvidenceCreateDialog';
+import { GradientBackground } from '../ui/GradientBackground';
+import '../../utils/pdfConfig';
 
 // --- Shared Components ---
 
@@ -193,8 +193,12 @@ const HighlightFloatingToolbar = ({
 }) => {
   return (
     <div
-      style={{ top: `${position.y}%`, left: `${position.x}%` }}
-      className="absolute z-50 transform -translate-y-full -translate-x-1/2 mt-[-10px] bg-white shadow-xl rounded-full p-1.5 flex items-center space-x-2 border border-slate-200 animate-bounce-in"
+      style={{ 
+        top: `${position.y}%`, 
+        left: `${position.x}%`,
+        zIndex: 100,
+      }}
+      className="absolute transform -translate-y-full -translate-x-1/2 mt-[-10px] bg-white shadow-xl rounded-full p-1.5 flex items-center space-x-2 border border-slate-200 animate-bounce-in"
     >
       {EVIDENCE_TYPES.map((typeDef) => (
         <button
@@ -260,13 +264,38 @@ const HighlightHoverCard = ({
 
   if (!highlight.x || !highlight.y || !highlight.width || !highlight.height) return null;
 
+  // 計算最佳位置，避免超出邊界
+  const cardWidth = 320; // w-80 = 20rem = 320px
+  const highlightLeft = highlight.x * 100;
+  const highlightTop = highlight.y * 100;
+  const highlightBottom = (highlight.y + highlight.height) * 100;
+  
+  // 判斷是否應該顯示在左側或右側
+  let left = highlightLeft;
+  let transform = 'translateY(10px)';
+  
+  // 如果 highlight 位置太靠右（超過 60%），將 card 顯示在左側
+  if (highlightLeft > 60) {
+    left = Math.max(0, highlightLeft + (highlight.width * 100) - 32); // 32 = w-80 in percentage
+    transform = 'translate(-100%, 10px)'; // 向左偏移整個寬度
+  }
+  
+  // 如果 highlight 位置太靠下（超過 70%），將 card 顯示在上方
+  let top = highlightBottom;
+  if (highlightBottom > 70) {
+    top = highlightTop;
+    transform = transform.replace('translateY(10px)', 'translateY(-100%) translateY(-10px)');
+  }
+
   return (
     <div
-      className="absolute z-40 w-80 bg-white/95 backdrop-blur-sm shadow-xl rounded-xl border border-slate-200 p-4 animate-fadeIn flex flex-col gap-3"
+      className="absolute w-80 bg-white/95 backdrop-blur-sm shadow-xl rounded-xl border border-slate-200 p-4 animate-fadeIn flex flex-col gap-3"
       style={{
-        top: `${highlight.y * 100 + (highlight.height || 0) * 100}%`,
-        left: `${highlight.x * 100}%`,
-        transform: 'translateY(10px)',
+        top: `${top}%`,
+        left: `${left}%`,
+        transform,
+        zIndex: 100,
+        maxWidth: '320px',
       }}
       draggable
       onDragStart={(e) => {
@@ -1364,7 +1393,8 @@ const ReaderPanel = () => {
     const [pendingSelection, setPendingSelection] = useState<{ x: number; y: number; width: number; height: number; page: number; text?: string } | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [hoveredHighlightId, setHoveredHighlightId] = useState<string | null>(null);
-    const [toolbarRect, setToolbarRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+    const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [toolbarRect, setToolbarRect] = useState<{ x: number; y: number; w: number; h: number; page?: number } | null>(null);
     const [currentRect, setCurrentRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [startPos, setStartPos] = useState({ x: 0, y: 0 });
@@ -1428,11 +1458,13 @@ const ReaderPanel = () => {
     const handleBoxSelection = (selection: { x: number; y: number; width: number; height: number; page: number; text?: string }) => {
         if (!currentDocId) return;
         // Show floating toolbar instead of dialog
+        // x, y, width, height 都是 0-1 的相對座標，轉換為百分比
         setToolbarRect({
-            x: selection.x + selection.width / 2,
-            y: selection.y,
-            w: selection.width,
-            h: selection.height,
+            x: (selection.x + selection.width / 2) * 100, // 選中框的中心點 x 位置（百分比）
+            y: selection.y * 100, // 選中框的頂部 y 位置（百分比）
+            w: selection.width * 100,
+            h: selection.height * 100,
+            page: selection.page, // 記錄頁碼，用於在正確的頁面中顯示工具列
         });
         setPendingSelection(selection);
     };
@@ -1447,8 +1479,11 @@ const ReaderPanel = () => {
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
-        if (!doc || (doc.type !== 'pdf' && doc.content_type !== 'application/pdf')) return;
-        
+        // 對於 PDF 文檔，使用 PDFSelector 而不是直接拖拽系統
+        if (doc && (doc.type === 'pdf' || doc.content_type === 'application/pdf')) {
+            return; // 讓 PDFSelector 處理
+        }
+        // 只對非 PDF 文檔使用直接拖拽
         setIsDrawing(true);
         const pos = getRelativePos(e);
         setStartPos(pos);
@@ -1762,42 +1797,12 @@ const ReaderPanel = () => {
             className="w-full max-w-3xl bg-white shadow-sm border border-slate-200 min-h-[1000px] p-10 relative cursor-crosshair"
             onMouseDown={handleMouseDown}
           >
-            {/* Highlights Overlay */}
-            {extendedHighlights
-              .filter((h) => h.document_id === currentDocId)
-              .map((h) => {
-                const typeInfo = EVIDENCE_TYPES.find((t) => t.type === h.type);
-                if (!h.x || !h.y || !h.width || !h.height) return null;
+            {/* Highlights Overlay - 已移除，改為在每個 PDF 頁面中渲染 */}
 
-                return (
-                  <React.Fragment key={h.id}>
-                    <div
-                      className={`absolute transition-opacity z-10 cursor-pointer ${typeInfo?.bg} opacity-30 hover:opacity-50 border-b-2 ${typeInfo?.border}`}
-                      style={{
-                        left: `${h.x * 100}%`,
-                        top: `${h.y * 100}%`,
-                        width: `${h.width * 100}%`,
-                        height: `${h.height * 100}%`,
-                      }}
-                      onMouseEnter={() => setHoveredHighlightId(h.id)}
-                      onMouseLeave={() => setHoveredHighlightId(null)}
-                    />
-                    {hoveredHighlightId === h.id && (
-                      <HighlightHoverCard
-                        highlight={h}
-                        onDelete={handleRemoveHighlight}
-                        onCopy={handleCopyHighlight}
-                        onUpdate={handleUpdateHighlight}
-                      />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-
-            {/* Current Selection Rect */}
-            {currentRect && (
+            {/* Current Selection Rect - 只對非 PDF 文檔顯示，PDF 使用 PDFSelector */}
+            {currentRect && doc && doc.type !== 'pdf' && doc.content_type !== 'application/pdf' && (
               <div
-                className="absolute bg-indigo-500/20 border-2 border-indigo-500 z-20"
+                className="absolute bg-orange-100 opacity-30 border-2 border-dashed border-orange-400 z-20"
                 style={{
                   left: `${currentRect.x}%`,
                   top: `${currentRect.y}%`,
@@ -1806,11 +1811,23 @@ const ReaderPanel = () => {
                 }}
               />
             )}
+            {/* Pending Selection Rect - 顯示拖拽完成但尚未儲存的選中框（非 PDF 文檔） */}
+            {pendingSelection && doc && doc.type !== 'pdf' && doc.content_type !== 'application/pdf' && (
+              <div
+                className="absolute bg-orange-100 opacity-30 border-2 border-dashed border-orange-400 z-15"
+                style={{
+                  left: `${(pendingSelection.x || 0) * 100}%`,
+                  top: `${(pendingSelection.y || 0) * 100}%`,
+                  width: `${(pendingSelection.width || 0) * 100}%`,
+                  height: `${(pendingSelection.height || 0) * 100}%`,
+                }}
+              />
+            )}
 
-            {/* Floating Creation Toolbar */}
-            {toolbarRect && (
+            {/* Floating Creation Toolbar - 只對非 PDF 文檔顯示在外層容器 */}
+            {toolbarRect && doc && doc.type !== 'pdf' && doc.content_type !== 'application/pdf' && (
               <HighlightFloatingToolbar
-                position={{ x: toolbarRect.x + toolbarRect.w / 2, y: toolbarRect.y }}
+                position={{ x: toolbarRect.x, y: toolbarRect.y }}
                 onSelectType={handleQuickCreate}
                 onEdit={handleEditCreate}
                 onClose={() => {
@@ -1836,10 +1853,11 @@ const ReaderPanel = () => {
               {!previewLoading &&
                 (doc.type === 'pdf' || doc.content_type === 'application/pdf') &&
                 previewUrl && (
-                  <div
-                    ref={pdfContainerRef}
-                    className="border border-base-200 rounded-md overflow-auto max-h-[70vh] bg-white pointer-events-auto"
-                  >
+                  <div className="relative">
+                    <div
+                      ref={pdfContainerRef}
+                      className="border border-base-200 rounded-md overflow-y-auto overflow-x-hidden max-h-[70vh] bg-white pointer-events-auto"
+                    >
                       <PdfDocument
                         file={previewUrl}
                         onLoadSuccess={({ numPages }) => setPageCount(numPages)}
@@ -1881,6 +1899,93 @@ const ReaderPanel = () => {
                                   });
                                 }}
                               />
+                              {/* Highlights Overlay - 在每個頁面中渲染該頁的 highlights，隨 PDF 捲動移動 */}
+                              {extendedHighlights
+                                .filter((h) => h.document_id === currentDocId && h.page === pageNum && h.x !== undefined && h.y !== undefined && h.width !== undefined && h.height !== undefined)
+                                .map((h) => {
+                                  const typeInfo = EVIDENCE_TYPES.find((t) => t.type === h.type);
+                                  return (
+                                    <React.Fragment key={h.id}>
+                                      <div
+                                        data-is-highlight="true"
+                                        className={`absolute transition-opacity cursor-pointer ${typeInfo?.bg} opacity-30 hover:opacity-50 border-2 ${typeInfo?.border}`}
+                                        style={{
+                                          left: `${(h.x || 0) * 100}%`,
+                                          top: `${(h.y || 0) * 100}%`,
+                                          width: `${(h.width || 0) * 100}%`,
+                                          height: `${(h.height || 0) * 100}%`,
+                                          pointerEvents: 'auto',
+                                          zIndex: 10,
+                                        }}
+                                        onMouseEnter={() => {
+                                          // 清除之前的 timeout（包括延遲顯示和延遲隱藏）
+                                          if (hoverTimeoutRef.current) {
+                                            clearTimeout(hoverTimeoutRef.current);
+                                          }
+                                          // 設置短暫延遲後顯示 hover card（300ms）
+                                          hoverTimeoutRef.current = setTimeout(() => {
+                                            setHoveredHighlightId(h.id);
+                                          }, 300);
+                                        }}
+                                        onMouseLeave={() => {
+                                          // 清除顯示 timeout
+                                          if (hoverTimeoutRef.current) {
+                                            clearTimeout(hoverTimeoutRef.current);
+                                          }
+                                          // 延遲隱藏 hover card（500ms），給用戶時間移動鼠標到 hover card 上
+                                          hoverTimeoutRef.current = setTimeout(() => {
+                                            setHoveredHighlightId(null);
+                                          }, 500);
+                                        }}
+                                        onClick={() => {
+                                          // 可以添加點擊事件處理
+                                        }}
+                                      />
+                                      {hoveredHighlightId === h.id && (
+                                        <div
+                                          onMouseEnter={() => {
+                                            // 當游標移動到 hover card 上時，清除隱藏 timeout，保持顯示
+                                            if (hoverTimeoutRef.current) {
+                                              clearTimeout(hoverTimeoutRef.current);
+                                              hoverTimeoutRef.current = null;
+                                            }
+                                            setHoveredHighlightId(h.id);
+                                          }}
+                                          onMouseLeave={() => {
+                                            // 離開 hover card 時，延遲隱藏（300ms）
+                                            if (hoverTimeoutRef.current) {
+                                              clearTimeout(hoverTimeoutRef.current);
+                                            }
+                                            hoverTimeoutRef.current = setTimeout(() => {
+                                              setHoveredHighlightId(null);
+                                            }, 300);
+                                          }}
+                                          style={{ pointerEvents: 'auto' }}
+                                        >
+                                          <HighlightHoverCard
+                                            highlight={h}
+                                            onDelete={handleRemoveHighlight}
+                                            onCopy={handleCopyHighlight}
+                                            onUpdate={handleUpdateHighlight}
+                                          />
+                                        </div>
+                                      )}
+                                    </React.Fragment>
+                                  );
+                                })}
+                              {/* Pending Selection Rect - 顯示拖拽完成但尚未儲存的選中框 */}
+                              {pendingSelection && pendingSelection.page === pageNum && (
+                                <div
+                                  className="absolute bg-orange-100 opacity-30 border-2 border-dashed border-orange-400 z-15"
+                                  style={{
+                                    left: `${(pendingSelection.x || 0) * 100}%`,
+                                    top: `${(pendingSelection.y || 0) * 100}%`,
+                                    width: `${(pendingSelection.width || 0) * 100}%`,
+                                    height: `${(pendingSelection.height || 0) * 100}%`,
+                                  }}
+                                />
+                              )}
+                              {/* Floating Creation Toolbar - 已移到 PDF 容器外部渲染 */}
                               {/* 選擇器覆蓋層 - 保留原有功能 */}
                               {selectionMode === 'box' && (
                                 <PDFSelector
@@ -1895,7 +2000,21 @@ const ReaderPanel = () => {
                         })}
                       </PdfDocument>
                     </div>
-                  )}
+                    {/* Floating Creation Toolbar - 在 PDF 容器外部渲染，避免被截斷 */}
+                    {toolbarRect && toolbarRect.page && (
+                      <HighlightFloatingToolbar
+                        position={{ x: toolbarRect.x, y: toolbarRect.y }}
+                        onSelectType={handleQuickCreate}
+                        onEdit={handleEditCreate}
+                        onClose={() => {
+                          setToolbarRect(null);
+                          setCurrentRect(null);
+                          setPendingSelection(null);
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
 
               {!previewLoading &&
                 (!doc.content_type ||

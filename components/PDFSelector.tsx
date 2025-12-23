@@ -38,7 +38,18 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
       
       const page = pageData.page;
 
-      const textContent = await page.getTextContent();
+      // 添加错误处理，防止 worker 终止错误
+      let textContent;
+      try {
+        textContent = await page.getTextContent();
+      } catch (error: any) {
+        // 如果 worker 被终止，返回空字符串而不是抛出错误
+        if (error?.message?.includes('Worker') && error?.message?.includes('terminated')) {
+          console.debug('PDF worker task was terminated, skipping text extraction');
+          return '';
+        }
+        throw error;
+      }
       const viewport = page.getViewport({ scale: 1 });
 
       // 將相對座標轉換為 PDF 座標系統（PDF 座標系統原點在左下角）
@@ -120,10 +131,10 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
       return;
     }
     
-    e.preventDefault();
-    e.stopPropagation();
     const coords = getRelativeCoordinates(e.clientX, e.clientY);
     if (coords) {
+      e.preventDefault();
+      e.stopPropagation();
       setIsSelecting(true);
       setStartPos(coords);
       setCurrentPos(coords);
@@ -232,33 +243,40 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
       top: `${y}%`,
       width: `${width}%`,
       height: `${height}%`,
-      border: '2px dashed #3b82f6',
-      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      // 使用與儲存後相同的樣式，僅 border 為虛線
+      border: '2px dashed #fb923c', // orange-400
+      backgroundColor: 'rgba(254, 243, 199, 0.3)', // orange-100 with opacity
       pointerEvents: 'none' as const,
     };
   };
 
   return (
-    <div
-      ref={overlayRef}
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        cursor: isSelecting ? 'crosshair' : 'crosshair',
-        zIndex: 10,
-      }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-    >
-      {/* 選擇框 */}
-      {isSelecting && startPos && currentPos && (
-        <div style={getSelectionStyle()} />
-      )}
-    </div>
+    <>
+      {/* 選擇覆蓋層 - 較低 z-index，用於開始選擇 */}
+      <div
+        ref={overlayRef}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          cursor: 'crosshair',
+          zIndex: 5,
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+      >
+        {/* 選擇框 - 在選擇時提高 z-index 到 20，確保在 highlight 之上 */}
+        {isSelecting && startPos && currentPos && (
+          <div style={{
+            ...getSelectionStyle(),
+            zIndex: 20,
+          }} />
+        )}
+      </div>
+    </>
   );
 };
 
