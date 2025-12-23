@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useStore } from '../../store';
 import { useAuthStore } from '../../authStore';
 import {
@@ -35,6 +36,9 @@ import {
   Target,
   Sparkles,
   LayoutTemplate,
+  Home,
+  LayoutGrid,
+  LogOut,
 } from 'lucide-react';
 import { AppNode, Document, FieldWithEvidence, Message, TaskAContent, ComparisonRow, TaskCContent } from '../types';
 import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
@@ -168,6 +172,30 @@ const EVIDENCE_TYPES: { type: EvidenceType; label: string; color: string; bg: st
   { type: 'Limitation', label: '研究限制', color: 'bg-orange-400', bg: 'bg-orange-100', border: 'border-orange-400' },
   { type: 'Other', label: '其他', color: 'bg-yellow-400', bg: 'bg-yellow-100', border: 'border-yellow-400' },
 ];
+
+// Normalize document titles: prefer metadata, otherwise clean filename/uuid noise
+const cleanFileName = (raw: string) => {
+  if (!raw) return '';
+  const noPath = raw.split('/').pop() || raw;
+  const noUploads = noPath.replace(/^uploads[\\/_]?/i, '');
+  const noUuidPrefix = noUploads.replace(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}_/, '');
+  const noLongHexPrefix = noUuidPrefix.replace(/^[0-9a-fA-F]{32,}_/, '');
+  const noExt = noLongHexPrefix.replace(/\\.[^.]+$/, '');
+  return noExt.trim();
+};
+
+const getDocumentTitle = (doc?: Document) => {
+  if (!doc) return { display: '請選擇文獻', full: '請選擇文獻' };
+  const metaTitle =
+    (doc as any)?.metadata_title ||
+    (doc as any)?.metadata?.title ||
+    (doc as any)?.meta?.title;
+  const rawTitle = (typeof metaTitle === 'string' && metaTitle.trim()) || doc.title || '';
+  const cleaned = cleanFileName(rawTitle) || cleanFileName(doc.title || '') || '未命名文獻';
+  const full = rawTitle || cleaned;
+  const truncated = cleaned.length > 64 ? `${cleaned.slice(0, 64)}…` : cleaned;
+  return { display: truncated, full };
+};
 
 // Extended Highlight type with tag and note (backward compatible)
 interface ExtendedHighlight extends Highlight {
@@ -462,7 +490,32 @@ const HighlightSidebar = ({
   onDelete: (id: string) => void;
   onLocate: (h: ExtendedHighlight) => void;
 }) => {
-  const groupedHighlights = highlights.reduce(
+  const [activeTypes, setActiveTypes] = useState<EvidenceType[]>(() =>
+    EVIDENCE_TYPES.map((t) => t.type)
+  );
+
+  const countByType = EVIDENCE_TYPES.reduce((acc, t) => {
+    acc[t.type] = 0;
+    return acc;
+  }, {} as Record<EvidenceType, number>);
+
+  highlights.forEach((h) => {
+    const type = ((h.type || (h.evidence_type as EvidenceType)) || 'Other') as EvidenceType;
+    countByType[type] = (countByType[type] || 0) + 1;
+  });
+
+  const toggleType = (type: EvidenceType) => {
+    setActiveTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    );
+  };
+
+  const visibleHighlights = highlights.filter((h) => {
+    const type = ((h.type || (h.evidence_type as EvidenceType)) || 'Other') as EvidenceType;
+    return activeTypes.includes(type);
+  });
+
+  const groupedHighlights = visibleHighlights.reduce(
     (acc, h) => {
       const type = (h.type || (h.evidence_type as EvidenceType) || 'Other') as EvidenceType;
       if (!acc[type]) acc[type] = [];
@@ -485,66 +538,110 @@ const HighlightSidebar = ({
           <X size={16} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
         {highlights.length === 0 ? (
           <div className="text-center py-10 text-slate-400">
             <Highlighter size={32} className="mx-auto mb-2 opacity-50" />
             <p className="text-xs">尚無標記片段<br />請在 PDF 上拖曳框選</p>
           </div>
         ) : (
-          EVIDENCE_TYPES.map((typeDef) => {
-            const typeHighlights = groupedHighlights[typeDef.type];
-            if (!typeHighlights || typeHighlights.length === 0) return null;
-
-            return (
-              <div key={typeDef.type} className="space-y-2">
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 pl-1 flex items-center">
-                  <span className={`w-2 h-2 rounded-full ${typeDef.color} mr-2`}></span>
-                  {typeDef.label}
-                </h4>
-                {typeHighlights.map((h) => (
-                  <div
-                    key={h.id}
-                    className="group bg-white border border-slate-200 rounded-lg p-3 hover:shadow-md transition-all hover:border-indigo-300 cursor-grab active:cursor-grabbing relative"
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('highlight', JSON.stringify(h));
-                      e.dataTransfer.effectAllowed = 'copy';
-                    }}
+          <>
+            <div className="flex flex-wrap gap-2 pb-3 border-b border-slate-100 mb-3">
+              {EVIDENCE_TYPES.map((typeDef) => {
+                const isActive = activeTypes.includes(typeDef.type);
+                const count = countByType[typeDef.type] || 0;
+                return (
+                  <button
+                    key={typeDef.type}
+                    onClick={() => toggleType(typeDef.type)}
+                    className={`flex items-center gap-2 px-2.5 py-1 rounded-full text-xs border transition-all ${
+                      isActive
+                        ? 'bg-white text-slate-700 border-slate-200 shadow-sm'
+                        : 'bg-slate-50 text-slate-400 border-slate-100'
+                    } ${count === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={count === 0}
                   >
-                    <div className="flex justify-between items-start mb-1">
-                      {/* Show Tag if exists, else show Name */}
-                      <span className={`text-xs font-bold truncate max-w-[150px] ${h.tag ? 'text-indigo-700' : 'text-slate-700'}`}>
-                        {h.tag || h.name || h.snippet.substring(0, 20)}
-                      </span>
-                      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => onLocate(h)}
-                          className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
-                          title="定位"
-                        >
-                          <Target size={12} />
-                        </button>
-                        <button
-                          onClick={() => onDelete(h.id)}
-                          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          title="刪除"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-500 line-clamp-2 pl-2 border-l-2 border-slate-100 italic">
-                      "{h.snippet}"
-                    </p>
-                    <div className="absolute top-1/2 right-[-10px] transform -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:right-2 transition-all">
-                      <GripVertical size={14} className="text-slate-300" />
-                    </div>
-                  </div>
-                ))}
+                    <span className={`h-2.5 w-2.5 rounded-full ${typeDef.color}`}></span>
+                    <span className="sr-only">{typeDef.label}</span>
+                    <span className="text-[10px] text-slate-500">{count}</span>
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setActiveTypes(EVIDENCE_TYPES.map((t) => t.type))}
+                className="text-xs px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-violet-50 transition-colors"
+              >
+                全部
+              </button>
+            </div>
+
+            {visibleHighlights.length === 0 ? (
+              <div className="text-center py-6 text-slate-400 text-xs">
+                尚無符合篩選的標記，請切換類型查看。
               </div>
-            );
-          })
+            ) : (
+              EVIDENCE_TYPES.map((typeDef) => {
+                const typeHighlights = groupedHighlights[typeDef.type];
+                if (!typeHighlights || typeHighlights.length === 0) return null;
+
+                return (
+                  <div key={typeDef.type} className="space-y-2">
+                    {typeHighlights.map((h) => {
+                      const highlightType = (h.type || (h.evidence_type as EvidenceType) || 'Other') as EvidenceType;
+                      const typeConfig = EVIDENCE_TYPES.find(t => t.type === highlightType) || EVIDENCE_TYPES[EVIDENCE_TYPES.length - 1];
+                      
+                      return (
+                        <div
+                          key={h.id}
+                          className={`group bg-white border-l-4 ${typeConfig.border} border border-slate-200 rounded-lg p-3 hover:shadow-md transition-all hover:border-indigo-300 cursor-grab active:cursor-grabbing relative`}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('highlight', JSON.stringify(h));
+                            e.dataTransfer.effectAllowed = 'copy';
+                          }}
+                          title={h.snippet}
+                        >
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`h-2.5 w-2.5 rounded-full ${typeConfig.color}`}></span>
+                            <span className="sr-only">{typeConfig.label}</span>
+                            {h.page && <span className="text-[11px] text-slate-400">P.{h.page}</span>}
+                          </div>
+                          <div className="flex justify-between items-start mb-1">
+                            {/* Show Tag if exists, else show Name */}
+                            <span className={`text-xs font-bold truncate max-w-[150px] ${h.tag ? 'text-indigo-700' : 'text-slate-700'}`}>
+                              {h.tag || h.name || h.snippet.substring(0, 20)}
+                            </span>
+                            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => onLocate(h)}
+                                className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                                title="定位"
+                              >
+                                <Target size={12} />
+                              </button>
+                              <button
+                                onClick={() => onDelete(h.id)}
+                                className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"
+                                title="刪除"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500 line-clamp-2 pl-2 border-l-2 border-slate-100 italic">
+                            "{h.snippet}"
+                          </p>
+                          <div className="absolute top-1/2 right-[-10px] transform -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:right-2 transition-all">
+                            <GripVertical size={14} className="text-slate-300" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })
+            )}
+          </>
         )}
       </div>
     </div>
@@ -1034,8 +1131,11 @@ const DocCard = ({
       {doc.type === 'pdf' ? <FileText size={16} /> : <File size={16} />}
     </div>
     <div className="flex-1 min-w-0">
-      <h4 className="text-sm font-medium text-slate-700 truncate group-hover:text-indigo-700 transition-colors">
-        {doc.title}
+      <h4
+        className="text-sm font-medium text-slate-700 truncate group-hover:text-indigo-700 transition-colors"
+        title={getDocumentTitle(doc).full}
+      >
+        {getDocumentTitle(doc).display}
       </h4>
     </div>
     {source === 'project' && onDelete && (
@@ -1389,6 +1489,10 @@ const ReaderPanel = () => {
     const [selectionToolbar, setSelectionToolbar] = useState<{ text: string; x: number; y: number } | null>(null);
     const [evidenceType, setEvidenceType] = useState<string>('Other');
     const [isDragOver, setIsDragOver] = useState(false);
+    const [showHints, setShowHints] = useState<boolean>(() => {
+      if (typeof window === 'undefined') return true;
+      return localStorage.getItem('reader_hints_dismissed') !== 'true';
+    });
     const [selectionMode, setSelectionMode] = useState<'text' | 'box'>('box'); // 'text' 或 'box'
     const [pendingSelection, setPendingSelection] = useState<{ x: number; y: number; width: number; height: number; page: number; text?: string } | null>(null);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -1404,6 +1508,13 @@ const ReaderPanel = () => {
     const pageRef = useRef<HTMLDivElement>(null);
     const loadingRef = useRef<string | null>(null); // 跟踪正在加载的 object_key
     const doc = documents.find(d => d.id === currentDocId);
+    
+    const dismissHints = (persist?: boolean) => {
+      setShowHints(false);
+      if (persist && typeof window !== 'undefined') {
+        localStorage.setItem('reader_hints_dismissed', 'true');
+      }
+    };
     
     // Convert highlights to ExtendedHighlight format
     const extendedHighlights: ExtendedHighlight[] = (doc?.highlights || []).map((h) => ({
@@ -1691,7 +1802,8 @@ const ReaderPanel = () => {
         const basePdfWidthPx = basePdfWidth * (96 / 72); // 轉換為像素 (96 DPI)
         
         // 計算縮放比例：目標寬度 / 基準寬度
-        const autoZoom = (targetWidth / basePdfWidthPx) * 1.68;
+        // 係數調整：由於 PDF 渲染寬度從 520 改為 680，需要調整係數以維持約 133% 的預設縮放
+        const autoZoom = (targetWidth / basePdfWidthPx) * 1.28;
         
         // 限制在合理範圍內 (0.5 到 2.5)
         const clampedZoom = Math.max(0.5, Math.min(2.5, autoZoom));
@@ -1739,10 +1851,10 @@ const ReaderPanel = () => {
         onLocate={handleLocateHighlight}
       />
       
-      {/* PDF Toolbar */}
+      {/* PDF Toolbar - Matching navbar style */}
       <div
-        className={`h-12 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 sticky top-0 z-10 transition-colors ${
-          isDragOver ? 'bg-indigo-50 border-indigo-300' : ''
+        className={`bg-white/60 backdrop-blur-sm border-b border-slate-200/50 flex items-center justify-between px-6 py-3 sticky top-0 z-10 transition-all ${
+          isDragOver ? 'bg-violet-50/90 border-violet-200' : ''
         }`}
         onDragOver={(e) => {
           e.preventDefault();
@@ -1765,21 +1877,21 @@ const ReaderPanel = () => {
       >
         <div className="flex items-center space-x-3 max-w-[60%]">
           <button
-            className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-200 rounded-lg text-slate-600 hover:text-indigo-600 transition-all shadow-sm group shrink-0"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white/90 hover:bg-violet-50 border border-white/80 hover:border-violet-200 rounded-xl text-slate-600 hover:text-violet-600 transition-all shadow-sm shadow-violet-500/5 group shrink-0"
             onClick={() => setLibraryOpen(!isLibraryOpen)}
           >
-            <BookOpen size={14} className="text-slate-500 group-hover:text-indigo-600 transition-colors" />
+            <BookOpen size={14} className="text-slate-500 group-hover:text-violet-600 transition-colors" />
             <span className="text-xs font-medium">文獻庫</span>
           </button>
           <button
-            className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-200 rounded-lg text-slate-600 hover:text-indigo-600 transition-all shadow-sm group shrink-0"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white/90 hover:bg-violet-50 border border-white/80 hover:border-violet-200 rounded-xl text-slate-600 hover:text-violet-600 transition-all shadow-sm shadow-violet-500/5 group shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => setIsEvidencePanelOpen((prev) => !prev)}
             disabled={!doc}
           >
-            <Highlighter size={14} className="text-slate-500 group-hover:text-indigo-600 transition-colors" />
+            <Highlighter size={14} className="text-slate-500 group-hover:text-violet-600 transition-colors" />
             <span className="text-xs font-medium">標記列表</span>
             {doc && (
-              <span className="bg-indigo-100 text-indigo-700 px-1.5 rounded-full text-[10px] font-bold">
+              <span className="bg-violet-100 text-violet-700 px-1.5 rounded-full text-[10px] font-bold">
                 {doc.highlights?.length || 0}
               </span>
             )}
@@ -1790,35 +1902,69 @@ const ReaderPanel = () => {
               {isDragOver ? '放開以加入文檔' : '拖曳文獻到此處以加入專案'}
             </div>
           ) : (
-            <span className="text-sm font-medium text-slate-700 truncate">{doc?.title || '請選擇文獻'}</span>
+            <span
+              className="text-sm font-medium text-slate-700 truncate"
+              title={getDocumentTitle(doc).full}
+            >
+              {getDocumentTitle(doc).display}
+            </span>
           )}
         </div>
 
         {doc && (doc.type === 'pdf' || doc.content_type === 'application/pdf') && (
           <div className="flex items-center space-x-2 shrink-0">
-            <div className="flex items-center bg-slate-100 rounded-lg px-2 py-1 mr-2 text-xs text-slate-500">
+            <div className="flex items-center bg-slate-100/80 rounded-xl px-2 py-1 mr-2 text-xs text-slate-500 border border-white/80">
               <MousePointer2 size={12} className="mr-1" />
               <span>拖曳框選</span>
             </div>
-            <button className="p-1.5 hover:bg-slate-100 rounded-md text-slate-500" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))}>
+            <button className="p-1.5 hover:bg-violet-50 rounded-lg text-slate-500 hover:text-violet-600 transition-all" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))}>
               <ZoomOut size={16} />
             </button>
             <span className="text-xs text-slate-500 font-mono">{Math.round(zoom * 100)}%</span>
-            <button className="p-1.5 hover:bg-slate-100 rounded-md text-slate-500" onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))}>
+            <button className="p-1.5 hover:bg-violet-50 rounded-lg text-slate-500 hover:text-violet-600 transition-all" onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))}>
               <ZoomIn size={16} />
             </button>
           </div>
         )}
       </div>
 
+      {doc && showHints && (
+        <div className="px-6 pt-3">
+          <div className="bg-white/90 backdrop-blur border border-slate-200 rounded-2xl shadow-sm px-4 py-3 flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <div className="text-sm font-semibold text-slate-800">快速提示</div>
+              <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
+                <li>拖曳 PDF 區域建立標記，標記會依類型顯示色點</li>
+                <li>開啟「標記列表」可用類型篩選並定位到頁面</li>
+                <li>拖曳標記到對話視窗，可快速引用內容</li>
+              </ul>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                className="text-xs px-3 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors"
+                onClick={() => setShowHints(false)}
+              >
+                關閉
+              </button>
+              <button
+                className="text-xs px-3 py-1 rounded-lg bg-violet-50 text-violet-700 border border-violet-100 hover:bg-violet-100 transition-colors"
+                onClick={() => dismissHints(true)}
+              >
+                不再顯示
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* PDF Page View Container */}
-      <div className="flex-1 overflow-y-auto p-8 flex justify-center custom-scrollbar select-none" onMouseMove={handleMouseMove}>
+      <div className="flex-1 overflow-y-auto p-6 flex justify-center custom-scrollbar select-none" onMouseMove={handleMouseMove}>
         {!doc ? (
           <div className="grid place-items-center h-full text-slate-400">請選擇文獻</div>
         ) : (
           <div
             ref={pageRef}
-            className="w-full max-w-3xl bg-white shadow-sm border border-slate-200 min-h-[1000px] p-10 relative cursor-crosshair"
+            className="w-full max-w-5xl bg-white shadow-sm border border-slate-200 min-h-[1000px] p-8 relative cursor-crosshair"
             onMouseDown={handleMouseDown}
           >
             {/* Highlights Overlay - 已移除，改為在每個 PDF 頁面中渲染 */}
@@ -1883,7 +2029,7 @@ const ReaderPanel = () => {
               {!previewLoading && doc.content_type?.startsWith('image/') && previewUrl && (
                 <img
                   src={previewUrl}
-                  alt={doc.title}
+                  alt={getDocumentTitle(doc).full}
                   className="max-h-[70vh] max-w-full object-contain border border-base-200 rounded-md"
                 />
               )}
@@ -1894,7 +2040,7 @@ const ReaderPanel = () => {
                   <div className="relative">
                     <div
                       ref={pdfContainerRef}
-                      className="border border-base-200 rounded-md overflow-y-auto overflow-x-hidden max-h-[70vh] bg-white pointer-events-auto"
+                      className="border border-base-200 rounded-md overflow-y-auto overflow-x-hidden max-h-[calc(100vh-280px)] bg-white pointer-events-auto"
                     >
                       <PdfDocument
                         file={previewUrl}
@@ -1924,7 +2070,7 @@ const ReaderPanel = () => {
                                 pageNumber={pageNum}
                                 renderAnnotationLayer={false}
                                 renderTextLayer={true}
-                                width={520 * zoom}
+                                width={680 * zoom}
                                 onGetTextSuccess={(text) => {
                                   const current = pdfPageTexts.current.get(pageNum) || {};
                                   pdfPageTexts.current.set(pageNum, { ...current, text });
@@ -2356,6 +2502,7 @@ export default function StudentInterface() {
     updateHighlight,
   } = useStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const currentNode = nodes.find(n => n.id === currentStepId);
   const currentProject = projects.find(p => p.id === activeProjectId);
   const projectCohorts = cohorts.filter(c => c.project_id === activeProjectId);
@@ -2370,6 +2517,8 @@ export default function StudentInterface() {
   const [activeTab, setActiveTab] = useState<'chat' | 'task'>('chat');
   const [editingHighlight, setEditingHighlight] = useState<ExtendedHighlight | null>(null);
   const prevStepIdRef = useRef<string | null>(null);
+  const [showNavbarAnimation, setShowNavbarAnimation] = useState(true);
+  const hasPlayedAnimationRef = useRef(false);
 
   const handleJoinCohort = async () => {
       const code = joinCode.trim();
@@ -2475,6 +2624,21 @@ export default function StudentInterface() {
     }
   }, [currentStepId, currentNode, chatTimeline, addChatMessage]);
 
+  // Navbar animation - play once on mount
+  useEffect(() => {
+    if (!hasPlayedAnimationRef.current) {
+      hasPlayedAnimationRef.current = true;
+      setShowNavbarAnimation(true);
+      
+      // Hide animation overlay after animation completes
+      const timer = setTimeout(() => {
+        setShowNavbarAnimation(false);
+      }, 800); // Match animation duration
+      
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const renderContent = () => {
       if (!currentNode) return <div className="p-10 text-center">Loading Stage...</div>;
       const type = currentNode.data.type; 
@@ -2483,10 +2647,10 @@ export default function StudentInterface() {
       if (type === 'start' || type === 'end') {
         return (
           <div className="flex h-full w-full relative">
-            <div className="flex-[0.7] h-full flex flex-col border-r border-slate-200">
+            <div className="w-[72%] h-full flex flex-col border-r border-slate-200/50">
               <ReaderPanel />
             </div>
-            <div className="flex-[0.3] h-full flex flex-col bg-white relative">
+            <div className="w-[28%] h-full flex flex-col bg-white/80 backdrop-blur-sm relative">
               <div className="flex-1 p-6 overflow-hidden flex items-center justify-center">
                 {type === 'start' && (
                   <div className="h-full flex flex-col items-center justify-center text-center p-8">
@@ -2516,10 +2680,10 @@ export default function StudentInterface() {
       // 其他節點使用 Chat 主區
       return (
         <div className="flex h-full w-full relative">
-          <div className={`transition-all duration-500 ease-in-out h-full relative ${isCollapsed ? 'w-[calc(100%-60px)]' : 'w-[70%]'}`}>
+          <div className={`transition-all duration-500 ease-in-out h-full relative ${isCollapsed ? 'w-[calc(100%-60px)]' : 'w-[72%]'}`}>
             <ReaderPanel />
           </div>
-          <div className={`transition-all duration-500 ease-in-out h-full bg-white border-l border-slate-200 shadow-[-5px_0_20px_rgba(0,0,0,0.02)] flex flex-col ${isCollapsed ? 'w-[60px]' : 'w-[30%]'}`}>
+          <div className={`transition-all duration-500 ease-in-out h-full bg-white/80 backdrop-blur-sm border-l border-slate-200/50 shadow-[-5px_0_20px_rgba(0,0,0,0.02)] flex flex-col ${isCollapsed ? 'w-[60px]' : 'w-[28%]'}`}>
             <div className="h-12 border-b border-slate-100 flex items-center justify-between px-2 bg-white sticky top-0 z-10">
               {!isCollapsed ? (
                 <div className="flex space-x-1 p-1 bg-slate-100 rounded-lg w-full max-w-[240px] ml-2">
@@ -2583,7 +2747,7 @@ export default function StudentInterface() {
       );
   };
 
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const getUserInitials = () => {
     if (user?.name) {
       return user.name
@@ -2596,13 +2760,15 @@ export default function StudentInterface() {
     return user?.email?.[0]?.toUpperCase() || 'U';
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
-    <div className="h-screen w-full bg-slate-50 font-sans text-slate-800 overflow-hidden flex flex-col">
-      {/* Background Gradient */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-100/40 blur-[100px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-100/40 blur-[100px]"></div>
-      </div>
+    <div className="h-screen w-full font-sans text-gray-900 overflow-hidden flex flex-col relative">
+      {/* Background Gradient - Same as Layout */}
+      <GradientBackground />
 
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
@@ -2620,24 +2786,114 @@ export default function StudentInterface() {
         .cursor-crosshair { cursor: crosshair; }
       `}</style>
 
-      {/* Header */}
-      <header className="h-14 bg-white/80 backdrop-blur-lg border-b border-slate-200 shrink-0 flex items-center justify-between px-6 z-50 relative">
-        <div className="flex items-center space-x-2">
-          <div className="h-8 w-8 bg-gradient-to-tr from-indigo-600 to-purple-500 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-            <LayoutTemplate size={18} />
+      {/* Header - Matching Navigation style from Layout */}
+      <header className="shrink-0 z-50 relative px-4 py-4">
+        <div className="max-w-7xl mx-auto">
+        <div className="bg-white/80 backdrop-blur-2xl border border-white/80 rounded-2xl shadow-lg shadow-violet-500/10 px-6 py-3 flex items-center justify-between gap-4 relative overflow-hidden">
+          {/* Purple gradient animation overlay */}
+          {showNavbarAnimation && (
+            <div 
+              className="absolute inset-0 pointer-events-none z-10 navbar-gradient-animation"
+              style={{
+                background: 'radial-gradient(ellipse at center, rgba(139, 92, 246, 0.4) 0%, rgba(139, 92, 246, 0.2) 40%, transparent 70%)',
+                transformOrigin: 'center',
+              }}
+            />
+          )}
+          
+          {/* Logo - click to go back to dashboard */}
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center gap-2 group focus:outline-none relative z-20"
+            aria-label="回到儀表板"
+          >
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:shadow-violet-500/30 transition-all">
+              T
+            </div>
+            <span className="font-bold text-xl text-gray-900 tracking-tight group-hover:text-violet-600 transition-colors cursor-pointer">
+              Thesis<span className="text-violet-600">Flow</span>
+            </span>
+          </button>
+
+          {/* Center nav - mirrors main Navigation links */}
+          <div className="hidden md:flex items-center gap-1 flex-1 justify-center relative z-20">
+            {[
+              { path: '/', label: '首頁', icon: <Home size={18} /> },
+              { path: '/dashboard', label: '儀表板', icon: <LayoutGrid size={18} /> },
+              { path: '/projects', label: '專案', icon: <Sparkles size={18} /> },
+              { path: '/groups', label: '群組', icon: <Users size={18} /> },
+              { path: '/literature', label: '文獻', icon: <FileText size={18} /> },
+            ].map((item) => {
+              // 對於專案按鈕，檢查是否在 /projects 或 /student/project 路由
+              const isActive = item.path === '/projects' 
+                ? (location.pathname === '/projects' || location.pathname.startsWith('/student/project'))
+                : location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  type="button"
+                  onClick={() => navigate(item.path)}
+                  className={`
+                    relative px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-medium transition-all duration-200
+                    ${isActive ? 'text-violet-700' : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'}
+                  `}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-pill"
+                      className="absolute inset-0 bg-violet-100/50 rounded-xl -z-10"
+                      transition={{
+                        type: 'spring',
+                        bounce: 0.2,
+                        duration: 0.6,
+                      }}
+                    />
+                  )}
+                  {item.icon}
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
-          <span className="font-bold text-lg tracking-tight text-slate-800">ThesisFlow</span>
+
+          {/* User section - click to go to profile */}
+          <div className="flex items-center gap-3 relative z-20">
+            <button
+              type="button"
+              onClick={() => navigate('/profile')}
+              className="flex items-center gap-3 pl-3 border-l border-gray-200"
+              aria-label="前往個人資料頁"
+            >
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-medium text-gray-900">
+                  {user?.name}
+                </p>
+                <p className="text-xs text-gray-500">學生</p>
+              </div>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-100 to-indigo-100 border border-white shadow-sm flex items-center justify-center text-violet-700 font-bold text-sm">
+                {getUserInitials()}
+              </div>
+            </button>
+            <button
+              onClick={handleLogout}
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/50 rounded-xl transition-all"
+              title="登出"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="h-8 w-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-xs">
-            {getUserInitials()}
-          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="flex-1 relative z-10 overflow-hidden">
-        {renderContent()}
+      {/* Main Content - Matching Layout style */}
+      <div className="flex-1 relative z-10 overflow-hidden px-4 pb-4">
+        <div className="h-full max-w-7xl mx-auto">
+          <div className="h-full bg-white/60 backdrop-blur-sm rounded-2xl border border-white/80 shadow-lg shadow-violet-500/5 overflow-hidden">
+            {renderContent()}
+          </div>
+        </div>
       </div>
       <HighlightEditModal
           isOpen={!!editingHighlight}
@@ -2741,7 +2997,9 @@ export default function StudentInterface() {
                             className="checkbox checkbox-primary"
                           />
                           <div className="flex-1">
-                            <h4 className="font-semibold text-slate-800">{doc.title}</h4>
+                          <h4 className="font-semibold text-slate-800 truncate" title={getDocumentTitle(doc).full}>
+                            {getDocumentTitle(doc).display}
+                          </h4>
                             <p className="text-xs text-slate-500 mt-1">
                               {doc.type?.toUpperCase() || 'FILE'} · 
                               {' '}{new Date(doc.uploaded_at || Date.now()).toLocaleDateString()}
