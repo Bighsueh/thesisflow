@@ -456,7 +456,7 @@ const HighlightSidebar = ({
           <X size={16} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
         {highlights.length === 0 ? (
           <div className="text-center py-10 text-slate-400">
             <Highlighter size={32} className="mx-auto mb-2 opacity-50" />
@@ -469,50 +469,51 @@ const HighlightSidebar = ({
 
             return (
               <div key={typeDef.type} className="space-y-2">
-                <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 pl-1 flex items-center">
-                  <span className={`w-2 h-2 rounded-full ${typeDef.color} mr-2`}></span>
-                  {typeDef.label}
-                </h4>
-                {typeHighlights.map((h) => (
-                  <div
-                    key={h.id}
-                    className="group bg-white border border-slate-200 rounded-lg p-3 hover:shadow-md transition-all hover:border-indigo-300 cursor-grab active:cursor-grabbing relative"
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData('highlight', JSON.stringify(h));
-                      e.dataTransfer.effectAllowed = 'copy';
-                    }}
-                  >
-                    <div className="flex justify-between items-start mb-1">
-                      {/* Show Tag if exists, else show Name */}
-                      <span className={`text-xs font-bold truncate max-w-[150px] ${h.tag ? 'text-indigo-700' : 'text-slate-700'}`}>
-                        {h.tag || h.name || h.snippet.substring(0, 20)}
-                      </span>
-                      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => onLocate(h)}
-                          className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
-                          title="定位"
-                        >
-                          <Target size={12} />
-                        </button>
-                        <button
-                          onClick={() => onDelete(h.id)}
-                          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"
-                          title="刪除"
-                        >
-                          <Trash2 size={12} />
-                        </button>
+                {typeHighlights.map((h) => {
+                  const highlightType = (h.type || (h.evidence_type as EvidenceType) || 'Other') as EvidenceType;
+                  const typeConfig = EVIDENCE_TYPES.find(t => t.type === highlightType) || EVIDENCE_TYPES[EVIDENCE_TYPES.length - 1];
+                  
+                  return (
+                    <div
+                      key={h.id}
+                      className={`group bg-white border-l-4 ${typeConfig.border} border border-slate-200 rounded-lg p-3 hover:shadow-md transition-all hover:border-indigo-300 cursor-grab active:cursor-grabbing relative`}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('highlight', JSON.stringify(h));
+                        e.dataTransfer.effectAllowed = 'copy';
+                      }}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        {/* Show Tag if exists, else show Name */}
+                        <span className={`text-xs font-bold truncate max-w-[150px] ${h.tag ? 'text-indigo-700' : 'text-slate-700'}`}>
+                          {h.tag || h.name || h.snippet.substring(0, 20)}
+                        </span>
+                        <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => onLocate(h)}
+                            className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
+                            title="定位"
+                          >
+                            <Target size={12} />
+                          </button>
+                          <button
+                            onClick={() => onDelete(h.id)}
+                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"
+                            title="刪除"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500 line-clamp-2 pl-2 border-l-2 border-slate-100 italic">
+                        "{h.snippet}"
+                      </p>
+                      <div className="absolute top-1/2 right-[-10px] transform -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:right-2 transition-all">
+                        <GripVertical size={14} className="text-slate-300" />
                       </div>
                     </div>
-                    <p className="text-xs text-slate-500 line-clamp-2 pl-2 border-l-2 border-slate-100 italic">
-                      "{h.snippet}"
-                    </p>
-                    <div className="absolute top-1/2 right-[-10px] transform -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:right-2 transition-all">
-                      <GripVertical size={14} className="text-slate-300" />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })
