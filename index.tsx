@@ -1,4 +1,5 @@
 import './index.css'
+import './utils/pdfConfig' // 初始化 PDF worker 配置和错误处理
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";

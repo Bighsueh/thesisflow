@@ -6,9 +6,7 @@ import { useStore } from '../store';
 import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-
-// 使用 CDN worker 以避免路徑解析問題
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+import '../utils/pdfConfig';
 
 export default function StudentHome() {
   const navigate = useNavigate();

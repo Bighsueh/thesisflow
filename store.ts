@@ -1095,6 +1095,10 @@ export const useStore = create<AppState>((set, get) => ({
 
   loadWorkflowState: async (projectId: string) => {
     try {
+      if (!projectService || typeof projectService.loadWorkflowState !== 'function') {
+        console.error('projectService.loadWorkflowState is not available');
+        return;
+      }
       const state = await projectService.loadWorkflowState(projectId);
       if (state) {
         set({
