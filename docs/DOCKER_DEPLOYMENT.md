@@ -402,3 +402,7 @@ docker compose logs -f
 2. 系統資源（記憶體、磁碟空間）
 3. 日誌輸出：`docker compose logs`
 4. 服務狀態：`docker compose ps`
+
+---
+
+**最後更新**：2026-01-05
