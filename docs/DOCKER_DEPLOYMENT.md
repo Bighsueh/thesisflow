@@ -329,6 +329,12 @@ docker compose up -d
 1. **前端開發模式：**
    - 不使用 Docker，直接在本地運行：
      ```bash
+     # 從根目錄
+     npm run install:frontend
+     npm run dev
+
+     # 或進入 frontend 目錄
+     cd frontend
      npm install
      npm run dev
      ```
