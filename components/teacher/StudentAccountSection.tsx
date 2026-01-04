@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
-import { Plus, Pencil, Trash2, X } from 'lucide-react'
-import { useStore } from '../../store'
-import { GlassCard } from '../ui/GlassCard'
-import { Button } from '../ui/Button'
-import { Input } from '../ui/Input'
+import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { useStore } from '../../store';
+import { Button } from '../ui/Button';
+import { GlassCard } from '../ui/GlassCard';
+import { Input } from '../ui/Input';
 
 export function StudentAccountSection() {
   const {
@@ -13,85 +13,85 @@ export function StudentAccountSection() {
     bulkCreateStudents,
     updateStudent,
     deleteStudent,
-  } = useStore()
-  const [isStudentModalOpen, setIsStudentModalOpen] = useState(false)
-  const [studentName, setStudentName] = useState('')
-  const [studentEmail, setStudentEmail] = useState('')
-  const [studentPassword, setStudentPassword] = useState('')
-  const [studentSaving, setStudentSaving] = useState(false)
-  const [editingStudentId, setEditingStudentId] = useState<string | null>(null)
-  const [isBulkStudentModalOpen, setIsBulkStudentModalOpen] = useState(false)
-  const [bulkClassLabel, setBulkClassLabel] = useState('')
-  const [bulkPrefix, setBulkPrefix] = useState('')
-  const [bulkDomain, setBulkDomain] = useState('@example.com')
-  const [bulkStartNo, setBulkStartNo] = useState(1)
-  const [bulkEndNo, setBulkEndNo] = useState(30)
-  const [bulkZeroPad, setBulkZeroPad] = useState(2)
-  const [bulkPassword, setBulkPassword] = useState('')
-  const [bulkSaving, setBulkSaving] = useState(false)
+  } = useStore();
+  const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+  const [studentName, setStudentName] = useState('');
+  const [studentEmail, setStudentEmail] = useState('');
+  const [studentPassword, setStudentPassword] = useState('');
+  const [studentSaving, setStudentSaving] = useState(false);
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  const [isBulkStudentModalOpen, setIsBulkStudentModalOpen] = useState(false);
+  const [bulkClassLabel, setBulkClassLabel] = useState('');
+  const [bulkPrefix, setBulkPrefix] = useState('');
+  const [bulkDomain, setBulkDomain] = useState('@example.com');
+  const [bulkStartNo, setBulkStartNo] = useState(1);
+  const [bulkEndNo, setBulkEndNo] = useState(30);
+  const [bulkZeroPad, setBulkZeroPad] = useState(2);
+  const [bulkPassword, setBulkPassword] = useState('');
+  const [bulkSaving, setBulkSaving] = useState(false);
 
   React.useEffect(() => {
-    loadStudents().catch(() => {})
-  }, [loadStudents])
+    loadStudents().catch(() => {});
+  }, [loadStudents]);
 
   const onCreateStudent = () => {
-    setEditingStudentId(null)
-    setStudentName('')
-    setStudentEmail('')
-    setStudentPassword('')
-    setIsStudentModalOpen(true)
-  }
+    setEditingStudentId(null);
+    setStudentName('');
+    setStudentEmail('');
+    setStudentPassword('');
+    setIsStudentModalOpen(true);
+  };
 
   const handleStudentSave = async () => {
     if (!studentName.trim() || !studentEmail.trim()) {
-      alert('請輸入姓名與 Email')
-      return
+      alert('請輸入姓名與 Email');
+      return;
     }
-    setStudentSaving(true)
+    setStudentSaving(true);
     try {
       if (editingStudentId) {
         const payload: { name: string; email: string; password?: string } = {
           name: studentName.trim(),
           email: studentEmail.trim(),
-        }
+        };
         if (studentPassword.trim()) {
-          payload.password = studentPassword.trim()
+          payload.password = studentPassword.trim();
         }
-        await updateStudent(editingStudentId, payload)
-        await loadStudents()
-        alert('已更新學生資料')
+        await updateStudent(editingStudentId, payload);
+        await loadStudents();
+        alert('已更新學生資料');
       } else {
         await createStudent({
           name: studentName.trim(),
           email: studentEmail.trim(),
           password: studentPassword || '',
-        })
-        await loadStudents()
+        });
+        await loadStudents();
       }
-      setIsStudentModalOpen(false)
+      setIsStudentModalOpen(false);
     } catch (e: any) {
-      alert(e?.message || (editingStudentId ? '更新失敗' : '建立失敗'))
+      alert(e?.message || (editingStudentId ? '更新失敗' : '建立失敗'));
     } finally {
-      setStudentSaving(false)
+      setStudentSaving(false);
     }
-  }
+  };
 
   const onEditStudent = async (id: string, prevName: string, prevEmail: string) => {
-    setEditingStudentId(id)
-    setStudentName(prevName)
-    setStudentEmail(prevEmail)
-    setStudentPassword('')
-    setIsStudentModalOpen(true)
-  }
+    setEditingStudentId(id);
+    setStudentName(prevName);
+    setStudentEmail(prevEmail);
+    setStudentPassword('');
+    setIsStudentModalOpen(true);
+  };
 
   const onDeleteStudent = async (id: string) => {
-    if (!window.confirm('確定要刪除此學生帳號？此動作無法復原。')) return
+    if (!window.confirm('確定要刪除此學生帳號？此動作無法復原。')) return;
     try {
-      await deleteStudent(id)
+      await deleteStudent(id);
     } catch (e: any) {
-      alert(e?.message || '刪除失敗')
+      alert(e?.message || '刪除失敗');
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -115,7 +115,9 @@ export function StudentAccountSection() {
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
                 <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">姓名</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">使用者名稱</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">
+                  使用者名稱
+                </th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">Email</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">角色</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">操作</th>
@@ -125,7 +127,9 @@ export function StudentAccountSection() {
               {students.map((s) => (
                 <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50/50">
                   <td className="py-3 px-4">{s.name}</td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{(s.email || '').split('@')[0]}</td>
+                  <td className="py-3 px-4 text-sm text-gray-600">
+                    {(s.email || '').split('@')[0]}
+                  </td>
                   <td className="py-3 px-4 text-sm text-gray-600">{s.email}</td>
                   <td className="py-3 px-4 text-xs uppercase text-gray-500">{s.role}</td>
                   <td className="py-3 px-4">
@@ -205,10 +209,18 @@ export function StudentAccountSection() {
               </p>
             </div>
             <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
-              <Button variant="ghost" disabled={studentSaving} onClick={() => setIsStudentModalOpen(false)}>
+              <Button
+                variant="ghost"
+                disabled={studentSaving}
+                onClick={() => setIsStudentModalOpen(false)}
+              >
                 取消
               </Button>
-              <Button disabled={studentSaving} onClick={handleStudentSave} isLoading={studentSaving}>
+              <Button
+                disabled={studentSaving}
+                onClick={handleStudentSave}
+                isLoading={studentSaving}
+              >
                 {editingStudentId ? '儲存變更' : '建立學生'}
               </Button>
             </div>
@@ -235,7 +247,8 @@ export function StudentAccountSection() {
                 <code className="mx-1 bg-gray-100 px-1 rounded text-xs">
                   {'{prefix}{座號}{domain}'}
                 </code>
-                ，例如：<code className="bg-gray-100 px-1 rounded text-xs">cs101_01@example.com</code>。
+                ，例如：
+                <code className="bg-gray-100 px-1 rounded text-xs">cs101_01@example.com</code>。
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -266,7 +279,9 @@ export function StudentAccountSection() {
 
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">起始座號</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">
+                      起始座號
+                    </label>
                     <input
                       type="number"
                       className="w-full bg-white/70 backdrop-blur-xl border border-white/80 rounded-xl px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all duration-200 shadow-lg shadow-violet-500/5"
@@ -276,7 +291,9 @@ export function StudentAccountSection() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">結束座號</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">
+                      結束座號
+                    </label>
                     <input
                       type="number"
                       className="w-full bg-white/70 backdrop-blur-xl border border-white/80 rounded-xl px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all duration-200 shadow-lg shadow-violet-500/5"
@@ -286,7 +303,9 @@ export function StudentAccountSection() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">座號補 0 位數</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">
+                      座號補 0 位數
+                    </label>
                     <input
                       type="number"
                       className="w-full bg-white/70 backdrop-blur-xl border border-white/80 rounded-xl px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all duration-200 shadow-lg shadow-violet-500/5"
@@ -313,7 +332,8 @@ export function StudentAccountSection() {
               <div className="rounded-lg bg-gray-50 border border-dashed border-gray-300 p-4 text-xs text-gray-600 space-y-1">
                 <div className="font-semibold">預覽</div>
                 <div>
-                  座號範圍：{bulkStartNo} ~ {bulkEndNo}（共 {Math.max(0, bulkEndNo - bulkStartNo + 1)} 位）
+                  座號範圍：{bulkStartNo} ~ {bulkEndNo}（共{' '}
+                  {Math.max(0, bulkEndNo - bulkStartNo + 1)} 位）
                 </div>
                 <div>
                   第 1 位帳號：
@@ -326,23 +346,22 @@ export function StudentAccountSection() {
               </div>
             </div>
             <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-200">
-              <Button variant="ghost" disabled={bulkSaving} onClick={() => setIsBulkStudentModalOpen(false)}>
+              <Button
+                variant="ghost"
+                disabled={bulkSaving}
+                onClick={() => setIsBulkStudentModalOpen(false)}
+              >
                 取消
               </Button>
               <Button
-                disabled={
-                  bulkSaving ||
-                  !bulkPrefix ||
-                  !bulkDomain ||
-                  bulkEndNo < bulkStartNo
-                }
+                disabled={bulkSaving || !bulkPrefix || !bulkDomain || bulkEndNo < bulkStartNo}
                 onClick={async () => {
                   if (bulkEndNo < bulkStartNo) {
-                    alert('結束座號必須大於等於起始座號')
-                    return
+                    alert('結束座號必須大於等於起始座號');
+                    return;
                   }
                   try {
-                    setBulkSaving(true)
+                    setBulkSaving(true);
                     await bulkCreateStudents({
                       startNo: bulkStartNo,
                       endNo: bulkEndNo,
@@ -351,13 +370,13 @@ export function StudentAccountSection() {
                       emailDomain: bulkDomain,
                       password: bulkPassword || '',
                       zeroPad: bulkZeroPad,
-                    })
-                    await loadStudents()
-                    setIsBulkStudentModalOpen(false)
+                    });
+                    await loadStudents();
+                    setIsBulkStudentModalOpen(false);
                   } catch (e: any) {
-                    alert(e?.message || '批量新增失敗')
+                    alert(e?.message || '批量新增失敗');
                   } finally {
-                    setBulkSaving(false)
+                    setBulkSaving(false);
                   }
                 }}
                 isLoading={bulkSaving}
@@ -371,10 +390,5 @@ export function StudentAccountSection() {
         </div>
       )}
     </div>
-  )
+  );
 }
-
-
-
-
-

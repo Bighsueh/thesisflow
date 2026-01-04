@@ -1,5 +1,5 @@
-import React from 'react';
 import { Bot, User, Info, AlertCircle, CheckCircle } from 'lucide-react';
+import React from 'react';
 import { Message as MessageType } from '../types';
 
 interface ChatMessageProps {
@@ -55,7 +55,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           {message.role === 'ai' && 'AI'}
         </span>
         <time className="text-xs opacity-50">
-          {new Date(message.timestamp).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}
+          {new Date(message.timestamp).toLocaleTimeString('zh-TW', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
         </time>
       </div>
       <div
@@ -71,5 +74,3 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
     </div>
   );
 };
-
-

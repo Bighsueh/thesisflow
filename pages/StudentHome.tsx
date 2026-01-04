@@ -1,9 +1,19 @@
+import {
+  ArrowRight,
+  BookOpen,
+  Layers,
+  LayoutGrid,
+  FileText,
+  Plus,
+  Users,
+  Trash2,
+  X,
+} from 'lucide-react';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { ArrowRight, BookOpen, Layers, LayoutGrid, FileText, Plus, Users, Trash2, X } from 'lucide-react';
+import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../authStore';
 import { useStore } from '../store';
-import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import '../utils/pdfConfig';
@@ -43,7 +53,6 @@ export default function StudentHome() {
 
   const friendlyRole = user?.role === 'teacher' ? '教師' : '學生';
 
-
   useEffect(() => {
     loadProjects();
     loadDocuments();
@@ -51,7 +60,6 @@ export default function StudentHome() {
   }, [loadProjects, loadDocuments, loadCohorts]);
 
   const ongoingProjects = useMemo(() => projects, [projects]);
-
 
   const handleEnterProject = async (projectId: string) => {
     await enterProject(projectId);
@@ -192,9 +200,7 @@ export default function StudentHome() {
         {/* 頂部使用者資訊列 */}
         <header className="flex items-center justify-between mb-2">
           <div className="flex flex-col">
-            <span className="text-xs uppercase tracking-[0.2em] text-slate-400">
-              ThesisFlow
-            </span>
+            <span className="text-xs uppercase tracking-[0.2em] text-slate-400">ThesisFlow</span>
             <span className="text-sm font-semibold text-slate-800">
               文獻探討輔助平台 · 學生端工作臺
             </span>
@@ -231,9 +237,7 @@ export default function StudentHome() {
               <BookOpen size={22} />
             </div>
             <div className="space-y-1">
-              <h1 className="text-base font-semibold text-slate-800">
-                選擇專案後開始你的工作流程
-              </h1>
+              <h1 className="text-base font-semibold text-slate-800">選擇專案後開始你的工作流程</h1>
               <p className="text-xs text-slate-500">
                 上方將列出你目前可以進入的研究專案。點擊專案卡片後，你將進入學習路徑，依序完成文獻閱讀、摘要、比較與綜合分析等任務。
               </p>
@@ -255,7 +259,8 @@ export default function StudentHome() {
               <h2 className="text-lg font-bold text-slate-800">我的研究室</h2>
             </div>
             <p className="text-xs text-slate-500">
-              {user?.name ? `${user.name}，` : ''}你目前加入了 {ongoingProjects.length} 個專案。請選擇後開始學習。
+              {user?.name ? `${user.name}，` : ''}你目前加入了 {ongoingProjects.length}{' '}
+              個專案。請選擇後開始學習。
             </p>
           </div>
 
@@ -396,9 +401,7 @@ export default function StudentHome() {
                       <span className="font-medium text-slate-800 truncate max-w-[140px]">
                         {c.name}
                       </span>
-                      <span className="text-[10px] text-slate-400">
-                        {c.code || '無代碼'}
-                      </span>
+                      <span className="text-[10px] text-slate-400">{c.code || '無代碼'}</span>
                     </div>
                   ))}
                 </div>
@@ -410,9 +413,7 @@ export default function StudentHome() {
         {/* 文獻庫概覽 */}
         <section className="bg-white rounded-2xl shadow-sm border border-base-200 p-6 flex flex-col">
           <div className="flex justify-between items-center mb-4 shrink-0">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              文獻庫概覽
-            </h2>
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">文獻庫概覽</h2>
             <button
               className="text-xs text-blue-600 font-semibold hover:underline"
               onClick={() => setUploadModalOpen(true)}
@@ -432,12 +433,9 @@ export default function StudentHome() {
                     <FileText size={20} />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="text-slate-700 font-medium truncate">
-                      {doc.title}
-                    </h4>
+                    <h4 className="text-slate-700 font-medium truncate">{doc.title}</h4>
                     <p className="text-xs text-slate-400">
-                      Added{' '}
-                      {new Date(doc.uploaded_at || Date.now()).toLocaleDateString()}
+                      Added {new Date(doc.uploaded_at || Date.now()).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -516,17 +514,10 @@ export default function StudentHome() {
                 />
               </div>
               <div className="p-4 bg-slate-50 flex justify-end gap-2">
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => setUploadModalOpen(false)}
-                >
+                <button className="btn btn-ghost" onClick={() => setUploadModalOpen(false)}>
                   取消
                 </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleUpload}
-                  disabled={uploading}
-                >
+                <button className="btn btn-primary" onClick={handleUpload} disabled={uploading}>
                   {uploading ? '上傳中...' : '確認上傳'}
                 </button>
               </div>
@@ -545,10 +536,7 @@ export default function StudentHome() {
                     <div className="p-6">
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold text-lg">找不到文件</h3>
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => setPreviewId(null)}
-                        >
+                        <button className="btn btn-ghost btn-sm" onClick={() => setPreviewId(null)}>
                           關閉
                         </button>
                       </div>
@@ -564,14 +552,10 @@ export default function StudentHome() {
                         </div>
                         <h3 className="font-bold text-lg text-slate-800">{doc.title}</h3>
                         <div className="text-xs text-slate-400">
-                          Uploaded{' '}
-                          {new Date(doc.uploaded_at || Date.now()).toLocaleString()}
+                          Uploaded {new Date(doc.uploaded_at || Date.now()).toLocaleString()}
                         </div>
                       </div>
-                      <button
-                        className="btn btn-ghost btn-sm"
-                        onClick={() => setPreviewId(null)}
-                      >
+                      <button className="btn btn-ghost btn-sm" onClick={() => setPreviewId(null)}>
                         關閉
                       </button>
                     </div>
@@ -584,21 +568,16 @@ export default function StudentHome() {
                           alt={doc.title}
                           className="max-h-[70vh] max-w-full object-contain mx-auto"
                         />
-                      ) : (doc.type === 'pdf' ||
-                          doc.content_type === 'application/pdf') &&
+                      ) : (doc.type === 'pdf' || doc.content_type === 'application/pdf') &&
                         previewUrl ? (
                         <div className="border border-slate-200 rounded-md overflow-auto max-h-[70vh]">
                           <PdfDocument
                             file={previewUrl}
                             onLoadSuccess={({ numPages }) => setPreviewPages(numPages)}
                             loading={
-                              <div className="p-4 text-sm text-slate-500">
-                                PDF 載入中...
-                              </div>
+                              <div className="p-4 text-sm text-slate-500">PDF 載入中...</div>
                             }
-                            error={
-                              <div className="p-4 text-sm text-red-500">PDF 載入失敗</div>
-                            }
+                            error={<div className="p-4 text-sm text-red-500">PDF 載入失敗</div>}
                           >
                             {Array.from({ length: previewPages || 1 }, (_, i) => (
                               <Page
@@ -634,10 +613,7 @@ export default function StudentHome() {
                   您確定要刪除此文檔嗎？此操作無法復原。
                 </p>
                 <div className="flex justify-end gap-2">
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => setDeleteConfirmId(null)}
-                  >
+                  <button className="btn btn-ghost" onClick={() => setDeleteConfirmId(null)}>
                     取消
                   </button>
                   <button
@@ -655,5 +631,3 @@ export default function StudentHome() {
     </div>
   );
 }
-
-

@@ -1,7 +1,7 @@
-import React from 'react';
 import { X, MapPin, MessageSquare, Link as LinkIcon, Edit2 } from 'lucide-react';
-import { Highlight, Document } from '../types';
+import React from 'react';
 import { useStore } from '../store';
+import { Highlight, Document } from '../types';
 
 interface EvidenceCardProps {
   highlight: Highlight;
@@ -26,9 +26,10 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
   draggable = false,
   compact = false,
 }) => {
-  const snippet = highlight.snippet.length > 100 
-    ? highlight.snippet.substring(0, 100) + '...' 
-    : highlight.snippet;
+  const snippet =
+    highlight.snippet.length > 100
+      ? highlight.snippet.substring(0, 100) + '...'
+      : highlight.snippet;
 
   const handleDragStart = (e: React.DragEvent) => {
     if (draggable) {
@@ -136,5 +137,3 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
     </div>
   );
 };
-
-

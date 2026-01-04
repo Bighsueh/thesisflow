@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
 import { Copy, Trash2, Tag, Save } from 'lucide-react';
-import { ExtendedHighlight, EvidenceType } from '../StudentInterface.types';
+import React, { useState } from 'react';
 import { EVIDENCE_TYPES } from '../StudentInterface.constants';
+import { ExtendedHighlight, EvidenceType } from '../StudentInterface.types';
 
 interface HighlightHoverCardProps {
   highlight: ExtendedHighlight;
@@ -16,7 +16,9 @@ export const HighlightHoverCard: React.FC<HighlightHoverCardProps> = ({
   onCopy,
   onUpdate,
 }) => {
-  const typeInfo = EVIDENCE_TYPES.find((t) => t.type === (highlight.type || (highlight.evidence_type as EvidenceType) || 'Other'));
+  const typeInfo = EVIDENCE_TYPES.find(
+    (t) => t.type === (highlight.type || (highlight.evidence_type as EvidenceType) || 'Other')
+  );
   const [tagInput, setTagInput] = useState(highlight.tag || highlight.name || '');
   const [isEditingTag, setIsEditingTag] = useState(false);
 
@@ -51,7 +53,9 @@ export const HighlightHoverCard: React.FC<HighlightHoverCardProps> = ({
     >
       {/* Header: Type & Actions */}
       <div className="flex justify-between items-center">
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${typeInfo?.bg} ${typeInfo?.color.replace('bg-', 'text-')}`}>
+        <span
+          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${typeInfo?.bg} ${typeInfo?.color.replace('bg-', 'text-')}`}
+        >
           {typeInfo?.label}
         </span>
         <div className="flex space-x-1">
@@ -95,7 +99,10 @@ export const HighlightHoverCard: React.FC<HighlightHoverCardProps> = ({
               className="flex-1 bg-white border border-slate-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-300 outline-none"
               autoFocus
             />
-            <button onClick={handleTagSubmit} className="p-1 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200">
+            <button
+              onClick={handleTagSubmit}
+              className="p-1 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200"
+            >
               <Save size={12} />
             </button>
           </div>
@@ -117,4 +124,3 @@ export const HighlightHoverCard: React.FC<HighlightHoverCardProps> = ({
     </div>
   );
 };
-

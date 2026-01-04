@@ -1,8 +1,8 @@
-import React from 'react';
 import { Link as LinkIcon, X } from 'lucide-react';
-import { TaskCContent, FieldWithEvidence } from '../../types';
-import { useStore } from '../../store';
+import React from 'react';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import { useStore } from '../../store';
+import { TaskCContent, FieldWithEvidence } from '../../types';
 
 interface SynthesisWriterProps {
   nodeId: string;
@@ -24,7 +24,7 @@ export const SynthesisWriter: React.FC<SynthesisWriterProps> = ({
 }) => {
   const { documents } = useStore();
   const autoSave = useAutoSave(1000);
-  
+
   // 獲取所有 highlights
   const allHighlights = documents.flatMap((d) =>
     (d.highlights || []).map((h) => ({ ...h, docTitle: d.title, document: d }))
@@ -35,7 +35,7 @@ export const SynthesisWriter: React.FC<SynthesisWriterProps> = ({
     const newSnippetIds = currentValue.snippetIds.includes(highlightId)
       ? currentValue.snippetIds.filter((id) => id !== highlightId)
       : [...currentValue.snippetIds, highlightId];
-    
+
     onUpdate(key, { ...currentValue, snippetIds: newSnippetIds });
     autoSave();
   };
@@ -45,9 +45,7 @@ export const SynthesisWriter: React.FC<SynthesisWriterProps> = ({
       {slots.map((slot) => {
         const value = values[slot.key];
         const minEvidence = slot.minEvidence || 1;
-        const selectedHighlights = allHighlights.filter((h) =>
-          value.snippetIds.includes(h.id)
-        );
+        const selectedHighlights = allHighlights.filter((h) => value.snippetIds.includes(h.id));
 
         return (
           <div
@@ -95,19 +93,17 @@ export const SynthesisWriter: React.FC<SynthesisWriterProps> = ({
                   <div className="flex flex-wrap gap-2 mt-2">
                     {selectedHighlights.map((h) => {
                       // 優先顯示名稱，如果沒有名稱則顯示內容摘要
-                      const displayText = h.name 
-                        ? h.name 
-                        : h.snippet.length > 30 
-                          ? h.snippet.substring(0, 30) + '...' 
+                      const displayText = h.name
+                        ? h.name
+                        : h.snippet.length > 30
+                          ? h.snippet.substring(0, 30) + '...'
                           : h.snippet;
                       return (
                         <div
                           key={h.id}
                           className="badge badge-sm badge-warning gap-1 h-auto py-1 text-left"
                         >
-                          <span className="truncate max-w-[120px] text-xs">
-                            {displayText}
-                          </span>
+                          <span className="truncate max-w-[120px] text-xs">{displayText}</span>
                           <button
                             onClick={() => toggleEvidenceSelection(slot.key, h.id)}
                             className="hover:text-red-700"
@@ -154,9 +150,7 @@ const EvidenceSelector: React.FC<{
       {isOpen && (
         <div className="border border-base-300 rounded-lg p-2 bg-base-50 max-h-40 overflow-y-auto mt-2">
           {highlights.length === 0 ? (
-            <div className="text-xs text-slate-400 text-center py-2">
-              尚無標註資料
-            </div>
+            <div className="text-xs text-slate-400 text-center py-2">尚無標註資料</div>
           ) : (
             <div className="space-y-1">
               {highlights.map((h) => (
@@ -192,5 +186,3 @@ const EvidenceSelector: React.FC<{
     </div>
   );
 };
-
-

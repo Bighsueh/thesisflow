@@ -1,10 +1,10 @@
-import React from 'react'
-import { GradientBackground } from '../ui/GradientBackground'
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
+import React from 'react';
+import { GradientBackground } from '../ui/GradientBackground';
 
 interface TeacherLayoutProps {
-  children: React.ReactNode
-  sidebar: React.ReactNode
+  children: React.ReactNode;
+  sidebar: React.ReactNode;
 }
 
 export function TeacherLayout({ children, sidebar }: TeacherLayoutProps) {
@@ -35,10 +35,5 @@ export function TeacherLayout({ children, sidebar }: TeacherLayoutProps) {
         </div>
       </main>
     </div>
-  )
+  );
 }
-
-
-
-
-

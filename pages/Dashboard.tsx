@@ -1,43 +1,30 @@
-import React, { useEffect, useMemo } from 'react'
-import { GlassCard } from '../components/ui/GlassCard'
-import { Button } from '../components/ui/Button'
-import {
-  ArrowRight,
-  FileText,
-  Users,
-  Plus,
-} from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
-import { useStore } from '../store'
-import { useAuthStore } from '../authStore'
+import { ArrowRight, FileText, Users, Plus } from 'lucide-react';
+import React, { useEffect, useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../authStore';
+import { Button } from '../components/ui/Button';
+import { GlassCard } from '../components/ui/GlassCard';
+import { useStore } from '../store';
 
 export function Dashboard() {
-  const navigate = useNavigate()
-  const { user } = useAuthStore()
-  const {
-    projects,
-    loadProjects,
-    enterProject,
-    documents,
-    loadDocuments,
-  } = useStore()
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { projects, loadProjects, enterProject, documents, loadDocuments } = useStore();
 
   useEffect(() => {
-    loadProjects()
-    loadDocuments()
-  }, [loadProjects, loadDocuments])
+    loadProjects();
+    loadDocuments();
+  }, [loadProjects, loadDocuments]);
 
-  const ongoingProjects = useMemo(() => projects, [projects])
+  const ongoingProjects = useMemo(() => projects, [projects]);
   const recentDocuments = useMemo(() => {
-    return documents
-      .sort((a, b) => (b.uploaded_at || 0) - (a.uploaded_at || 0))
-      .slice(0, 4)
-  }, [documents])
+    return documents.sort((a, b) => (b.uploaded_at || 0) - (a.uploaded_at || 0)).slice(0, 4);
+  }, [documents]);
 
   const handleEnterProject = async (projectId: string) => {
-    await enterProject(projectId)
-    navigate('/student/project')
-  }
+    await enterProject(projectId);
+    navigate('/student/project');
+  };
 
   const getProjectInitials = (title: string) => {
     return title
@@ -45,8 +32,8 @@ export function Dashboard() {
       .map((word) => word[0])
       .join('')
       .toUpperCase()
-      .slice(0, 2)
-  }
+      .slice(0, 2);
+  };
 
   const getProjectColor = (index: number) => {
     const colors = [
@@ -56,9 +43,9 @@ export function Dashboard() {
       'from-orange-500 to-amber-500',
       'from-pink-500 to-rose-500',
       'from-indigo-500 to-blue-500',
-    ]
-    return colors[index % colors.length]
-  }
+    ];
+    return colors[index % colors.length];
+  };
 
   return (
     <div className="space-y-12">
@@ -75,9 +62,7 @@ export function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">您的專案</h2>
-            <p className="text-gray-500 text-sm mt-1">
-              從上次離開的地方繼續
-            </p>
+            <p className="text-gray-500 text-sm mt-1">從上次離開的地方繼續</p>
           </div>
           <Link to="/projects">
             <Button leftIcon={<Plus size={18} />}>查看所有專案</Button>
@@ -89,9 +74,7 @@ export function Dashboard() {
             <div className="text-gray-400 mb-4">
               <FileText size={48} className="mx-auto mb-2 opacity-50" />
             </div>
-            <p className="text-gray-600 font-medium mb-2">
-              目前尚未加入任何專案
-            </p>
+            <p className="text-gray-600 font-medium mb-2">目前尚未加入任何專案</p>
             <p className="text-sm text-gray-500">
               請向授課教師索取專案流程，或前往 Groups 頁面加入學生群組。
             </p>
@@ -126,9 +109,7 @@ export function Dashboard() {
                             <span>•</span>
                           </>
                         )}
-                        <span>
-                          完成度 {Math.round(project.progress ?? 0)}%
-                        </span>
+                        <span>完成度 {Math.round(project.progress ?? 0)}%</span>
                       </div>
                     </div>
                   </div>
@@ -159,12 +140,8 @@ export function Dashboard() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              最近文獻
-            </h2>
-            <p className="text-gray-500 text-sm mt-0.5">
-              最近新增的論文
-            </p>
+            <h2 className="text-xl font-semibold text-gray-900">最近文獻</h2>
+            <p className="text-gray-500 text-sm mt-0.5">最近新增的論文</p>
           </div>
           <Link to="/literature">
             <Button variant="secondary" size="sm" leftIcon={<Plus size={16} />}>
@@ -190,17 +167,13 @@ export function Dashboard() {
               >
                 <div
                   className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0 ${
-                    doc.type === 'pdf'
-                      ? 'bg-red-50 text-red-600'
-                      : 'bg-blue-50 text-blue-600'
+                    doc.type === 'pdf' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                   }`}
                 >
                   {doc.type === 'pdf' ? 'PDF' : 'TXT'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 text-sm truncate">
-                    {doc.title}
-                  </p>
+                  <p className="font-medium text-gray-900 text-sm truncate">{doc.title}</p>
                   <p className="text-xs text-gray-500">
                     {new Date(doc.uploaded_at || Date.now()).toLocaleDateString()}
                   </p>
@@ -219,9 +192,7 @@ export function Dashboard() {
             <Users size={16} />
             <span>
               您目前參與{' '}
-              <span className="font-semibold text-gray-900">
-                {ongoingProjects.length} 個專案
-              </span>
+              <span className="font-semibold text-gray-900">{ongoingProjects.length} 個專案</span>
             </span>
           </div>
           <Link to="/groups">
@@ -232,6 +203,5 @@ export function Dashboard() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

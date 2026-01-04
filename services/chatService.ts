@@ -1,13 +1,18 @@
-import { api } from './api';
 import { Message } from '../types';
+import { api } from './api';
 
 export const chatService = {
-  sendMessage: async (projectId: string, stepId: string, message: string, context?: any): Promise<Message> => {
-    return api.post(`/api/projects/${projectId}/chat`, { 
+  sendMessage: async (
+    projectId: string,
+    stepId: string,
+    message: string,
+    context?: any
+  ): Promise<Message> => {
+    return api.post(`/api/projects/${projectId}/chat`, {
       project_id: projectId,
-      node_id: stepId, 
-      message, 
-      context: context || {} 
+      node_id: stepId,
+      message,
+      context: context || {},
     });
   },
   getChatHistory: async (projectId: string, stepId: string): Promise<Message[]> => {

@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { useAuthStore } from '../authStore'
-import { useStore } from '../store'
-import { GlassCard } from './ui/GlassCard'
-import { Button } from './ui/Button'
-import { Input } from './ui/Input'
-import { X, Copy, Plus, RefreshCw } from 'lucide-react'
+import { X, Copy, Plus, RefreshCw } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useAuthStore } from '../authStore';
+import { useStore } from '../store';
+import { Button } from './ui/Button';
+import { GlassCard } from './ui/GlassCard';
+import { Input } from './ui/Input';
 
 interface CohortDetailProps {
   cohortId: string;
@@ -97,14 +97,17 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
     };
   }, [cohortId, loadCohortMembers, loadCohorts]);
 
-  const members = useMemo(() => (cohortId ? cohortMembers[cohortId] || [] : []), [cohortId, cohortMembers]);
+  const members = useMemo(
+    () => (cohortId ? cohortMembers[cohortId] || [] : []),
+    [cohortId, cohortMembers]
+  );
   const usageForCohort = useMemo(
     () => usageRecords.filter((u) => !cohortId || u.cohort_id === cohortId),
-    [usageRecords, cohortId],
+    [usageRecords, cohortId]
   );
   const availableStudents = useMemo(
     () => students.filter((s) => !members.some((m) => m.user.id === s.id)),
-    [students, members],
+    [students, members]
   );
 
   const filteredAvailableStudents = useMemo(
@@ -114,7 +117,7 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
         if (!q) return true;
         return s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q);
       }),
-    [availableStudents, studentSearch],
+    [availableStudents, studentSearch]
   );
 
   useEffect(() => {
@@ -124,10 +127,7 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
     }
   }, [cohortId, cohorts]);
 
-  const currentCohort = useMemo(
-    () => cohorts.find((c) => c.id === cohortId),
-    [cohorts, cohortId],
-  );
+  const currentCohort = useMemo(() => cohorts.find((c) => c.id === cohortId), [cohorts, cohortId]);
 
   const formattedCode = useMemo(() => {
     if (!currentCohort?.code) return '';
@@ -150,7 +150,9 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
   };
 
   const handleToggleStudent = (id: string) => {
-    setSelectedStudentIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSelectedStudentIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   };
 
   const handleSelectAllVisible = () => {
@@ -167,7 +169,7 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
     try {
       for (const id of selectedStudentIds) {
         // 逐一加入，避免一次傳太多造成錯誤難以追蹤
-        // eslint-disable-next-line no-await-in-loop
+
         await addCohortMember(cohortId, id);
       }
       await loadCohortMembers(cohortId);
@@ -206,19 +208,19 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
   };
 
   if (loading) {
-    return <div className="text-gray-500">載入中...</div>
+    return <div className="text-gray-500">載入中...</div>;
   }
 
   if (error) {
     const friendly =
       typeof error === 'string' && error.includes('Cohort not found')
         ? '找不到這個學生群組，可能已被刪除或編號不正確。請在左側重新選擇其他群組。'
-        : error
+        : error;
     return (
       <GlassCard className="p-4 border-red-200 bg-red-50">
         <div className="text-sm text-red-600">{friendly}</div>
       </GlassCard>
-    )
+    );
   }
 
   return (
@@ -239,10 +241,10 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                   leftIcon={<Copy size={14} />}
                   onClick={async () => {
                     try {
-                      await navigator.clipboard.writeText(currentCohort.code!)
-                      alert('邀請碼已複製到剪貼簿')
+                      await navigator.clipboard.writeText(currentCohort.code!);
+                      alert('邀請碼已複製到剪貼簿');
                     } catch {
-                      alert('複製失敗，請手動選取文字複製')
+                      alert('複製失敗，請手動選取文字複製');
                     }
                   }}
                 >
@@ -269,7 +271,12 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
               </option>
             ))}
           </select>
-          <Button size="sm" onClick={handleSaveProject} isLoading={savingProject} disabled={savingProject}>
+          <Button
+            size="sm"
+            onClick={handleSaveProject}
+            isLoading={savingProject}
+            disabled={savingProject}
+          >
             儲存設定
           </Button>
         </div>
@@ -282,9 +289,9 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
             size="sm"
             leftIcon={<Plus size={16} />}
             onClick={() => {
-              setIsAddStudentModalOpen(true)
-              setSelectedStudentIds([])
-              setStudentSearch('')
+              setIsAddStudentModalOpen(true);
+              setSelectedStudentIds([]);
+              setStudentSearch('');
             }}
             disabled={availableStudents.length === 0}
           >
@@ -314,10 +321,18 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                     <td className="py-3 px-4 text-sm">{m.progress ?? 0}%</td>
                     <td className="py-3 px-4">
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleUpdateStatus(m.user.id)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleUpdateStatus(m.user.id)}
+                        >
                           狀態
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleUpdateProgress(m.user.id)}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleUpdateProgress(m.user.id)}
+                        >
                           進度
                         </Button>
                         <Button
@@ -360,7 +375,8 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                   />
                 </div>
                 <div className="text-xs text-gray-500">
-                  已選擇 {selectedStudentIds.length} 位學生，可點擊左側列或勾選方塊，或拖曳到右側列表。
+                  已選擇 {selectedStudentIds.length}{' '}
+                  位學生，可點擊左側列或勾選方塊，或拖曳到右側列表。
                 </div>
               </div>
 
@@ -382,10 +398,12 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                   </div>
                   <div className="max-h-64 overflow-auto divide-y divide-gray-100">
                     {filteredAvailableStudents.length === 0 ? (
-                      <div className="p-4 text-sm text-gray-500 text-center">沒有符合條件的學生。</div>
+                      <div className="p-4 text-sm text-gray-500 text-center">
+                        沒有符合條件的學生。
+                      </div>
                     ) : (
                       filteredAvailableStudents.map((s) => {
-                        const checked = selectedStudentIds.includes(s.id)
+                        const checked = selectedStudentIds.includes(s.id);
                         return (
                           <div
                             key={s.id}
@@ -394,7 +412,7 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                             }`}
                             draggable
                             onDragStart={(e) => {
-                              e.dataTransfer.setData('text/plain', s.id)
+                              e.dataTransfer.setData('text/plain', s.id);
                             }}
                             onClick={() => handleToggleStudent(s.id)}
                           >
@@ -409,7 +427,7 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                               checked={checked}
                             />
                           </div>
-                        )
+                        );
                       })
                     )}
                   </div>
@@ -418,19 +436,21 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                 {/* 右側：準備加入的學生（拖曳目標） */}
                 <div
                   className={`border rounded-xl min-h-[160px] transition ${
-                    isDragOverTarget ? 'border-violet-500 bg-violet-50/60' : 'border-gray-200 bg-gray-50/40'
+                    isDragOverTarget
+                      ? 'border-violet-500 bg-violet-50/60'
+                      : 'border-gray-200 bg-gray-50/40'
                   }`}
                   onDragOver={(e) => {
-                    e.preventDefault()
-                    setIsDragOverTarget(true)
+                    e.preventDefault();
+                    setIsDragOverTarget(true);
                   }}
                   onDragLeave={() => setIsDragOverTarget(false)}
                   onDrop={(e) => {
-                    e.preventDefault()
-                    setIsDragOverTarget(false)
-                    const id = e.dataTransfer.getData('text/plain')
+                    e.preventDefault();
+                    setIsDragOverTarget(false);
+                    const id = e.dataTransfer.getData('text/plain');
                     if (id && availableStudents.some((s) => s.id === id)) {
-                      handleToggleStudent(id)
+                      handleToggleStudent(id);
                     }
                   }}
                 >
@@ -534,7 +554,5 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
         )}
       </GlassCard>
     </div>
-  )
+  );
 }
-
-

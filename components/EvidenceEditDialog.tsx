@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { Highlight, Document } from '../types';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../store';
+import { Highlight, Document } from '../types';
 
 interface EvidenceEditDialogProps {
   highlight: Highlight;
@@ -88,7 +88,9 @@ export const EvidenceEditDialog: React.FC<EvidenceEditDialogProps> = ({
             <div>
               <label className="label">
                 <span className="label-text font-bold text-sm">標記片段名稱</span>
-                <span className="label-text-alt text-xs text-slate-500">（方便識別此標記片段的用途）</span>
+                <span className="label-text-alt text-xs text-slate-500">
+                  （方便識別此標記片段的用途）
+                </span>
               </label>
               <input
                 type="text"
@@ -123,9 +125,10 @@ export const EvidenceEditDialog: React.FC<EvidenceEditDialogProps> = ({
 
             {highlight.x !== undefined && highlight.y !== undefined && (
               <div className="text-xs text-slate-500">
-                座標: ({((highlight.x || 0) * 100).toFixed(1)}%, {((highlight.y || 0) * 100).toFixed(1)}%)
-                {' '}
-                尺寸: ({((highlight.width || 0) * 100).toFixed(1)}%, {((highlight.height || 0) * 100).toFixed(1)}%)
+                座標: ({((highlight.x || 0) * 100).toFixed(1)}%,{' '}
+                {((highlight.y || 0) * 100).toFixed(1)}%) 尺寸: (
+                {((highlight.width || 0) * 100).toFixed(1)}%,{' '}
+                {((highlight.height || 0) * 100).toFixed(1)}%)
               </div>
             )}
           </div>
@@ -144,4 +147,3 @@ export const EvidenceEditDialog: React.FC<EvidenceEditDialogProps> = ({
     </>
   );
 };
-

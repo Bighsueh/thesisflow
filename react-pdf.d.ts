@@ -3,4 +3,3 @@ declare module 'react-pdf' {
   export const Page: any;
   export const pdfjs: any;
 }
-

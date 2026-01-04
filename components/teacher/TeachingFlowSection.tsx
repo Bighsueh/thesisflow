@@ -1,36 +1,44 @@
-import React, { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Plus, Users, FileText, Clock } from 'lucide-react'
-import { useStore } from '../../store'
-import { GlassCard } from '../ui/GlassCard'
-import { Button } from '../ui/Button'
+import { Plus, Users, FileText, Clock } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useStore } from '../../store';
+import { Button } from '../ui/Button';
+import { GlassCard } from '../ui/GlassCard';
 
 export function TeachingFlowSection() {
-  const navigate = useNavigate()
-  const { projects, loadProjects, enterProject, exitProject, deleteProject, loadUsageRecords, usageRecords } = useStore()
-  const [usageModalProject, setUsageModalProject] = useState<string | null>(null)
-  const [usageLoading, setUsageLoading] = useState(false)
+  const navigate = useNavigate();
+  const {
+    projects,
+    loadProjects,
+    enterProject,
+    exitProject,
+    deleteProject,
+    loadUsageRecords,
+    usageRecords,
+  } = useStore();
+  const [usageModalProject, setUsageModalProject] = useState<string | null>(null);
+  const [usageLoading, setUsageLoading] = useState(false);
 
   React.useEffect(() => {
-    loadProjects().catch(() => {})
-  }, [loadProjects])
+    loadProjects().catch(() => {});
+  }, [loadProjects]);
 
   const openUsageModal = async (projectId: string) => {
-    setUsageModalProject(projectId)
-    setUsageLoading(true)
+    setUsageModalProject(projectId);
+    setUsageLoading(true);
     try {
-      await loadUsageRecords({ projectId })
+      await loadUsageRecords({ projectId });
     } catch (e: any) {
-      alert(e?.message || '無法載入紀錄')
+      alert(e?.message || '無法載入紀錄');
     } finally {
-      setUsageLoading(false)
+      setUsageLoading(false);
     }
-  }
+  };
 
   const usageForProject = useMemo(
     () => usageRecords.filter((u) => u.project_id === usageModalProject),
-    [usageRecords, usageModalProject],
-  )
+    [usageRecords, usageModalProject]
+  );
 
   return (
     <div className="space-y-8">
@@ -43,8 +51,8 @@ export function TeachingFlowSection() {
           <Button
             variant="secondary"
             onClick={async () => {
-              exitProject()
-              navigate('/teacher/designer')
+              exitProject();
+              navigate('/teacher/designer');
             }}
           >
             建立新流程
@@ -80,8 +88,8 @@ export function TeachingFlowSection() {
                 variant="ghost"
                 size="sm"
                 onClick={async () => {
-                  await enterProject(p.id)
-                  navigate('/teacher/designer')
+                  await enterProject(p.id);
+                  navigate('/teacher/designer');
                 }}
               >
                 編輯
@@ -98,11 +106,11 @@ export function TeachingFlowSection() {
                 variant="danger"
                 size="sm"
                 onClick={async () => {
-                  if (!window.confirm('確定要刪除這個流程嗎？')) return
+                  if (!window.confirm('確定要刪除這個流程嗎？')) return;
                   try {
-                    await deleteProject(p.id)
+                    await deleteProject(p.id);
                   } catch (e: any) {
-                    alert(e?.message || '刪除失敗')
+                    alert(e?.message || '刪除失敗');
                   }
                 }}
               >
@@ -114,8 +122,8 @@ export function TeachingFlowSection() {
         <GlassCard
           className="p-6 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-violet-400 transition-colors min-h-[200px]"
           onClick={() => {
-            exitProject()
-            navigate('/teacher/designer')
+            exitProject();
+            navigate('/teacher/designer');
           }}
           hoverEffect
         >
@@ -150,8 +158,12 @@ export function TeachingFlowSection() {
                     <thead>
                       <tr className="border-b border-gray-200">
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">學生</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">任務類型</th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">提交時間</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                          任務類型
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                          提交時間
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -173,10 +185,5 @@ export function TeachingFlowSection() {
         </div>
       )}
     </div>
-  )
+  );
 }
-
-
-
-
-

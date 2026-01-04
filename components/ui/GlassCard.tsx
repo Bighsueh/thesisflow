@@ -1,10 +1,10 @@
-import React from 'react'
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
+import React from 'react';
 interface GlassCardProps {
-  children: React.ReactNode
-  className?: string
-  hoverEffect?: boolean
-  onClick?: () => void
+  children: React.ReactNode;
+  className?: string;
+  hoverEffect?: boolean;
+  onClick?: () => void;
 }
 export function GlassCard({
   children,
@@ -44,6 +44,5 @@ export function GlassCard({
       <div className="absolute inset-0 bg-gradient-to-t from-violet-50/20 via-transparent to-transparent pointer-events-none" />
       <div className="relative z-10">{children}</div>
     </motion.div>
-  )
+  );
 }
-

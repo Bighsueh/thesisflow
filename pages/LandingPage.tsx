@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowRight, Sparkles, Brain, Zap, Users } from 'lucide-react'
-import { Button } from '../components/ui/Button'
-import { GlassCard } from '../components/ui/GlassCard'
-import { motion } from 'framer-motion'
-import Lottie from 'lottie-react'
+import { motion } from 'framer-motion';
+import Lottie from 'lottie-react';
+import { ArrowRight, Sparkles, Brain, Zap, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '../components/ui/Button';
+import { GlassCard } from '../components/ui/GlassCard';
 
 export function LandingPage() {
-  const [animationData, setAnimationData] = useState<any>(null)
+  const [animationData, setAnimationData] = useState<any>(null);
 
   useEffect(() => {
     // 從 public 資料夾載入本地 JSON 檔案
     fetch('/animations/Businessman flies up with rocket.json')
-      .then(res => res.json())
-      .then(data => setAnimationData(data))
-      .catch(err => console.error('載入動畫失敗:', err))
-  }, [])
+      .then((res) => res.json())
+      .then((data) => setAnimationData(data))
+      .catch((err) => console.error('載入動畫失敗:', err));
+  }, []);
 
   return (
     <div className="space-y-24">
@@ -157,9 +157,7 @@ export function LandingPage() {
           <div className="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 mb-4">
             <Users size={24} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">
-            協作群組
-          </h3>
+          <h3 className="text-xl font-bold text-gray-900">協作群組</h3>
           <p className="text-gray-600 leading-relaxed">
             與學生和指導老師協作。即時分享文獻集合與註解。
           </p>
@@ -194,6 +192,5 @@ export function LandingPage() {
         </div>
       </GlassCard>
     </div>
-  )
+  );
 }
-

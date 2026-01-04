@@ -1,5 +1,5 @@
-import React from 'react';
 import { BookOpen, Info, CheckSquare, Columns, Layers } from 'lucide-react';
+import React from 'react';
 import { AppNode } from '../../types';
 
 interface InstructionCardProps {
@@ -98,7 +98,9 @@ export const InstructionCard: React.FC<InstructionCardProps> = ({
             </h3>
             <p className={`text-sm ${colorConfig.textColor} mb-3`}>{guidance}</p>
             {minEvidence > 0 && (
-              <div className={`text-xs ${colorConfig.badgeTextColor} ${colorConfig.badgeBg} rounded px-2 py-1 inline-block`}>
+              <div
+                className={`text-xs ${colorConfig.badgeTextColor} ${colorConfig.badgeBg} rounded px-2 py-1 inline-block`}
+              >
                 需要至少 {minEvidence} 則標記片段
                 {currentEvidenceCount > 0 && (
                   <span className="ml-2">
@@ -113,4 +115,3 @@ export const InstructionCard: React.FC<InstructionCardProps> = ({
     </div>
   );
 };
-
