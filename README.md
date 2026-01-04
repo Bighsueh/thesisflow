@@ -191,11 +191,14 @@ docker compose up -d postgres
 #### 前端開發
 
 ```bash
-# 安裝依賴
-npm install
+# 從根目錄（推薦方式）
+npm run install:frontend  # 安裝前端依賴
+npm run dev               # 啟動前端開發伺服器
 
-# 啟動開發伺服器（預設 port 3000）
-npm run dev
+# 或直接進入 frontend 目錄
+cd frontend
+npm install               # 安裝依賴
+npm run dev               # 啟動開發伺服器（預設 port 3000）
 ```
 
 前端會自動連接到後端 API（根據 `VITE_API_BASE` 環境變數）。
@@ -234,12 +237,31 @@ docker compose up -d postgres backend
 docker compose up -d postgres
 ```
 
-> 📖 **詳細部署說明**：請參考 [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) 了解完整的部署配置、生產環境設定和故障排除指南。
+> 📖 **詳細部署說明**：請參考 [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) 了解完整的部署配置、生產環境設定和故障排除指南。
 
 ## 📁 項目結構
 
 ```
 thesisflow-ai-flow/
+├── frontend/                # React 前端應用
+│   ├── components/         # React 組件
+│   │   ├── TeacherInterface.tsx # 教師流程設計器
+│   │   ├── StudentInterface.tsx # 學生學習介面
+│   │   ├── ChatMainPanel.tsx   # 聊天主面板
+│   │   └── widgets/        # 各種功能組件
+│   ├── pages/              # 頁面組件
+│   │   ├── LoginPage.tsx   # 登入頁面
+│   │   ├── TeacherHome.tsx # 教師首頁
+│   │   └── StudentHome.tsx # 學生首頁
+│   ├── services/           # API 服務層
+│   ├── hooks/              # 自定義 React Hooks
+│   ├── utils/              # 工具函數
+│   ├── store.ts            # Zustand 全局狀態
+│   ├── authStore.ts        # 認證狀態
+│   ├── types.ts            # TypeScript 類型定義
+│   ├── package.json        # 前端依賴
+│   ├── Dockerfile          # 前端 Docker 配置
+│   └── nginx.conf          # Nginx 配置檔案
 ├── backend/                 # FastAPI 後端服務
 │   ├── main.py             # 主應用入口
 │   ├── models.py           # 資料庫模型
@@ -249,23 +271,12 @@ thesisflow-ai-flow/
 │   ├── db.py               # 資料庫配置
 │   ├── requirements.txt    # Python 依賴
 │   └── Dockerfile          # 後端 Docker 配置
-├── components/             # React 組件
-│   ├── TeacherInterface.tsx # 教師流程設計器
-│   ├── StudentInterface.tsx # 學生學習介面
-│   ├── ChatMainPanel.tsx   # 聊天主面板
-│   └── widgets/            # 各種功能組件
-├── pages/                  # 頁面組件
-│   ├── LoginPage.tsx       # 登入頁面
-│   ├── TeacherHome.tsx     # 教師首頁
-│   └── StudentHome.tsx     # 學生首頁
+├── docs/                    # 文檔
+│   ├── DOCKER_DEPLOYMENT.md # Docker 部署詳細文檔
+│   └── AI_DOCUMENTATION_GUIDE.md # AI 文檔維護指南
 ├── docker-compose.yml      # Docker Compose 配置
-├── Dockerfile              # 前端 Docker 配置
-├── nginx.conf              # Nginx 配置檔案
+├── package.json            # 根目錄工作區腳本
 ├── .env.example            # 環境變數範例（Docker）
-├── .dockerignore           # Docker 建置排除檔案
-├── package.json            # Node.js 依賴
-├── DOCKER_DEPLOYMENT.md    # Docker 部署詳細文檔
-├── AI_DOCUMENTATION_GUIDE.md # AI 文檔維護指南（給 AI 助手使用）
 └── README.md               # 本文件
 ```
 
@@ -462,7 +473,7 @@ A:
 
 ### 更多問題
 
-詳細的故障排除指南請參考 [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) 的「常見問題」章節。
+詳細的故障排除指南請參考 [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) 的「常見問題」章節。
 
 ## 📄 許可證
 

@@ -8,11 +8,45 @@ ThesisFlow is a dual-cycle learning system for master's thesis literature review
 
 **Language Note**: Documentation and code comments are primarily in Traditional Chinese (繁體中文).
 
+## Project Structure
+
+```
+thesisflow-ai-flow/
+├── frontend/          # React frontend application
+│   ├── components/    # React components
+│   ├── pages/         # Page components
+│   ├── services/      # API service layer
+│   ├── hooks/         # Custom React hooks
+│   ├── utils/         # Utility functions
+│   ├── store.ts       # Zustand global state
+│   ├── authStore.ts   # Auth state
+│   ├── types.ts       # TypeScript types
+│   └── package.json   # Frontend dependencies
+├── backend/           # FastAPI backend application
+├── docs/              # Documentation
+├── docker-compose.yml # Docker orchestration
+└── package.json       # Root workspace scripts
+```
+
 ## Development Commands
 
-### Frontend
+### From Root (Recommended)
 
 ```bash
+npm run dev            # Start frontend dev server
+npm run build          # Build frontend for production
+npm run lint           # Run ESLint
+npm run lint:fix       # Run ESLint with auto-fix
+npm run format         # Format code with Prettier
+npm run dev:backend    # Start backend server
+npm run install:frontend  # Install frontend dependencies
+npm run install:backend   # Install backend dependencies
+```
+
+### Frontend (from /frontend directory)
+
+```bash
+cd frontend
 npm install          # Install dependencies
 npm run dev          # Start Vite dev server (port 3000)
 npm run build        # Production build to dist/
@@ -60,23 +94,23 @@ docker compose down -v      # Stop and reset database
 
 ### Key Files
 
-| File                                      | Purpose                                                   |
-| ----------------------------------------- | --------------------------------------------------------- |
-| `store.ts`                                | Zustand global state - central hub for all frontend state |
-| `authStore.ts`                            | Authentication state (user, role, tokens)                 |
-| `types.ts`                                | TypeScript type definitions for entire app                |
-| `components/StudentInterface.tsx` (107KB) | Main student workspace - multi-panel layout               |
-| `components/TeacherInterface.tsx` (31KB)  | React Flow-based workflow designer                        |
-| `components/ChatMainPanel.tsx`            | AI assistant interface                                    |
-| `backend/models.py`                       | SQLAlchemy database models                                |
-| `backend/routes/`                         | FastAPI route handlers                                    |
+| File                                               | Purpose                                                   |
+| -------------------------------------------------- | --------------------------------------------------------- |
+| `frontend/store.ts`                                | Zustand global state - central hub for all frontend state |
+| `frontend/authStore.ts`                            | Authentication state (user, role, tokens)                 |
+| `frontend/types.ts`                                | TypeScript type definitions for entire app                |
+| `frontend/components/StudentInterface.tsx` (107KB) | Main student workspace - multi-panel layout               |
+| `frontend/components/TeacherInterface.tsx` (31KB)  | React Flow-based workflow designer                        |
+| `frontend/components/ChatMainPanel.tsx`            | AI assistant interface                                    |
+| `backend/models.py`                                | SQLAlchemy database models                                |
+| `backend/routes/`                                  | FastAPI route handlers                                    |
 
 ### State Management Pattern
 
 All state flows through Zustand stores. API calls go through service layer → store → component re-renders.
 
 ```
-services/*.ts → store.ts → components
+frontend/services/*.ts → frontend/store.ts → frontend/components
 ```
 
 ### Evidence System (Core Concept)
@@ -93,7 +127,7 @@ Evidence linked via `snippetIds` array in `FieldWithEvidence` objects.
 
 ### SALSA Task Types
 
-Students progress through 4 task widget types in `components/widgets/`:
+Students progress through 4 task widget types in `frontend/components/widgets/`:
 
 - **InstructionCard** (Task A): Reading guidance
 - **SectionWriter** (Task B): Single paper summary with multiple sections
@@ -102,7 +136,7 @@ Students progress through 4 task widget types in `components/widgets/`:
 
 ### Multi-Panel Interface
 
-`StudentInterface.tsx` uses a 5-panel layout:
+`frontend/components/StudentInterface.tsx` uses a 5-panel layout:
 
 1. LibraryPanel - Project document binding
 2. ReaderPanel - PDF viewing + annotation
