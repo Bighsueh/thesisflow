@@ -29,7 +29,11 @@ __pycache__/
 !.vscode/extensions.json
 .idea
 .cursor
+.claude/
 .DS_Store
+
+# Build cache
+.vite/
 *.suo
 *.ntvs*
 *.njsproj

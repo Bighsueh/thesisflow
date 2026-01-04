@@ -33,7 +33,6 @@ docker-compose.yml
 # Documentation
 README.md
 *.md
-!DOCKER_DEPLOYMENT.md
 
 # Logs
 logs
@@ -52,5 +51,7 @@ __pycache__
 
 # Other
 .cursor
+.claude/
+.vite/
 plans
 
