@@ -1,11 +1,4 @@
-import {
-  CheckSquare,
-  Layers,
-  Columns,
-  PlayCircle,
-  BookOpen,
-  StopCircle,
-} from 'lucide-react';
+import { CheckSquare, Layers, Columns, PlayCircle, BookOpen, StopCircle } from 'lucide-react';
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { NodeData } from '../types';
