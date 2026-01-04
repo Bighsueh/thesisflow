@@ -22,6 +22,15 @@ npm run lint:fix     # Run ESLint with auto-fix
 npm run format       # Format code with Prettier
 ```
 
+### Pre-commit Hooks
+
+Husky + lint-staged runs automatically on `git commit`:
+
+- **TypeScript/JavaScript**: ESLint fix + Prettier
+- **JSON/CSS/Markdown**: Prettier only
+
+To bypass hooks (not recommended): `git commit --no-verify`
+
 ### Backend
 
 ```bash
