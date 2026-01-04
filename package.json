@@ -1,0 +1,23 @@
+{
+  "name": "thesisflow-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ThesisFlow - Literature Review Assistant Platform",
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "preview": "npm run preview --prefix frontend",
+    "lint": "npm run lint --prefix frontend",
+    "lint:fix": "npm run lint:fix --prefix frontend",
+    "format": "npm run format --prefix frontend",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && pip install -r requirements.txt",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build",
+    "docker:logs": "docker compose logs -f"
+  },
+  "license": "MIT"
+}
