@@ -12,7 +12,12 @@ interface AuthState {
   user: AuthUser | null;
   token: string | null;
   login: (payload: { email: string; password: string }) => Promise<void>;
-  register: (payload: { email: string; password: string; name: string; role: 'teacher' | 'student' }) => Promise<void>;
+  register: (payload: {
+    email: string;
+    password: string;
+    name: string;
+    role: 'teacher' | 'student';
+  }) => Promise<void>;
   logout: () => void;
   hydrate: () => void;
 }
@@ -68,4 +73,3 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ token: data.access_token, user });
   },
 }));
-

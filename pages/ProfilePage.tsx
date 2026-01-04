@@ -1,19 +1,19 @@
-import React from 'react'
-import { GlassCard } from '../components/ui/GlassCard'
-import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
-import { Mail, Shield, LogOut, Camera } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../authStore'
+import { Mail, Shield, LogOut, Camera } from 'lucide-react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../authStore';
+import { Button } from '../components/ui/Button';
+import { GlassCard } from '../components/ui/GlassCard';
+import { Input } from '../components/ui/Input';
 
 export function ProfilePage() {
-  const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+    logout();
+    navigate('/login');
+  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -33,20 +33,14 @@ export function ProfilePage() {
             </div>
             <div className="text-center">
               <h2 className="text-xl font-bold text-gray-900">{user?.name || '使用者'}</h2>
-              <p className="text-gray-500">
-                {user?.role === 'teacher' ? '教師' : '學生'}
-              </p>
+              <p className="text-gray-500">{user?.role === 'teacher' ? '教師' : '學生'}</p>
             </div>
           </div>
 
           {/* Form Section */}
           <div className="flex-1 w-full space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input
-                label="姓名"
-                defaultValue={user?.name || ''}
-                disabled
-              />
+              <Input label="姓名" defaultValue={user?.name || ''} disabled />
               <Input
                 label="角色"
                 defaultValue={user?.role === 'teacher' ? '教師' : '學生'}
@@ -74,15 +68,12 @@ export function ProfilePage() {
       <GlassCard className="p-8 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-gray-900">登出</h3>
-          <p className="text-gray-500 text-sm">
-            安全地從此裝置登出您的帳號
-          </p>
+          <p className="text-gray-500 text-sm">安全地從此裝置登出您的帳號</p>
         </div>
         <Button variant="danger" leftIcon={<LogOut size={16} />} onClick={handleLogout}>
           登出
         </Button>
       </GlassCard>
     </div>
-  )
+  );
 }
-

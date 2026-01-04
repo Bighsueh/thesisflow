@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useStore } from '../../../store';
-import { usePDFViewer } from './usePDFViewer';
-import { useHighlights } from './useHighlights';
-import { useSelection } from './useSelection';
 import { useDocumentDragDrop } from './useDocumentDragDrop';
+import { useHighlights } from './useHighlights';
+import { usePDFViewer } from './usePDFViewer';
+import { useSelection } from './useSelection';
 
 export const useReaderPanel = () => {
   const { currentDocId, addHighlight } = useStore();
@@ -16,7 +16,9 @@ export const useReaderPanel = () => {
 
   const handleCreateEvidence = async () => {
     if (selection.selectionToolbar && currentDocId) {
-      await addHighlight(currentDocId, selection.selectionToolbar.text, { evidence_type: selection.evidenceType });
+      await addHighlight(currentDocId, selection.selectionToolbar.text, {
+        evidence_type: selection.evidenceType,
+      });
       window.getSelection()?.removeAllRanges();
       selection.setSelectionToolbar(null);
     }

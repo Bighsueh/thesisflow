@@ -1,20 +1,17 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
-import { Workflow, Users, LogOut, Home } from 'lucide-react'
-import { useAuthStore } from '../../authStore'
-import { Button } from '../ui/Button'
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
+import { Workflow, Users, LogOut, Home } from 'lucide-react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '../../authStore';
+import { Button } from '../ui/Button';
 
 interface TeacherSidebarProps {
-  activeSection: 'flows' | 'accounts' | 'groups'
-  onSectionChange: (section: 'flows' | 'accounts' | 'groups') => void
+  activeSection: 'flows' | 'accounts' | 'groups';
+  onSectionChange: (section: 'flows' | 'accounts' | 'groups') => void;
 }
 
-export function TeacherSidebar({
-  activeSection,
-  onSectionChange,
-}: TeacherSidebarProps) {
-  const { user, logout } = useAuthStore()
+export function TeacherSidebar({ activeSection, onSectionChange }: TeacherSidebarProps) {
+  const { user, logout } = useAuthStore();
 
   const navItems = [
     {
@@ -32,7 +29,7 @@ export function TeacherSidebar({
       label: '學生群組管理',
       icon: <Users size={20} />,
     },
-  ]
+  ];
 
   return (
     <aside className="fixed left-0 top-0 h-full w-64 bg-white/80 backdrop-blur-2xl border-r border-white/80 shadow-lg z-40 flex flex-col">
@@ -51,7 +48,7 @@ export function TeacherSidebar({
       {/* Navigation */}
       <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = activeSection === item.id
+          const isActive = activeSection === item.id;
           return (
             <button
               key={item.id}
@@ -79,7 +76,7 @@ export function TeacherSidebar({
               {item.icon}
               <span>{item.label}</span>
             </button>
-          )
+          );
         })}
       </nav>
 
@@ -91,7 +88,12 @@ export function TeacherSidebar({
         </div>
         <div className="flex flex-col gap-2">
           <Link to="/">
-            <Button variant="ghost" size="sm" className="w-full justify-start" leftIcon={<Home size={16} />}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start"
+              leftIcon={<Home size={16} />}
+            >
               返回首頁
             </Button>
           </Link>
@@ -107,10 +109,5 @@ export function TeacherSidebar({
         </div>
       </div>
     </aside>
-  )
+  );
 }
-
-
-
-
-

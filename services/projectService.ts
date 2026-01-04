@@ -1,5 +1,5 @@
-import { api } from './api';
 import { Project } from '../types';
+import { api } from './api';
 
 export const projectService = {
   loadProjects: async (): Promise<Project[]> => {

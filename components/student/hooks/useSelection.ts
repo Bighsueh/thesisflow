@@ -2,12 +2,26 @@ import { useState, useRef } from 'react';
 import { SelectionRect } from '../StudentInterface.types';
 
 export const useSelection = () => {
-  const [selectionToolbar, setSelectionToolbar] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [selectionToolbar, setSelectionToolbar] = useState<{
+    text: string;
+    x: number;
+    y: number;
+  } | null>(null);
   const [evidenceType, setEvidenceType] = useState<string>('Other');
   const [pendingSelection, setPendingSelection] = useState<SelectionRect | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [toolbarRect, setToolbarRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
-  const [currentRect, setCurrentRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [toolbarRect, setToolbarRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  const [currentRect, setCurrentRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
   const [currentRectPage, setCurrentRectPage] = useState<number | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
@@ -26,10 +40,10 @@ export const useSelection = () => {
     // PDFSelector 返回的座標是 0-1 範圍，已經是相對於頁面的
     // 轉換為 0-100% 以用於顯示
     const rect = {
-      x: selection.x * 100,  // 轉換為百分比（相對於頁面）
-      y: selection.y * 100,   // 轉換為百分比（相對於頁面）
-      w: selection.width * 100,   // 轉換為百分比（相對於頁面）
-      h: selection.height * 100,   // 轉換為百分比（相對於頁面）
+      x: selection.x * 100, // 轉換為百分比（相對於頁面）
+      y: selection.y * 100, // 轉換為百分比（相對於頁面）
+      w: selection.width * 100, // 轉換為百分比（相對於頁面）
+      h: selection.height * 100, // 轉換為百分比（相對於頁面）
     };
     setToolbarRect(rect);
     setCurrentRect(rect); // 設置 currentRect，讓選擇框持續顯示（相對於頁面）
@@ -39,15 +53,16 @@ export const useSelection = () => {
 
   const handleMouseDown = (e: React.MouseEvent, doc: any) => {
     // 防止在按鈕或輸入框上觸發拖拽
-    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
-    
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input'))
+      return;
+
     // 檢查是否點擊到已存在的標記
     const target = e.target as HTMLElement;
     if (target.dataset.isHighlight === 'true' || target.closest('[data-is-highlight="true"]')) {
       // 點擊到已存在的標記，不開始拖拽
       return;
     }
-    
+
     if (!doc || (doc.type !== 'pdf' && doc.content_type !== 'application/pdf')) return;
     setIsDrawing(true);
     const pos = getRelativePos(e);
@@ -79,19 +94,19 @@ export const useSelection = () => {
       if (currentRect && (currentRect.w > 1 || currentRect.h > 1)) {
         // 保存容器相對座標，用於工具列定位（工具列相對於外層容器）
         const containerRelativeRect = { ...currentRect };
-        
+
         // 計算選擇框所在的頁面和頁面相對座標
         if (pageRefs && pdfContainerRef && pageRef.current && pdfContainerRef.current) {
           const containerRect = pageRef.current.getBoundingClientRect();
-          
+
           // 計算選擇框的中心點（絕對座標）
           const centerX = containerRect.left + (currentRect.x / 100) * containerRect.width;
           const centerY = containerRect.top + (currentRect.y / 100) * containerRect.height;
-          
+
           // 找到包含中心點的 PDF 頁面
           let targetPage = 1;
           let pageElement: HTMLDivElement | null = null;
-          
+
           for (const [pageNum, pageEl] of pageRefs.current.entries()) {
             const pageRect = pageEl.getBoundingClientRect();
             if (
@@ -105,25 +120,37 @@ export const useSelection = () => {
               break;
             }
           }
-          
+
           if (pageElement) {
             const pageRect = pageElement.getBoundingClientRect();
-            
+
             // 計算選擇框的邊界（絕對座標）
             const selectionLeft = containerRect.left + (currentRect.x / 100) * containerRect.width;
             const selectionTop = containerRect.top + (currentRect.y / 100) * containerRect.height;
             const selectionRight = selectionLeft + (currentRect.w / 100) * containerRect.width;
             const selectionBottom = selectionTop + (currentRect.h / 100) * containerRect.height;
-            
+
             // 計算選擇框相對於頁面的位置（0-1）
-            const pageRelativeLeft = Math.max(0, Math.min(1, (selectionLeft - pageRect.left) / pageRect.width));
-            const pageRelativeTop = Math.max(0, Math.min(1, (selectionTop - pageRect.top) / pageRect.height));
-            const pageRelativeRight = Math.max(0, Math.min(1, (selectionRight - pageRect.left) / pageRect.width));
-            const pageRelativeBottom = Math.max(0, Math.min(1, (selectionBottom - pageRect.top) / pageRect.height));
-            
+            const pageRelativeLeft = Math.max(
+              0,
+              Math.min(1, (selectionLeft - pageRect.left) / pageRect.width)
+            );
+            const pageRelativeTop = Math.max(
+              0,
+              Math.min(1, (selectionTop - pageRect.top) / pageRect.height)
+            );
+            const pageRelativeRight = Math.max(
+              0,
+              Math.min(1, (selectionRight - pageRect.left) / pageRect.width)
+            );
+            const pageRelativeBottom = Math.max(
+              0,
+              Math.min(1, (selectionBottom - pageRect.top) / pageRect.height)
+            );
+
             // 設置當前選擇框所在頁面
             setCurrentRectPage(targetPage);
-            
+
             // 更新 currentRect 為相對於頁面的座標（0-100%），用於在頁面上顯示選擇框
             setCurrentRect({
               x: pageRelativeLeft * 100,
@@ -131,10 +158,10 @@ export const useSelection = () => {
               w: (pageRelativeRight - pageRelativeLeft) * 100,
               h: (pageRelativeBottom - pageRelativeTop) * 100,
             });
-            
+
             // 設置 toolbarRect 為容器相對座標，用於工具列定位（相對於外層容器）
             setToolbarRect(containerRelativeRect);
-            
+
             // 創建 pendingSelection，座標為 0-1 範圍
             setPendingSelection({
               x: pageRelativeLeft,
@@ -170,7 +197,7 @@ export const useSelection = () => {
             text: '',
           });
         }
-        
+
         // currentRect 保持不變，讓選擇框持續顯示直到用戶確認或取消
       } else {
         setCurrentRect(null); // 取消無效框選
@@ -239,4 +266,3 @@ export const useSelection = () => {
     handleCancelSelection,
   };
 };
-

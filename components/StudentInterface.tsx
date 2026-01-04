@@ -1,7 +1,3 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useStore } from '../store';
-import { useAuthStore } from '../authStore';
 import {
   Bot,
   Send,
@@ -36,137 +32,200 @@ import {
   Sparkles,
   LayoutTemplate,
 } from 'lucide-react';
-import { AppNode, Document, FieldWithEvidence, Message, TaskAContent, ComparisonRow, TaskCContent } from '../types';
+import React, { useEffect, useRef, useState } from 'react';
 import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
+import { useNavigate } from 'react-router-dom';
 import { getIncomers, getOutgoers } from 'reactflow';
+import { useAuthStore } from '../authStore';
+import { useAutoSave } from '../hooks/useAutoSave';
+import { useStore } from '../store';
+import {
+  AppNode,
+  Document,
+  FieldWithEvidence,
+  Message,
+  TaskAContent,
+  ComparisonRow,
+  TaskCContent,
+} from '../types';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 import { ChatMessage } from './ChatMessage';
-import { InstructionCard } from './widgets/InstructionCard';
-import { SectionWriter } from './widgets/SectionWriter';
-import { ChecklistSubmit } from './widgets/ChecklistSubmit';
-import { MatrixCompare } from './widgets/MatrixCompare';
-import { SynthesisWriter } from './widgets/SynthesisWriter';
-import { useAutoSave } from '../hooks/useAutoSave';
-import { PDFSelector } from './PDFSelector';
-import { PDFHighlightOverlay } from './PDFHighlightOverlay';
-import { EvidenceListPanel } from './EvidenceListPanel';
 import { EvidenceCreateDialog } from './EvidenceCreateDialog';
+import { EvidenceListPanel } from './EvidenceListPanel';
+import { PDFHighlightOverlay } from './PDFHighlightOverlay';
+import { PDFSelector } from './PDFSelector';
 import { GradientBackground } from './ui/GradientBackground';
+import { ChecklistSubmit } from './widgets/ChecklistSubmit';
+import { InstructionCard } from './widgets/InstructionCard';
+import { MatrixCompare } from './widgets/MatrixCompare';
+import { SectionWriter } from './widgets/SectionWriter';
+import { SynthesisWriter } from './widgets/SynthesisWriter';
 import '../utils/pdfConfig';
 
 // --- Shared Components ---
 
-const EvidenceSelector = ({ 
-    selectedIds, 
-    onChange 
-}: { 
-    selectedIds: string[], 
-    onChange: (ids: string[]) => void 
+const EvidenceSelector = ({
+  selectedIds,
+  onChange,
+}: {
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
 }) => {
-    const { documents } = useStore();
-    const [isOpen, setIsOpen] = useState(false);
-    
-    // Flatten all highlights
-    const allHighlights = documents.flatMap(d => (d.highlights || []).map(h => ({ ...h, docTitle: d.title })));
+  const { documents } = useStore();
+  const [isOpen, setIsOpen] = useState(false);
 
-    const toggleSelection = (id: string) => {
-        if (selectedIds.includes(id)) {
-            onChange(selectedIds.filter(sid => sid !== id));
-        } else {
-            onChange([...selectedIds, id]);
-        }
-    };
+  // Flatten all highlights
+  const allHighlights = documents.flatMap((d) =>
+    (d.highlights || []).map((h) => ({ ...h, docTitle: d.title }))
+  );
 
-    return (
-        <div className="mt-2">
-            <div className="flex flex-wrap gap-2 mb-2 min-h-[24px]">
-                {selectedIds.length === 0 && <span className="text-xs text-red-400 italic flex items-center gap-1">* 需綁定標記片段 (Evidence)</span>}
-                {selectedIds.map(id => {
-                    const h = allHighlights.find(h => h.id === id);
-                    if (!h) return null;
-                    return (
-                        <span key={id} className="badge badge-sm badge-warning gap-1 h-auto py-1 text-left">
-                            <span className="truncate max-w-[150px]">{h.snippet}</span>
-                            <button onClick={() => toggleSelection(id)} className="hover:text-red-700"><X size={10}/></button>
-                        </span>
-                    );
-                })}
-                <button 
-                    className="btn btn-xs btn-outline btn-primary gap-1"
-                    onClick={() => setIsOpen(!isOpen)}
-                >
-                    <LinkIcon size={10} /> 引用標記片段
-                </button>
+  const toggleSelection = (id: string) => {
+    if (selectedIds.includes(id)) {
+      onChange(selectedIds.filter((sid) => sid !== id));
+    } else {
+      onChange([...selectedIds, id]);
+    }
+  };
+
+  return (
+    <div className="mt-2">
+      <div className="flex flex-wrap gap-2 mb-2 min-h-[24px]">
+        {selectedIds.length === 0 && (
+          <span className="text-xs text-red-400 italic flex items-center gap-1">
+            * 需綁定標記片段 (Evidence)
+          </span>
+        )}
+        {selectedIds.map((id) => {
+          const h = allHighlights.find((h) => h.id === id);
+          if (!h) return null;
+          return (
+            <span key={id} className="badge badge-sm badge-warning gap-1 h-auto py-1 text-left">
+              <span className="truncate max-w-[150px]">{h.snippet}</span>
+              <button onClick={() => toggleSelection(id)} className="hover:text-red-700">
+                <X size={10} />
+              </button>
+            </span>
+          );
+        })}
+        <button
+          className="btn btn-xs btn-outline btn-primary gap-1"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <LinkIcon size={10} /> 引用標記片段
+        </button>
+      </div>
+
+      {isOpen && (
+        <div className="border border-base-300 rounded-lg p-2 bg-base-100 max-h-40 overflow-y-auto shadow-inner text-xs">
+          {allHighlights.length === 0 && (
+            <div className="text-slate-400">尚無標註資料，請先閱讀文獻並畫線。</div>
+          )}
+          {allHighlights.map((h) => (
+            <div
+              key={h.id}
+              className={`p-1.5 border-b border-base-200 cursor-pointer hover:bg-base-200 flex gap-2 items-start ${selectedIds.includes(h.id) ? 'bg-blue-50' : ''}`}
+              onClick={() => toggleSelection(h.id)}
+            >
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(h.id)}
+                readOnly
+                className="checkbox checkbox-xs mt-0.5"
+              />
+              <div>
+                <div className="font-bold text-slate-500">{h.docTitle}</div>
+                <div className="text-slate-700">\"{h.snippet}\"</div>
+              </div>
             </div>
-
-            {isOpen && (
-                <div className="border border-base-300 rounded-lg p-2 bg-base-100 max-h-40 overflow-y-auto shadow-inner text-xs">
-                    {allHighlights.length === 0 && <div className="text-slate-400">尚無標註資料，請先閱讀文獻並畫線。</div>}
-                    {allHighlights.map(h => (
-                        <div 
-                            key={h.id} 
-                            className={`p-1.5 border-b border-base-200 cursor-pointer hover:bg-base-200 flex gap-2 items-start ${selectedIds.includes(h.id) ? 'bg-blue-50' : ''}`}
-                            onClick={() => toggleSelection(h.id)}
-                        >
-                            <input type="checkbox" checked={selectedIds.includes(h.id)} readOnly className="checkbox checkbox-xs mt-0.5" />
-                            <div>
-                                <div className="font-bold text-slate-500">{h.docTitle}</div>
-                                <div className="text-slate-700">\"{h.snippet}\"</div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+          ))}
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
-const FormField = ({ 
-    label, 
-    value, 
-    onChange, 
-    placeholder, 
-    minHeight = 'h-24' 
-}: { 
-    label: string, 
-    value: FieldWithEvidence, 
-    onChange: (val: FieldWithEvidence) => void, 
-    placeholder?: string,
-    minHeight?: string
+const FormField = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  minHeight = 'h-24',
+}: {
+  label: string;
+  value: FieldWithEvidence;
+  onChange: (val: FieldWithEvidence) => void;
+  placeholder?: string;
+  minHeight?: string;
 }) => {
-    return (
-        <div className="form-control mb-4">
-            <label className="label py-1">
-                <span className="label-text font-bold text-slate-700">{label}</span>
-            </label>
-            <div className="bg-white rounded-lg border border-base-300 p-2 focus-within:border-primary transition-colors">
-                <textarea 
-                    className={`textarea textarea-ghost textarea-sm w-full resize-none focus:bg-transparent ${minHeight}`}
-                    placeholder={placeholder}
-                    value={value.text}
-                    onChange={(e) => onChange({ ...value, text: e.target.value })}
-                />
-                <div className="border-t border-base-200 pt-2">
-                    <EvidenceSelector 
-                        selectedIds={value.snippetIds}
-                        onChange={(ids) => onChange({ ...value, snippetIds: ids })}
-                    />
-                </div>
-            </div>
+  return (
+    <div className="form-control mb-4">
+      <label className="label py-1">
+        <span className="label-text font-bold text-slate-700">{label}</span>
+      </label>
+      <div className="bg-white rounded-lg border border-base-300 p-2 focus-within:border-primary transition-colors">
+        <textarea
+          className={`textarea textarea-ghost textarea-sm w-full resize-none focus:bg-transparent ${minHeight}`}
+          placeholder={placeholder}
+          value={value.text}
+          onChange={(e) => onChange({ ...value, text: e.target.value })}
+        />
+        <div className="border-t border-base-200 pt-2">
+          <EvidenceSelector
+            selectedIds={value.snippetIds}
+            onChange={(ids) => onChange({ ...value, snippetIds: ids })}
+          />
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 // --- Evidence Type Definitions ---
 type EvidenceType = 'Purpose' | 'Method' | 'Findings' | 'Limitation' | 'Other';
 
-const EVIDENCE_TYPES: { type: EvidenceType; label: string; color: string; bg: string; border: string }[] = [
-  { type: 'Purpose', label: '研究目的', color: 'bg-red-400', bg: 'bg-red-100', border: 'border-red-400' },
-  { type: 'Method', label: '研究方法', color: 'bg-blue-400', bg: 'bg-blue-100', border: 'border-blue-400' },
-  { type: 'Findings', label: '主要發現', color: 'bg-green-400', bg: 'bg-green-100', border: 'border-green-400' },
-  { type: 'Limitation', label: '研究限制', color: 'bg-orange-400', bg: 'bg-orange-100', border: 'border-orange-400' },
-  { type: 'Other', label: '其他', color: 'bg-yellow-400', bg: 'bg-yellow-100', border: 'border-yellow-400' },
+const EVIDENCE_TYPES: {
+  type: EvidenceType;
+  label: string;
+  color: string;
+  bg: string;
+  border: string;
+}[] = [
+  {
+    type: 'Purpose',
+    label: '研究目的',
+    color: 'bg-red-400',
+    bg: 'bg-red-100',
+    border: 'border-red-400',
+  },
+  {
+    type: 'Method',
+    label: '研究方法',
+    color: 'bg-blue-400',
+    bg: 'bg-blue-100',
+    border: 'border-blue-400',
+  },
+  {
+    type: 'Findings',
+    label: '主要發現',
+    color: 'bg-green-400',
+    bg: 'bg-green-100',
+    border: 'border-green-400',
+  },
+  {
+    type: 'Limitation',
+    label: '研究限制',
+    color: 'bg-orange-400',
+    bg: 'bg-orange-100',
+    border: 'border-orange-400',
+  },
+  {
+    type: 'Other',
+    label: '其他',
+    color: 'bg-yellow-400',
+    bg: 'bg-yellow-100',
+    border: 'border-yellow-400',
+  },
 ];
 
 // Extended Highlight type with tag and note (backward compatible)
@@ -243,7 +302,9 @@ const HighlightHoverCard = ({
   onCopy: (text: string) => void;
   onUpdate: (id: string, updates: Partial<ExtendedHighlight>) => void;
 }) => {
-  const typeInfo = EVIDENCE_TYPES.find((t) => t.type === (highlight.type || (highlight.evidence_type as EvidenceType) || 'Other'));
+  const typeInfo = EVIDENCE_TYPES.find(
+    (t) => t.type === (highlight.type || (highlight.evidence_type as EvidenceType) || 'Other')
+  );
   const [tagInput, setTagInput] = useState(highlight.tag || highlight.name || '');
   const [isEditingTag, setIsEditingTag] = useState(false);
 
@@ -276,7 +337,9 @@ const HighlightHoverCard = ({
     >
       {/* Header: Type & Actions */}
       <div className="flex justify-between items-center">
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${typeInfo?.bg} ${typeInfo?.color.replace('bg-', 'text-')}`}>
+        <span
+          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${typeInfo?.bg} ${typeInfo?.color.replace('bg-', 'text-')}`}
+        >
           {typeInfo?.label}
         </span>
         <div className="flex space-x-1">
@@ -320,7 +383,10 @@ const HighlightHoverCard = ({
               className="flex-1 bg-white border border-slate-200 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-indigo-300 outline-none"
               autoFocus
             />
-            <button onClick={handleTagSubmit} className="p-1 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200">
+            <button
+              onClick={handleTagSubmit}
+              className="p-1 bg-indigo-100 text-indigo-600 rounded hover:bg-indigo-200"
+            >
               <Save size={12} />
             </button>
           </div>
@@ -460,7 +526,11 @@ const HighlightSidebar = ({
         {highlights.length === 0 ? (
           <div className="text-center py-10 text-slate-400">
             <Highlighter size={32} className="mx-auto mb-2 opacity-50" />
-            <p className="text-xs">尚無標記片段<br />請在 PDF 上拖曳框選</p>
+            <p className="text-xs">
+              尚無標記片段
+              <br />
+              請在 PDF 上拖曳框選
+            </p>
           </div>
         ) : (
           EVIDENCE_TYPES.map((typeDef) => {
@@ -485,7 +555,9 @@ const HighlightSidebar = ({
                   >
                     <div className="flex justify-between items-start mb-1">
                       {/* Show Tag if exists, else show Name */}
-                      <span className={`text-xs font-bold truncate max-w-[150px] ${h.tag ? 'text-indigo-700' : 'text-slate-700'}`}>
+                      <span
+                        className={`text-xs font-bold truncate max-w-[150px] ${h.tag ? 'text-indigo-700' : 'text-slate-700'}`}
+                      >
                         {h.tag || h.name || h.snippet.substring(0, 20)}
                       </span>
                       <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -547,7 +619,8 @@ const ChatPanelWrapper = ({ currentNode }: { currentNode: AppNode | null }) => {
   const handleInsertEvidence = (highlightId: string) => {
     const highlight = allHighlights.find((h) => h.id === highlightId);
     if (!highlight) return;
-    const displayText = highlight.tag || highlight.name || highlight.snippet.substring(0, 40) + '...';
+    const displayText =
+      highlight.tag || highlight.name || highlight.snippet.substring(0, 40) + '...';
     const shortId = highlightId.substring(0, 8);
     const token = `[標記片段: ${displayText}][E${shortId}]`;
     setInputMessage((prev) => prev + token + ' ');
@@ -677,7 +750,9 @@ const ChatPanelWrapper = ({ currentNode }: { currentNode: AppNode | null }) => {
             發送
           </button>
         </div>
-        <div className="text-[10px] text-center text-slate-400 mt-1">AI 僅提供引導，不會直接代寫</div>
+        <div className="text-[10px] text-center text-slate-400 mt-1">
+          AI 僅提供引導，不會直接代寫
+        </div>
       </div>
     </div>
   );
@@ -685,10 +760,30 @@ const ChatPanelWrapper = ({ currentNode }: { currentNode: AppNode | null }) => {
 
 // Default sections for task_summary (backward compatible)
 const DEFAULT_SECTIONS = [
-  { key: 'a1_purpose', label: 'A1 研究目的 (Purpose)', placeholder: '研究問題為何？', minEvidence: 1 },
-  { key: 'a2_method', label: 'A2 研究方法 (Method)', placeholder: '採用了什麼方法？', minEvidence: 1 },
-  { key: 'a3_findings', label: 'A3 主要發現 (Findings)', placeholder: '核心結論為何？', minEvidence: 1 },
-  { key: 'a4_limitations', label: 'A4 研究限制 (Limitations)', placeholder: '作者自述或觀察到的限制...', minEvidence: 1 },
+  {
+    key: 'a1_purpose',
+    label: 'A1 研究目的 (Purpose)',
+    placeholder: '研究問題為何？',
+    minEvidence: 1,
+  },
+  {
+    key: 'a2_method',
+    label: 'A2 研究方法 (Method)',
+    placeholder: '採用了什麼方法？',
+    minEvidence: 1,
+  },
+  {
+    key: 'a3_findings',
+    label: 'A3 主要發現 (Findings)',
+    placeholder: '核心結論為何？',
+    minEvidence: 1,
+  },
+  {
+    key: 'a4_limitations',
+    label: 'A4 研究限制 (Limitations)',
+    placeholder: '作者自述或觀察到的限制...',
+    minEvidence: 1,
+  },
 ];
 
 // TaskWidget component - extracts widget rendering logic from ChatMainPanel
@@ -724,7 +819,12 @@ const TaskWidget = ({ currentNode }: { currentNode: AppNode | null }) => {
         initializeTaskBDataForNode(currentNode.id, dimensions);
       }
     }
-  }, [currentStepId, currentNode?.data.config?.dimensions, initializeTaskBDataForNode, taskBData.length]);
+  }, [
+    currentStepId,
+    currentNode?.data.config?.dimensions,
+    initializeTaskBDataForNode,
+    taskBData.length,
+  ]);
 
   const renderNavigationButtons = () => {
     if (!currentNode) return null;
@@ -797,7 +897,10 @@ const TaskWidget = ({ currentNode }: { currentNode: AppNode | null }) => {
       ...sections.map((section) => ({
         id: section.key,
         label: `${section.label}已完成`,
-        checked: getSectionStatus(values[section.key], section.minEvidence || currentNode.data.config?.minEvidence || 1),
+        checked: getSectionStatus(
+          values[section.key],
+          section.minEvidence || currentNode.data.config?.minEvidence || 1
+        ),
         required: true,
       })),
     ];
@@ -819,9 +922,13 @@ const TaskWidget = ({ currentNode }: { currentNode: AppNode | null }) => {
               autoSave();
             }}
           >
-            <option value="" disabled>請選擇目標文獻...</option>
+            <option value="" disabled>
+              請選擇目標文獻...
+            </option>
             {documents.map((d) => (
-              <option key={d.id} value={d.id}>{d.title}</option>
+              <option key={d.id} value={d.id}>
+                {d.title}
+              </option>
             ))}
           </select>
         </div>
@@ -846,7 +953,11 @@ const TaskWidget = ({ currentNode }: { currentNode: AppNode | null }) => {
   if (nodeType === 'task_comparison') {
     const minEvidence = currentNode.data.config?.minEvidence || 1;
 
-    const handleUpdateRow = (index: number, field: keyof ComparisonRow | 'doc1Claim' | 'doc2Claim', value: any) => {
+    const handleUpdateRow = (
+      index: number,
+      field: keyof ComparisonRow | 'doc1Claim' | 'doc2Claim',
+      value: any
+    ) => {
       if (field === 'doc1Claim' || field === 'doc2Claim') {
         updateTaskBRow(index, field, value);
       } else {
@@ -901,17 +1012,59 @@ const TaskWidget = ({ currentNode }: { currentNode: AppNode | null }) => {
 
   if (nodeType === 'task_synthesis') {
     const slots = [
-      { key: 'c1_theme' as keyof TaskCContent, label: 'C1 主題句 (Theme)', placeholder: '本段落要探討的核心主題...', minEvidence: 1 },
-      { key: 'c2_evidence' as keyof TaskCContent, label: 'C2 跨篇標記片段 (Evidence)', placeholder: '綜合多篇文獻的觀察...', minEvidence: 2 },
-      { key: 'c3_boundary' as keyof TaskCContent, label: 'C3 差異界線 (Boundary)', placeholder: '雖然...但是... (指出適用範圍或對立點)', minEvidence: 1 },
-      { key: 'c4_gap' as keyof TaskCContent, label: 'C4 意義與缺口 (Gap)', placeholder: '因此... 目前尚未... (指出研究機會)', minEvidence: 1 },
+      {
+        key: 'c1_theme' as keyof TaskCContent,
+        label: 'C1 主題句 (Theme)',
+        placeholder: '本段落要探討的核心主題...',
+        minEvidence: 1,
+      },
+      {
+        key: 'c2_evidence' as keyof TaskCContent,
+        label: 'C2 跨篇標記片段 (Evidence)',
+        placeholder: '綜合多篇文獻的觀察...',
+        minEvidence: 2,
+      },
+      {
+        key: 'c3_boundary' as keyof TaskCContent,
+        label: 'C3 差異界線 (Boundary)',
+        placeholder: '雖然...但是... (指出適用範圍或對立點)',
+        minEvidence: 1,
+      },
+      {
+        key: 'c4_gap' as keyof TaskCContent,
+        label: 'C4 意義與缺口 (Gap)',
+        placeholder: '因此... 目前尚未... (指出研究機會)',
+        minEvidence: 1,
+      },
     ];
 
     const checks = [
-      { id: 'c1', label: 'C1 主題句已完成', checked: getSectionStatus(taskCData.c1_theme), required: true },
-      { id: 'c2', label: 'C2 跨篇標記片段已完成（需至少 2 則）', checked: taskCData.c2_evidence.snippetIds.length >= 2 && taskCData.c2_evidence.text.trim().length > 0, required: true },
-      { id: 'c3', label: 'C3 差異界線已完成', checked: getSectionStatus(taskCData.c3_boundary), required: true },
-      { id: 'c4', label: 'C4 意義與缺口已完成', checked: getSectionStatus(taskCData.c4_gap), required: true },
+      {
+        id: 'c1',
+        label: 'C1 主題句已完成',
+        checked: getSectionStatus(taskCData.c1_theme),
+        required: true,
+      },
+      {
+        id: 'c2',
+        label: 'C2 跨篇標記片段已完成（需至少 2 則）',
+        checked:
+          taskCData.c2_evidence.snippetIds.length >= 2 &&
+          taskCData.c2_evidence.text.trim().length > 0,
+        required: true,
+      },
+      {
+        id: 'c3',
+        label: 'C3 差異界線已完成',
+        checked: getSectionStatus(taskCData.c3_boundary),
+        required: true,
+      },
+      {
+        id: 'c4',
+        label: 'C4 意義與缺口已完成',
+        checked: getSectionStatus(taskCData.c4_gap),
+        required: true,
+      },
     ];
 
     const handleSubmitC = async () => {
@@ -948,7 +1101,7 @@ const TaskWidget = ({ currentNode }: { currentNode: AppNode | null }) => {
         <InstructionCard
           node={currentNode}
           minEvidence={currentNode.data.config?.minEvidence || 0}
-          currentEvidenceCount={documents.flatMap(d => d.highlights || []).length}
+          currentEvidenceCount={documents.flatMap((d) => d.highlights || []).length}
         />
         {renderNavigationButtons()}
       </div>
@@ -1153,7 +1306,11 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     e.dataTransfer.setData('source', source);
   };
 
-  const handleMoveDoc = async (docId: string, from: 'project' | 'library', to: 'project' | 'library') => {
+  const handleMoveDoc = async (
+    docId: string,
+    from: 'project' | 'library',
+    to: 'project' | 'library'
+  ) => {
     if (!activeProjectId) return;
     try {
       if (from === 'library' && to === 'project') {
@@ -1163,7 +1320,8 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       }
       await loadDocuments(activeProjectId);
       // 重新載入可用文檔列表
-      const API_BASE = ((import.meta as any).env?.VITE_API_BASE as string) || 'http://localhost:8000';
+      const API_BASE =
+        ((import.meta as any).env?.VITE_API_BASE as string) || 'http://localhost:8000';
       const token = useAuthStore.getState().token;
       const res = await fetch(`${API_BASE}/api/documents`, {
         headers: {
@@ -1183,8 +1341,13 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   if (!isOpen) return null;
   return (
     <>
-      <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity" onClick={onClose}></div>
-      <div className={`absolute inset-y-0 left-0 z-50 w-[800px] bg-white shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div
+        className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity"
+        onClick={onClose}
+      ></div>
+      <div
+        className={`absolute inset-y-0 left-0 z-50 w-[800px] bg-white shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
         <div className="h-14 border-b border-slate-100 flex items-center justify-between px-6 bg-white shrink-0">
           <div className="flex items-center space-x-2">
             <BookOpen className="text-indigo-600" size={20} />
@@ -1333,7 +1496,10 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
                   onChange={(e) => setNewContent(e.target.value)}
                 />
                 <div className="flex gap-2">
-                  <button className="btn btn-sm btn-ghost flex-1" onClick={() => setUploadMode(false)}>
+                  <button
+                    className="btn btn-sm btn-ghost flex-1"
+                    onClick={() => setUploadMode(false)}
+                  >
                     取消
                   </button>
                   <button className="btn btn-sm btn-primary flex-1" onClick={handleUpload}>
@@ -1350,316 +1516,358 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 };
 
 const ReaderPanel = () => {
-    const { documents, currentDocId, selectDocument, addHighlight, removeHighlight, updateHighlight, getFileUrl, getCachedFileUrl, activeProjectId, bindDocumentsToProject, loadDocuments, removeAllHighlights } = useStore();
-    const [isLibraryOpen, setLibraryOpen] = useState(false);
-    const [isEvidencePanelOpen, setIsEvidencePanelOpen] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [previewLoading, setPreviewLoading] = useState(false);
-    const [pageCount, setPageCount] = useState<number>(0);
-    const [zoom, setZoom] = useState<number>(1.0);
-    const [selectionToolbar, setSelectionToolbar] = useState<{ text: string; x: number; y: number } | null>(null);
-    const [evidenceType, setEvidenceType] = useState<string>('Other');
-    const [isDragOver, setIsDragOver] = useState(false);
-    const [selectionMode, setSelectionMode] = useState<'text' | 'box'>('box'); // 'text' 或 'box'
-    const [pendingSelection, setPendingSelection] = useState<{ x: number; y: number; width: number; height: number; page: number; text?: string } | null>(null);
-    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-    const [hoveredHighlightId, setHoveredHighlightId] = useState<string | null>(null);
-    const [toolbarRect, setToolbarRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
-    const [currentRect, setCurrentRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
-    const [isDrawing, setIsDrawing] = useState(false);
-    const [startPos, setStartPos] = useState({ x: 0, y: 0 });
-    const pdfContainerRef = useRef<HTMLDivElement>(null);
-    const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-    const pdfPageTexts = useRef<Map<number, any>>(new Map()); // 存儲每頁的文本內容和頁面實例
-    const pageRef = useRef<HTMLDivElement>(null);
-    const doc = documents.find(d => d.id === currentDocId);
-    
-    // Convert highlights to ExtendedHighlight format
-    const extendedHighlights: ExtendedHighlight[] = (doc?.highlights || []).map((h) => ({
-      ...h,
-      type: (h.evidence_type as EvidenceType) || 'Other',
-      tag: h.name, // Use name as tag for now
-    }));
+  const {
+    documents,
+    currentDocId,
+    selectDocument,
+    addHighlight,
+    removeHighlight,
+    updateHighlight,
+    getFileUrl,
+    getCachedFileUrl,
+    activeProjectId,
+    bindDocumentsToProject,
+    loadDocuments,
+    removeAllHighlights,
+  } = useStore();
+  const [isLibraryOpen, setLibraryOpen] = useState(false);
+  const [isEvidencePanelOpen, setIsEvidencePanelOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [pageCount, setPageCount] = useState<number>(0);
+  const [zoom, setZoom] = useState<number>(1.0);
+  const [selectionToolbar, setSelectionToolbar] = useState<{
+    text: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const [evidenceType, setEvidenceType] = useState<string>('Other');
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<'text' | 'box'>('box'); // 'text' 或 'box'
+  const [pendingSelection, setPendingSelection] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    page: number;
+    text?: string;
+  } | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [hoveredHighlightId, setHoveredHighlightId] = useState<string | null>(null);
+  const [toolbarRect, setToolbarRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  const [currentRect, setCurrentRect] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const pdfPageTexts = useRef<Map<number, any>>(new Map()); // 存儲每頁的文本內容和頁面實例
+  const pageRef = useRef<HTMLDivElement>(null);
+  const doc = documents.find((d) => d.id === currentDocId);
 
-    const handleDocumentDrop = async (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDragOver(false);
-        
-        const docId = e.dataTransfer.getData('application/document-id');
-        if (docId && activeProjectId) {
-            try {
-                await bindDocumentsToProject([docId], activeProjectId);
-                await loadDocuments(activeProjectId);
-            } catch (error: any) {
-                alert(`加入文檔失敗：${error?.message || error || '未知錯誤'}`);
-            }
-        }
-    };
+  // Convert highlights to ExtendedHighlight format
+  const extendedHighlights: ExtendedHighlight[] = (doc?.highlights || []).map((h) => ({
+    ...h,
+    type: (h.evidence_type as EvidenceType) || 'Other',
+    tag: h.name, // Use name as tag for now
+  }));
 
-    const handleDocumentDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.dataTransfer.types.includes('application/document-id')) {
-            setIsDragOver(true);
-            e.dataTransfer.dropEffect = 'move';
-        }
-    };
+  const handleDocumentDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
 
-    const handleDocumentDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        // 只有當離開整個 ReaderPanel 時才設置為 false
-        const currentTarget = e.currentTarget as HTMLElement;
-        const relatedTarget = e.relatedTarget as HTMLElement;
-        if (!currentTarget.contains(relatedTarget)) {
-            setIsDragOver(false);
-        }
-    };
+    const docId = e.dataTransfer.getData('application/document-id');
+    if (docId && activeProjectId) {
+      try {
+        await bindDocumentsToProject([docId], activeProjectId);
+        await loadDocuments(activeProjectId);
+      } catch (error: any) {
+        alert(`加入文檔失敗：${error?.message || error || '未知錯誤'}`);
+      }
+    }
+  };
 
-    const handleCreateEvidence = async () => {
-        if (selectionToolbar && currentDocId) {
-            await addHighlight(currentDocId, selectionToolbar.text, { evidence_type: evidenceType });
-            window.getSelection()?.removeAllRanges();
-            setSelectionToolbar(null);
-        }
-    };
+  const handleDocumentDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes('application/document-id')) {
+      setIsDragOver(true);
+      e.dataTransfer.dropEffect = 'move';
+    }
+  };
 
-    const handleBoxSelection = (selection: { x: number; y: number; width: number; height: number; page: number; text?: string }) => {
-        if (!currentDocId) return;
-        // Show floating toolbar instead of dialog
-        setToolbarRect({
-            x: selection.x + selection.width / 2,
-            y: selection.y,
-            w: selection.width,
-            h: selection.height,
-        });
-        setPendingSelection(selection);
-    };
+  const handleDocumentDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // 只有當離開整個 ReaderPanel 時才設置為 false
+    const currentTarget = e.currentTarget as HTMLElement;
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (!currentTarget.contains(relatedTarget)) {
+      setIsDragOver(false);
+    }
+  };
 
-    const getRelativePos = (e: React.MouseEvent) => {
-        if (!pageRef.current) return { x: 0, y: 0 };
-        const rect = pageRef.current.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-        return { x, y };
-    };
+  const handleCreateEvidence = async () => {
+    if (selectionToolbar && currentDocId) {
+      await addHighlight(currentDocId, selectionToolbar.text, { evidence_type: evidenceType });
+      window.getSelection()?.removeAllRanges();
+      setSelectionToolbar(null);
+    }
+  };
 
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) return;
-        if (!doc || (doc.type !== 'pdf' && doc.content_type !== 'application/pdf')) return;
-        
-        setIsDrawing(true);
-        const pos = getRelativePos(e);
-        setStartPos(pos);
-        setCurrentRect({ x: pos.x, y: pos.y, w: 0, h: 0 });
+  const handleBoxSelection = (selection: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    page: number;
+    text?: string;
+  }) => {
+    if (!currentDocId) return;
+    // Show floating toolbar instead of dialog
+    setToolbarRect({
+      x: selection.x + selection.width / 2,
+      y: selection.y,
+      w: selection.width,
+      h: selection.height,
+    });
+    setPendingSelection(selection);
+  };
+
+  const getRelativePos = (e: React.MouseEvent) => {
+    if (!pageRef.current) return { x: 0, y: 0 };
+    const rect = pageRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    return { x, y };
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input'))
+      return;
+    if (!doc || (doc.type !== 'pdf' && doc.content_type !== 'application/pdf')) return;
+
+    setIsDrawing(true);
+    const pos = getRelativePos(e);
+    setStartPos(pos);
+    setCurrentRect({ x: pos.x, y: pos.y, w: 0, h: 0 });
+    setToolbarRect(null);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDrawing) return;
+    const pos = getRelativePos(e);
+    const w = pos.x - startPos.x;
+    const h = pos.y - startPos.y;
+    setCurrentRect({
+      x: w > 0 ? startPos.x : pos.x,
+      y: h > 0 ? startPos.y : pos.y,
+      w: Math.abs(w),
+      h: Math.abs(h),
+    });
+  };
+
+  const handleMouseUp = () => {
+    // Handle box drawing first
+    if (isDrawing) {
+      setIsDrawing(false);
+      if (currentRect && (currentRect.w > 1 || currentRect.h > 1)) {
+        setToolbarRect(currentRect);
+      } else {
+        setCurrentRect(null);
         setToolbarRect(null);
-    };
+      }
+      return;
+    }
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDrawing) return;
-        const pos = getRelativePos(e);
-        const w = pos.x - startPos.x;
-        const h = pos.y - startPos.y;
-        setCurrentRect({
-            x: w > 0 ? startPos.x : pos.x,
-            y: h > 0 ? startPos.y : pos.y,
-            w: Math.abs(w),
-            h: Math.abs(h),
+    // Handle text selection (for non-PDF documents or text selection mode)
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      const text = selection.toString().trim();
+      if (text.length > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        setSelectionToolbar({
+          text,
+          x: rect.left + rect.width / 2,
+          y: rect.top - 10,
         });
-    };
+      }
+    }
+  };
 
-    const handleMouseUp = () => {
-        // Handle box drawing first
-        if (isDrawing) {
-            setIsDrawing(false);
-            if (currentRect && (currentRect.w > 1 || currentRect.h > 1)) {
-                setToolbarRect(currentRect);
-            } else {
-                setCurrentRect(null);
-                setToolbarRect(null);
-            }
-            return;
-        }
-        
-        // Handle text selection (for non-PDF documents or text selection mode)
-        const selection = window.getSelection();
-        if (selection && selection.toString().length > 0) {
-            const text = selection.toString().trim();
-            if (text.length > 0) {
-                const range = selection.getRangeAt(0);
-                const rect = range.getBoundingClientRect();
-                setSelectionToolbar({
-                    text,
-                    x: rect.left + rect.width / 2,
-                    y: rect.top - 10,
-                });
-            }
-        }
-    };
+  const handleQuickCreate = async (type: EvidenceType) => {
+    if (toolbarRect && currentDocId && pendingSelection) {
+      await addHighlight(currentDocId, pendingSelection.text || '選取的內容', {
+        evidence_type: type,
+        page: pendingSelection.page,
+        x: pendingSelection.x,
+        y: pendingSelection.y,
+        width: pendingSelection.width,
+        height: pendingSelection.height,
+      });
+      setToolbarRect(null);
+      setCurrentRect(null);
+      setPendingSelection(null);
+    }
+  };
 
-    const handleQuickCreate = async (type: EvidenceType) => {
-        if (toolbarRect && currentDocId && pendingSelection) {
-            await addHighlight(currentDocId, pendingSelection.text || '選取的內容', {
-                evidence_type: type,
-                page: pendingSelection.page,
-                x: pendingSelection.x,
-                y: pendingSelection.y,
-                width: pendingSelection.width,
-                height: pendingSelection.height,
-            });
-            setToolbarRect(null);
-            setCurrentRect(null);
-            setPendingSelection(null);
-        }
-    };
+  const handleEditCreate = () => {
+    if (toolbarRect && pendingSelection) {
+      setIsCreateDialogOpen(true);
+    }
+  };
 
-    const handleEditCreate = () => {
-        if (toolbarRect && pendingSelection) {
-            setIsCreateDialogOpen(true);
-        }
-    };
+  const handleCreateEvidenceFromDialog = async (snippet: string, name?: string) => {
+    if (!currentDocId || !pendingSelection) return;
+    await addHighlight(currentDocId, snippet, {
+      name: name,
+      page: pendingSelection.page,
+      x: pendingSelection.x,
+      y: pendingSelection.y,
+      width: pendingSelection.width,
+      height: pendingSelection.height,
+    });
+    setPendingSelection(null);
+    setIsCreateDialogOpen(false);
+  };
 
-    const handleCreateEvidenceFromDialog = async (snippet: string, name?: string) => {
-        if (!currentDocId || !pendingSelection) return;
-        await addHighlight(currentDocId, snippet, {
-            name: name,
-            page: pendingSelection.page,
-            x: pendingSelection.x,
-            y: pendingSelection.y,
-            width: pendingSelection.width,
-            height: pendingSelection.height,
-        });
-        setPendingSelection(null);
-        setIsCreateDialogOpen(false);
-    };
+  const handleLocateHighlight = (highlight: ExtendedHighlight) => {
+    if (highlight.page && pdfContainerRef.current) {
+      // 滾動到對應頁面
+      const pageElement = pageRefs.current.get(highlight.page);
+      if (pageElement) {
+        pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    setIsEvidencePanelOpen(false);
+  };
 
-    const handleLocateHighlight = (highlight: ExtendedHighlight) => {
-        if (highlight.page && pdfContainerRef.current) {
-            // 滾動到對應頁面
-            const pageElement = pageRefs.current.get(highlight.page);
-            if (pageElement) {
-                pageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }
-        setIsEvidencePanelOpen(false);
-    };
+  const handleUpdateHighlight = async (id: string, updates: Partial<ExtendedHighlight>) => {
+    await updateHighlight(id, {
+      name: updates.tag || updates.name,
+      evidence_type: updates.type || updates.evidence_type,
+    });
+    await loadDocuments(activeProjectId || undefined);
+  };
 
-    const handleUpdateHighlight = async (id: string, updates: Partial<ExtendedHighlight>) => {
-        await updateHighlight(id, {
-            name: updates.tag || updates.name,
-            evidence_type: updates.type || updates.evidence_type,
-        });
-        await loadDocuments(activeProjectId || undefined);
-    };
+  const handleCopyHighlight = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
 
-    const handleCopyHighlight = (text: string) => {
-        navigator.clipboard.writeText(text);
-    };
+  const handleEditHighlight = async (highlight: Highlight) => {
+    // 編輯功能由 EvidenceListPanel 中的對話框處理
+    // 這裡只需要確保狀態更新
+    await loadDocuments(activeProjectId || undefined);
+  };
 
-    const handleEditHighlight = async (highlight: Highlight) => {
-        // 編輯功能由 EvidenceListPanel 中的對話框處理
-        // 這裡只需要確保狀態更新
-        await loadDocuments(activeProjectId || undefined);
-    };
+  const handleRemoveHighlight = async (highlightId: string) => {
+    try {
+      await removeHighlight(highlightId);
+    } catch (error: any) {
+      throw error;
+    }
+  };
 
-    const handleRemoveHighlight = async (highlightId: string) => {
-        try {
-            await removeHighlight(highlightId);
-        } catch (error: any) {
-            throw error;
-        }
-    };
+  const handleCreateHighlight = async (snippet: string, name?: string, page?: number) => {
+    if (!currentDocId) return;
+    await addHighlight(currentDocId, snippet, {
+      name,
+      page,
+    });
+  };
 
-    const handleCreateHighlight = async (snippet: string, name?: string, page?: number) => {
-        if (!currentDocId) return;
-        await addHighlight(currentDocId, snippet, {
-            name,
-            page,
-        });
-    };
+  const handleRemoveAllHighlights = async () => {
+    if (!currentDocId) return;
+    try {
+      await removeAllHighlights(currentDocId);
+    } catch (error: any) {
+      throw error;
+    }
+  };
 
-    const handleRemoveAllHighlights = async () => {
-        if (!currentDocId) return;
-        try {
-            await removeAllHighlights(currentDocId);
-        } catch (error: any) {
-            throw error;
-        }
-    };
+  const handleCancelSelection = () => {
+    window.getSelection()?.removeAllRanges();
+    setSelectionToolbar(null);
+  };
+  useEffect(() => {
+    if (!doc) {
+      setPreviewUrl(null);
+      setPreviewLoading(false);
+      setPageCount(0);
+      setZoom(1.0);
+      return;
+    }
+    const isImage = doc.content_type?.startsWith('image/');
+    const isPdf = doc.type === 'pdf' || doc.content_type === 'application/pdf';
+    if (isImage || isPdf) {
+      setPreviewLoading(true);
+      getCachedFileUrl(doc.object_key)
+        .then((url) => setPreviewUrl(url))
+        .finally(() => setPreviewLoading(false));
+    } else {
+      setPreviewUrl(null);
+      setPreviewLoading(false);
+      setPageCount(0);
+      setZoom(1.0);
+    }
+  }, [doc, getCachedFileUrl]);
 
-    const handleCancelSelection = () => {
-        window.getSelection()?.removeAllRanges();
-        setSelectionToolbar(null);
-    };
-    useEffect(() => {
-        if (!doc) {
-            setPreviewUrl(null);
-            setPreviewLoading(false);
-            setPageCount(0);
-            setZoom(1.0);
-            return;
-        }
-        const isImage = doc.content_type?.startsWith('image/');
-        const isPdf = doc.type === 'pdf' || doc.content_type === 'application/pdf';
-        if (isImage || isPdf) {
-            setPreviewLoading(true);
-            getCachedFileUrl(doc.object_key)
-                .then((url) => setPreviewUrl(url))
-                .finally(() => setPreviewLoading(false));
-        } else {
-            setPreviewUrl(null);
-            setPreviewLoading(false);
-            setPageCount(0);
-            setZoom(1.0);
-        }
-    }, [doc, getCachedFileUrl]);
+  // 自動計算 PDF 縮放比例
+  const calculateAutoZoom = () => {
+    if (!pdfContainerRef.current) return;
+    const container = pdfContainerRef.current;
+    // 獲取容器的實際可用寬度（減去邊框和內邊距）
+    const containerWidth = container.clientWidth - 4; // 減去邊框寬度 (border = 2px * 2)
+    if (containerWidth <= 0) return;
 
-    // 自動計算 PDF 縮放比例
-    const calculateAutoZoom = () => {
-        if (!pdfContainerRef.current) return;
-        const container = pdfContainerRef.current;
-        // 獲取容器的實際可用寬度（減去邊框和內邊距）
-        const containerWidth = container.clientWidth - 4; // 減去邊框寬度 (border = 2px * 2)
-        if (containerWidth <= 0) return;
-        
-        // 標準 PDF 寬度：A4 紙張寬度為 210mm，在 96 DPI 下約為 794px
-        // 但考慮到實際顯示，我們使用 612pt (標準 PDF 點數) = 816px (96 DPI)
-        // 為了讓 PDF 能夠適應容器，我們計算合適的縮放比例
-        // 目標：讓 PDF 寬度約為容器寬度的 95%（留一些邊距）
-        const targetWidth = containerWidth * 0.95;
-        const basePdfWidth = 612; // PDF 標準寬度 (pt)
-        const basePdfWidthPx = basePdfWidth * (96 / 72); // 轉換為像素 (96 DPI)
-        
-        // 計算縮放比例：目標寬度 / 基準寬度
-        const autoZoom = (targetWidth / basePdfWidthPx) * 1.68;
-        
-        // 限制在合理範圍內 (0.5 到 2.5)
-        const clampedZoom = Math.max(0.5, Math.min(2.5, autoZoom));
-        setZoom(clampedZoom);
-    };
+    // 標準 PDF 寬度：A4 紙張寬度為 210mm，在 96 DPI 下約為 794px
+    // 但考慮到實際顯示，我們使用 612pt (標準 PDF 點數) = 816px (96 DPI)
+    // 為了讓 PDF 能夠適應容器，我們計算合適的縮放比例
+    // 目標：讓 PDF 寬度約為容器寬度的 95%（留一些邊距）
+    const targetWidth = containerWidth * 0.95;
+    const basePdfWidth = 612; // PDF 標準寬度 (pt)
+    const basePdfWidthPx = basePdfWidth * (96 / 72); // 轉換為像素 (96 DPI)
 
-    // 當 PDF 載入成功或容器大小改變時，重新計算縮放
-    useEffect(() => {
-        if (previewUrl && (doc?.type === 'pdf' || doc?.content_type === 'application/pdf')) {
-            // 延遲一下以確保容器已經渲染
-            const timer = setTimeout(() => {
-                calculateAutoZoom();
-            }, 100);
-            return () => clearTimeout(timer);
-        }
-    }, [previewUrl, doc, pageCount]);
+    // 計算縮放比例：目標寬度 / 基準寬度
+    const autoZoom = (targetWidth / basePdfWidthPx) * 1.68;
 
-    // 監聽窗口大小變化
-    useEffect(() => {
-        if (previewUrl && (doc?.type === 'pdf' || doc?.content_type === 'application/pdf')) {
-            const handleResize = () => {
-                calculateAutoZoom();
-            };
-            window.addEventListener('resize', handleResize);
-            return () => window.removeEventListener('resize', handleResize);
-        }
-    }, [previewUrl, doc]);
+    // 限制在合理範圍內 (0.5 到 2.5)
+    const clampedZoom = Math.max(0.5, Math.min(2.5, autoZoom));
+    setZoom(clampedZoom);
+  };
+
+  // 當 PDF 載入成功或容器大小改變時，重新計算縮放
+  useEffect(() => {
+    if (previewUrl && (doc?.type === 'pdf' || doc?.content_type === 'application/pdf')) {
+      // 延遲一下以確保容器已經渲染
+      const timer = setTimeout(() => {
+        calculateAutoZoom();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [previewUrl, doc, pageCount]);
+
+  // 監聽窗口大小變化
+  useEffect(() => {
+    if (previewUrl && (doc?.type === 'pdf' || doc?.content_type === 'application/pdf')) {
+      const handleResize = () => {
+        calculateAutoZoom();
+      };
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, [previewUrl, doc]);
 
   return (
     <div
@@ -1679,7 +1887,7 @@ const ReaderPanel = () => {
         onDelete={handleRemoveHighlight}
         onLocate={handleLocateHighlight}
       />
-      
+
       {/* PDF Toolbar */}
       <div
         className={`h-12 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 sticky top-0 z-10 transition-colors ${
@@ -1709,7 +1917,10 @@ const ReaderPanel = () => {
             className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-200 rounded-lg text-slate-600 hover:text-indigo-600 transition-all shadow-sm group shrink-0"
             onClick={() => setLibraryOpen(!isLibraryOpen)}
           >
-            <BookOpen size={14} className="text-slate-500 group-hover:text-indigo-600 transition-colors" />
+            <BookOpen
+              size={14}
+              className="text-slate-500 group-hover:text-indigo-600 transition-colors"
+            />
             <span className="text-xs font-medium">文獻庫</span>
           </button>
           <button
@@ -1717,7 +1928,10 @@ const ReaderPanel = () => {
             onClick={() => setIsEvidencePanelOpen((prev) => !prev)}
             disabled={!doc}
           >
-            <Highlighter size={14} className="text-slate-500 group-hover:text-indigo-600 transition-colors" />
+            <Highlighter
+              size={14}
+              className="text-slate-500 group-hover:text-indigo-600 transition-colors"
+            />
             <span className="text-xs font-medium">標記列表</span>
             {doc && (
               <span className="bg-indigo-100 text-indigo-700 px-1.5 rounded-full text-[10px] font-bold">
@@ -1731,7 +1945,9 @@ const ReaderPanel = () => {
               {isDragOver ? '放開以加入文檔' : '拖曳文獻到此處以加入專案'}
             </div>
           ) : (
-            <span className="text-sm font-medium text-slate-700 truncate">{doc?.title || '請選擇文獻'}</span>
+            <span className="text-sm font-medium text-slate-700 truncate">
+              {doc?.title || '請選擇文獻'}
+            </span>
           )}
         </div>
 
@@ -1741,11 +1957,17 @@ const ReaderPanel = () => {
               <MousePointer2 size={12} className="mr-1" />
               <span>拖曳框選</span>
             </div>
-            <button className="p-1.5 hover:bg-slate-100 rounded-md text-slate-500" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))}>
+            <button
+              className="p-1.5 hover:bg-slate-100 rounded-md text-slate-500"
+              onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))}
+            >
               <ZoomOut size={16} />
             </button>
             <span className="text-xs text-slate-500 font-mono">{Math.round(zoom * 100)}%</span>
-            <button className="p-1.5 hover:bg-slate-100 rounded-md text-slate-500" onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))}>
+            <button
+              className="p-1.5 hover:bg-slate-100 rounded-md text-slate-500"
+              onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))}
+            >
               <ZoomIn size={16} />
             </button>
           </div>
@@ -1753,7 +1975,10 @@ const ReaderPanel = () => {
       </div>
 
       {/* PDF Page View Container */}
-      <div className="flex-1 overflow-y-auto p-8 flex justify-center custom-scrollbar select-none" onMouseMove={handleMouseMove}>
+      <div
+        className="flex-1 overflow-y-auto p-8 flex justify-center custom-scrollbar select-none"
+        onMouseMove={handleMouseMove}
+      >
         {!doc ? (
           <div className="grid place-items-center h-full text-slate-400">請選擇文獻</div>
         ) : (
@@ -1840,62 +2065,62 @@ const ReaderPanel = () => {
                     ref={pdfContainerRef}
                     className="border border-base-200 rounded-md overflow-auto max-h-[70vh] bg-white pointer-events-auto"
                   >
-                      <PdfDocument
-                        file={previewUrl}
-                        onLoadSuccess={({ numPages }) => setPageCount(numPages)}
-                        loading={<div className="p-4 text-sm text-slate-500">PDF 載入中...</div>}
-                        error={<div className="p-4 text-sm text-red-500">PDF 載入失敗</div>}
-                      >
-                        {Array.from({ length: pageCount || 1 }, (_, i) => {
-                          const pageNum = i + 1;
+                    <PdfDocument
+                      file={previewUrl}
+                      onLoadSuccess={({ numPages }) => setPageCount(numPages)}
+                      loading={<div className="p-4 text-sm text-slate-500">PDF 載入中...</div>}
+                      error={<div className="p-4 text-sm text-red-500">PDF 載入失敗</div>}
+                    >
+                      {Array.from({ length: pageCount || 1 }, (_, i) => {
+                        const pageNum = i + 1;
 
-                          return (
-                            <div
-                              key={i}
-                              ref={(el) => {
-                                if (el) pageRefs.current.set(pageNum, el);
-                                else pageRefs.current.delete(pageNum);
+                        return (
+                          <div
+                            key={i}
+                            ref={(el) => {
+                              if (el) pageRefs.current.set(pageNum, el);
+                              else pageRefs.current.delete(pageNum);
+                            }}
+                            style={{
+                              position: 'relative',
+                              marginBottom: '8px',
+                              display: 'inline-block',
+                              width: '100%',
+                              textAlign: 'center',
+                            }}
+                          >
+                            <Page
+                              pageNumber={pageNum}
+                              renderAnnotationLayer={false}
+                              renderTextLayer={true}
+                              width={520 * zoom}
+                              onGetTextSuccess={(text) => {
+                                const current = pdfPageTexts.current.get(pageNum) || {};
+                                pdfPageTexts.current.set(pageNum, { ...current, text });
                               }}
-                              style={{
-                                position: 'relative',
-                                marginBottom: '8px',
-                                display: 'inline-block',
-                                width: '100%',
-                                textAlign: 'center',
+                              onRenderSuccess={(pageInfo) => {
+                                const current = pdfPageTexts.current.get(pageNum) || {};
+                                pdfPageTexts.current.set(pageNum, {
+                                  ...current,
+                                  page: pageInfo?.page || pageInfo,
+                                });
                               }}
-                            >
-                              <Page
+                            />
+                            {/* 選擇器覆蓋層 - 保留原有功能 */}
+                            {selectionMode === 'box' && (
+                              <PDFSelector
                                 pageNumber={pageNum}
-                                renderAnnotationLayer={false}
-                                renderTextLayer={true}
-                                width={520 * zoom}
-                                onGetTextSuccess={(text) => {
-                                  const current = pdfPageTexts.current.get(pageNum) || {};
-                                  pdfPageTexts.current.set(pageNum, { ...current, text });
-                                }}
-                                onRenderSuccess={(pageInfo) => {
-                                  const current = pdfPageTexts.current.get(pageNum) || {};
-                                  pdfPageTexts.current.set(pageNum, {
-                                    ...current,
-                                    page: pageInfo?.page || pageInfo,
-                                  });
-                                }}
+                                pageData={pdfPageTexts.current.get(pageNum)}
+                                onSelect={handleBoxSelection}
+                                disabled={false}
                               />
-                              {/* 選擇器覆蓋層 - 保留原有功能 */}
-                              {selectionMode === 'box' && (
-                                <PDFSelector
-                                  pageNumber={pageNum}
-                                  pageData={pdfPageTexts.current.get(pageNum)}
-                                  onSelect={handleBoxSelection}
-                                  disabled={false}
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </PdfDocument>
-                    </div>
-                  )}
+                            )}
+                          </div>
+                        );
+                      })}
+                    </PdfDocument>
+                  </div>
+                )}
 
               {!previewLoading &&
                 (!doc.content_type ||
@@ -1939,7 +2164,6 @@ const ReaderPanel = () => {
         </div>
       )}
 
-
       {/* 創建標記片段對話框 */}
       {pendingSelection && (
         <EvidenceCreateDialog
@@ -1960,237 +2184,339 @@ const ReaderPanel = () => {
 // --- Task Components (保留但不再使用，邏輯已移至 ChatMainPanel) ---
 
 const TaskATab = ({ nodeData }: { nodeData: any }) => {
-    const { documents, submitTaskA, taskAVersions, isAiThinking } = useStore();
-    const [selectedDocId, setSelectedDocId] = useState<string>('');
-    
-    // Structured State for Task A
-    const [content, setContent] = useState({
-        a1_purpose: { text: '', snippetIds: [] as string[] },
-        a2_method: { text: '', snippetIds: [] as string[] },
-        a3_findings: { text: '', snippetIds: [] as string[] },
-        a4_limitations: { text: '', snippetIds: [] as string[] }
-    });
+  const { documents, submitTaskA, taskAVersions, isAiThinking } = useStore();
+  const [selectedDocId, setSelectedDocId] = useState<string>('');
 
-    const handleSubmit = () => {
-        if(!selectedDocId) return;
-        submitTaskA(selectedDocId, content);
-    };
+  // Structured State for Task A
+  const [content, setContent] = useState({
+    a1_purpose: { text: '', snippetIds: [] as string[] },
+    a2_method: { text: '', snippetIds: [] as string[] },
+    a3_findings: { text: '', snippetIds: [] as string[] },
+    a4_limitations: { text: '', snippetIds: [] as string[] },
+  });
 
-    const previousVersions = taskAVersions.filter(v => v.targetDocId === selectedDocId);
+  const handleSubmit = () => {
+    if (!selectedDocId) return;
+    submitTaskA(selectedDocId, content);
+  };
 
-    return (
-        <div className="flex flex-col h-full">
-            <div className="alert alert-info shadow-sm mb-4 text-xs">
-                <span>任務 A：{nodeData.config?.guidance || "單篇摘要"}。請針對選擇的文獻，分段撰寫並綁定標記片段。</span>
-            </div>
+  const previousVersions = taskAVersions.filter((v) => v.targetDocId === selectedDocId);
 
-            <div className="form-control mb-4">
-                <select className="select select-bordered select-sm w-full" value={selectedDocId} onChange={e => setSelectedDocId(e.target.value)}>
-                    <option value="" disabled>請選擇目標文獻...</option>
-                    {documents.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}
-                </select>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto pr-2">
-                {selectedDocId ? (
-                    <>
-                        <FormField label="A1 研究目的 (Purpose)" value={content.a1_purpose} onChange={v => setContent({...content, a1_purpose: v})} placeholder="研究問題為何？" minHeight="h-16" />
-                        <FormField label="A2 研究方法 (Method)" value={content.a2_method} onChange={v => setContent({...content, a2_method: v})} placeholder="採用了什麼方法？" minHeight="h-16" />
-                        <FormField label="A3 主要發現 (Findings)" value={content.a3_findings} onChange={v => setContent({...content, a3_findings: v})} placeholder="核心結論為何？" minHeight="h-24" />
-                        <FormField label="A4 研究限制 (Limitations)" value={content.a4_limitations} onChange={v => setContent({...content, a4_limitations: v})} placeholder="作者自述或觀察到的限制..." minHeight="h-16" />
-                        
-                        <div className="h-4"></div>
-                        <button className="btn btn-primary w-full mb-8" onClick={handleSubmit} disabled={isAiThinking}>
-                            {isAiThinking ? 'AI 驗證中...' : '提交檢核'} <Send size={14}/>
-                        </button>
-                    </>
-                ) : (
-                    <div className="text-center text-slate-400 mt-10">請先選擇上方文獻以開始任務</div>
-                )}
-                
-                 {/* History */}
-                {previousVersions.length > 0 && (
-                    <div className="mt-8 pt-4 border-t border-base-300">
-                        <h4 className="text-xs font-bold text-slate-500 mb-2">歷史版本回饋</h4>
-                        {previousVersions.map(v => (
-                            <div key={v.id} className="text-xs bg-slate-50 p-2 rounded mb-2 border border-base-200">
-                                <div className="font-bold mb-1">v{v.version} {v.isValid ? '✅' : '❌'}</div>
-                                <div className="text-slate-600 whitespace-pre-wrap">{v.feedback || v.validationErrors?.join('\n')}</div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+  return (
+    <div className="flex flex-col h-full">
+      <div className="alert alert-info shadow-sm mb-4 text-xs">
+        <span>
+          任務 A：{nodeData.config?.guidance || '單篇摘要'}
+          。請針對選擇的文獻，分段撰寫並綁定標記片段。
+        </span>
+      </div>
+
+      <div className="form-control mb-4">
+        <select
+          className="select select-bordered select-sm w-full"
+          value={selectedDocId}
+          onChange={(e) => setSelectedDocId(e.target.value)}
+        >
+          <option value="" disabled>
+            請選擇目標文獻...
+          </option>
+          {documents.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.title}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex-1 overflow-y-auto pr-2">
+        {selectedDocId ? (
+          <>
+            <FormField
+              label="A1 研究目的 (Purpose)"
+              value={content.a1_purpose}
+              onChange={(v) => setContent({ ...content, a1_purpose: v })}
+              placeholder="研究問題為何？"
+              minHeight="h-16"
+            />
+            <FormField
+              label="A2 研究方法 (Method)"
+              value={content.a2_method}
+              onChange={(v) => setContent({ ...content, a2_method: v })}
+              placeholder="採用了什麼方法？"
+              minHeight="h-16"
+            />
+            <FormField
+              label="A3 主要發現 (Findings)"
+              value={content.a3_findings}
+              onChange={(v) => setContent({ ...content, a3_findings: v })}
+              placeholder="核心結論為何？"
+              minHeight="h-24"
+            />
+            <FormField
+              label="A4 研究限制 (Limitations)"
+              value={content.a4_limitations}
+              onChange={(v) => setContent({ ...content, a4_limitations: v })}
+              placeholder="作者自述或觀察到的限制..."
+              minHeight="h-16"
+            />
+
+            <div className="h-4"></div>
+            <button
+              className="btn btn-primary w-full mb-8"
+              onClick={handleSubmit}
+              disabled={isAiThinking}
+            >
+              {isAiThinking ? 'AI 驗證中...' : '提交檢核'} <Send size={14} />
+            </button>
+          </>
+        ) : (
+          <div className="text-center text-slate-400 mt-10">請先選擇上方文獻以開始任務</div>
+        )}
+
+        {/* History */}
+        {previousVersions.length > 0 && (
+          <div className="mt-8 pt-4 border-t border-base-300">
+            <h4 className="text-xs font-bold text-slate-500 mb-2">歷史版本回饋</h4>
+            {previousVersions.map((v) => (
+              <div
+                key={v.id}
+                className="text-xs bg-slate-50 p-2 rounded mb-2 border border-base-200"
+              >
+                <div className="font-bold mb-1">
+                  v{v.version} {v.isValid ? '✅' : '❌'}
+                </div>
+                <div className="text-slate-600 whitespace-pre-wrap">
+                  {v.feedback || v.validationErrors?.join('\n')}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 const TaskBTab = ({ nodeData }: { nodeData: any }) => {
-    const { documents, taskBData, updateTaskBRow, addTaskBRow, removeTaskBRow, submitTaskBCheck, isAiThinking } = useStore();
+  const {
+    documents,
+    taskBData,
+    updateTaskBRow,
+    addTaskBRow,
+    removeTaskBRow,
+    submitTaskBCheck,
+    isAiThinking,
+  } = useStore();
 
-    return (
-        <div className="flex flex-col h-full overflow-hidden">
-            <div className="alert alert-warning shadow-sm mb-4 text-xs">
-                 <span>任務 B：跨篇比較。請確保每一個比較維度都有雙邊的標記片段支持。</span>
-            </div>
-            
-            <div className="overflow-y-auto flex-1 pr-2 pb-20">
-                {taskBData.map((row, idx) => (
-                    <div key={row.id} className="card bg-base-100 border border-base-300 shadow-sm mb-4">
-                        <div className="card-body p-4">
-                            <div className="flex justify-between items-center mb-2">
-                                <h3 className="font-bold text-sm">比較維度 #{idx + 1}</h3>
-                                <button className="btn btn-ghost btn-xs text-red-400" onClick={() => removeTaskBRow(idx)}><Trash2 size={14}/></button>
-                            </div>
-                            
-                            <input 
-                                className="input input-sm input-bordered w-full mb-3" 
-                                placeholder="維度名稱 (例如：研究方法)"
-                                value={row.dimension}
-                                onChange={e => updateTaskBRow(idx, 'dimension', e.target.value)}
-                            />
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="alert alert-warning shadow-sm mb-4 text-xs">
+        <span>任務 B：跨篇比較。請確保每一個比較維度都有雙邊的標記片段支持。</span>
+      </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <div className="text-xs font-bold text-slate-500 mb-1">文獻 A</div>
-                                    <textarea 
-                                        className="textarea textarea-bordered textarea-xs w-full h-20"
-                                        value={row.doc1Claim.text}
-                                        onChange={e => updateTaskBRow(idx, 'doc1Claim', {...row.doc1Claim, text: e.target.value})}
-                                    />
-                                    <EvidenceSelector selectedIds={row.doc1Claim.snippetIds} onChange={ids => updateTaskBRow(idx, 'doc1Claim', {...row.doc1Claim, snippetIds: ids})} />
-                                </div>
-                                <div>
-                                    <div className="text-xs font-bold text-slate-500 mb-1">文獻 B</div>
-                                    <textarea 
-                                        className="textarea textarea-bordered textarea-xs w-full h-20"
-                                        value={row.doc2Claim.text}
-                                        onChange={e => updateTaskBRow(idx, 'doc2Claim', {...row.doc2Claim, text: e.target.value})}
-                                    />
-                                    <EvidenceSelector selectedIds={row.doc2Claim.snippetIds} onChange={ids => updateTaskBRow(idx, 'doc2Claim', {...row.doc2Claim, snippetIds: ids})} />
-                                </div>
-                            </div>
-
-                            <div className="mt-3 grid grid-cols-2 gap-4">
-                                <input className="input input-xs input-bordered" placeholder="相同點 (一句話)" value={row.similarity} onChange={e => updateTaskBRow(idx, 'similarity', e.target.value)} />
-                                <input className="input input-xs input-bordered" placeholder="不同點 (一句話)" value={row.difference} onChange={e => updateTaskBRow(idx, 'difference', e.target.value)} />
-                            </div>
-                        </div>
-                    </div>
-                ))}
-                
-                <button className="btn btn-outline btn-sm w-full border-dashed" onClick={addTaskBRow}>+ 新增比較維度</button>
-            </div>
-            
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-base-200">
-                <button className="btn btn-primary w-full" onClick={submitTaskBCheck} disabled={isAiThinking}>
-                    {isAiThinking ? '檢查中...' : '提交比較表'} <Send size={14}/>
+      <div className="overflow-y-auto flex-1 pr-2 pb-20">
+        {taskBData.map((row, idx) => (
+          <div key={row.id} className="card bg-base-100 border border-base-300 shadow-sm mb-4">
+            <div className="card-body p-4">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-bold text-sm">比較維度 #{idx + 1}</h3>
+                <button
+                  className="btn btn-ghost btn-xs text-red-400"
+                  onClick={() => removeTaskBRow(idx)}
+                >
+                  <Trash2 size={14} />
                 </button>
+              </div>
+
+              <input
+                className="input input-sm input-bordered w-full mb-3"
+                placeholder="維度名稱 (例如：研究方法)"
+                value={row.dimension}
+                onChange={(e) => updateTaskBRow(idx, 'dimension', e.target.value)}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-xs font-bold text-slate-500 mb-1">文獻 A</div>
+                  <textarea
+                    className="textarea textarea-bordered textarea-xs w-full h-20"
+                    value={row.doc1Claim.text}
+                    onChange={(e) =>
+                      updateTaskBRow(idx, 'doc1Claim', { ...row.doc1Claim, text: e.target.value })
+                    }
+                  />
+                  <EvidenceSelector
+                    selectedIds={row.doc1Claim.snippetIds}
+                    onChange={(ids) =>
+                      updateTaskBRow(idx, 'doc1Claim', { ...row.doc1Claim, snippetIds: ids })
+                    }
+                  />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-500 mb-1">文獻 B</div>
+                  <textarea
+                    className="textarea textarea-bordered textarea-xs w-full h-20"
+                    value={row.doc2Claim.text}
+                    onChange={(e) =>
+                      updateTaskBRow(idx, 'doc2Claim', { ...row.doc2Claim, text: e.target.value })
+                    }
+                  />
+                  <EvidenceSelector
+                    selectedIds={row.doc2Claim.snippetIds}
+                    onChange={(ids) =>
+                      updateTaskBRow(idx, 'doc2Claim', { ...row.doc2Claim, snippetIds: ids })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-4">
+                <input
+                  className="input input-xs input-bordered"
+                  placeholder="相同點 (一句話)"
+                  value={row.similarity}
+                  onChange={(e) => updateTaskBRow(idx, 'similarity', e.target.value)}
+                />
+                <input
+                  className="input input-xs input-bordered"
+                  placeholder="不同點 (一句話)"
+                  value={row.difference}
+                  onChange={(e) => updateTaskBRow(idx, 'difference', e.target.value)}
+                />
+              </div>
             </div>
-        </div>
-    );
+          </div>
+        ))}
+
+        <button className="btn btn-outline btn-sm w-full border-dashed" onClick={addTaskBRow}>
+          + 新增比較維度
+        </button>
+      </div>
+
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-base-200">
+        <button
+          className="btn btn-primary w-full"
+          onClick={submitTaskBCheck}
+          disabled={isAiThinking}
+        >
+          {isAiThinking ? '檢查中...' : '提交比較表'} <Send size={14} />
+        </button>
+      </div>
+    </div>
+  );
 };
 
 const TaskCTab = ({ nodeData }: { nodeData: any }) => {
-    const { taskCData, updateTaskC, submitTaskCCheck, isAiThinking } = useStore();
-    
-    return (
-        <div className="flex flex-col h-full">
-             <div className="alert alert-success shadow-sm mb-4 text-xs">
-                <span>任務 C：綜合分析。請填寫四個關鍵槽位，C2 需包含跨篇標記片段，C4 需指出缺口。</span>
-            </div>
+  const { taskCData, updateTaskC, submitTaskCCheck, isAiThinking } = useStore();
 
-            <div className="flex-1 overflow-y-auto pr-2 pb-8">
-                <FormField 
-                    label="C1 主題句 (Theme)" 
-                    placeholder="本段落要探討的核心主題..."
-                    value={taskCData.c1_theme} 
-                    onChange={v => updateTaskC('c1_theme', v)} 
-                    minHeight="h-16"
-                />
-                <FormField 
-                    label="C2 跨篇標記片段 (Evidence)" 
-                    placeholder="綜合多篇文獻的觀察..."
-                    value={taskCData.c2_evidence} 
-                    onChange={v => updateTaskC('c2_evidence', v)} 
-                />
-                <FormField 
-                    label="C3 差異界線 (Boundary)" 
-                    placeholder="雖然...但是... (指出適用範圍或對立點)"
-                    value={taskCData.c3_boundary} 
-                    onChange={v => updateTaskC('c3_boundary', v)} 
-                    minHeight="h-16"
-                />
-                <FormField 
-                    label="C4 意義與缺口 (Gap)" 
-                    placeholder="因此... 目前尚未... (指出研究機會)"
-                    value={taskCData.c4_gap} 
-                    onChange={v => updateTaskC('c4_gap', v)} 
-                    minHeight="h-16"
-                />
-                
-                <button className="btn btn-primary w-full mt-4 mb-8" onClick={submitTaskCCheck} disabled={isAiThinking}>
-                    {isAiThinking ? '分析中...' : '提交綜合分析'} <Send size={14}/>
-                </button>
-            </div>
-        </div>
-    )
-}
+  return (
+    <div className="flex flex-col h-full">
+      <div className="alert alert-success shadow-sm mb-4 text-xs">
+        <span>任務 C：綜合分析。請填寫四個關鍵槽位，C2 需包含跨篇標記片段，C4 需指出缺口。</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto pr-2 pb-8">
+        <FormField
+          label="C1 主題句 (Theme)"
+          placeholder="本段落要探討的核心主題..."
+          value={taskCData.c1_theme}
+          onChange={(v) => updateTaskC('c1_theme', v)}
+          minHeight="h-16"
+        />
+        <FormField
+          label="C2 跨篇標記片段 (Evidence)"
+          placeholder="綜合多篇文獻的觀察..."
+          value={taskCData.c2_evidence}
+          onChange={(v) => updateTaskC('c2_evidence', v)}
+        />
+        <FormField
+          label="C3 差異界線 (Boundary)"
+          placeholder="雖然...但是... (指出適用範圍或對立點)"
+          value={taskCData.c3_boundary}
+          onChange={(v) => updateTaskC('c3_boundary', v)}
+          minHeight="h-16"
+        />
+        <FormField
+          label="C4 意義與缺口 (Gap)"
+          placeholder="因此... 目前尚未... (指出研究機會)"
+          value={taskCData.c4_gap}
+          onChange={(v) => updateTaskC('c4_gap', v)}
+          minHeight="h-16"
+        />
+
+        <button
+          className="btn btn-primary w-full mt-4 mb-8"
+          onClick={submitTaskCCheck}
+          disabled={isAiThinking}
+        >
+          {isAiThinking ? '分析中...' : '提交綜合分析'} <Send size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const FloatingChat = () => {
-    const { chatMessages, isChatOpen, toggleChat, isAiThinking } = useStore();
-    const chatEndRef = useRef<HTMLDivElement>(null);
+  const { chatMessages, isChatOpen, toggleChat, isAiThinking } = useStore();
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (isChatOpen) {
-            chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [chatMessages, isChatOpen]);
-
-    if (!isChatOpen) {
-        return (
-            <button 
-                onClick={toggleChat}
-                className="fixed bottom-6 right-6 btn btn-circle btn-primary btn-lg shadow-xl z-50 animate-bounce"
-            >
-                <MessageCircle size={32} />
-            </button>
-        );
+  useEffect(() => {
+    if (isChatOpen) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
+  }, [chatMessages, isChatOpen]);
 
+  if (!isChatOpen) {
     return (
-        <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-slate-200 overflow-hidden animate-in slide-in-from-bottom duration-300">
-            <div className="bg-primary text-white p-4 flex justify-between items-center shadow-md">
-                <div className="flex items-center gap-2 font-bold">
-                    <Bot size={20} /> AI 引導教練
-                </div>
-                <button onClick={toggleChat} className="btn btn-sm btn-circle btn-ghost text-white hover:bg-white/20">
-                    <X size={18} />
-                </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
-                {chatMessages.map(msg => (
-                    <div key={msg.id} className={`chat ${msg.role === 'ai' ? 'chat-start' : 'chat-end'}`}>
-                        <div className={`chat-bubble text-sm shadow-sm whitespace-pre-wrap ${msg.role === 'ai' ? 'bg-white text-slate-700' : 'bg-primary text-white'}`}>
-                            {msg.content}
-                        </div>
-                    </div>
-                ))}
-                {isAiThinking && (
-                     <div className="chat chat-start">
-                        <div className="chat-bubble bg-white text-slate-500 text-xs">
-                            <span className="loading loading-dots loading-xs"></span>
-                        </div>
-                    </div>
-                )}
-                <div ref={chatEndRef} />
-            </div>
-            <div className="p-3 bg-white border-t border-slate-200">
-                <div className="text-[10px] text-center text-slate-400 mt-1">AI 僅提供引導，不會直接代寫</div>
-            </div>
-        </div>
+      <button
+        onClick={toggleChat}
+        className="fixed bottom-6 right-6 btn btn-circle btn-primary btn-lg shadow-xl z-50 animate-bounce"
+      >
+        <MessageCircle size={32} />
+      </button>
     );
+  }
+
+  return (
+    <div className="fixed bottom-6 right-6 w-96 h-[500px] bg-white rounded-2xl shadow-2xl flex flex-col z-50 border border-slate-200 overflow-hidden animate-in slide-in-from-bottom duration-300">
+      <div className="bg-primary text-white p-4 flex justify-between items-center shadow-md">
+        <div className="flex items-center gap-2 font-bold">
+          <Bot size={20} /> AI 引導教練
+        </div>
+        <button
+          onClick={toggleChat}
+          className="btn btn-sm btn-circle btn-ghost text-white hover:bg-white/20"
+        >
+          <X size={18} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+        {chatMessages.map((msg) => (
+          <div key={msg.id} className={`chat ${msg.role === 'ai' ? 'chat-start' : 'chat-end'}`}>
+            <div
+              className={`chat-bubble text-sm shadow-sm whitespace-pre-wrap ${msg.role === 'ai' ? 'bg-white text-slate-700' : 'bg-primary text-white'}`}
+            >
+              {msg.content}
+            </div>
+          </div>
+        ))}
+        {isAiThinking && (
+          <div className="chat chat-start">
+            <div className="chat-bubble bg-white text-slate-500 text-xs">
+              <span className="loading loading-dots loading-xs"></span>
+            </div>
+          </div>
+        )}
+        <div ref={chatEndRef} />
+      </div>
+      <div className="p-3 bg-white border-t border-slate-200">
+        <div className="text-[10px] text-center text-slate-400 mt-1">
+          AI 僅提供引導，不會直接代寫
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default function StudentInterface() {
@@ -2212,9 +2538,9 @@ export default function StudentInterface() {
     updateHighlight,
   } = useStore();
   const navigate = useNavigate();
-  const currentNode = nodes.find(n => n.id === currentStepId);
-  const currentProject = projects.find(p => p.id === activeProjectId);
-  const projectCohorts = cohorts.filter(c => c.project_id === activeProjectId);
+  const currentNode = nodes.find((n) => n.id === currentStepId);
+  const currentProject = projects.find((p) => p.id === activeProjectId);
+  const projectCohorts = cohorts.filter((c) => c.project_id === activeProjectId);
   const [joinCode, setJoinCode] = useState('');
   const [joining, setJoining] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
@@ -2228,19 +2554,19 @@ export default function StudentInterface() {
   const prevStepIdRef = useRef<string | null>(null);
 
   const handleJoinCohort = async () => {
-      const code = joinCode.trim();
-      if (code.length !== 9) return;
-      setJoining(true);
-      try {
-        await joinCohortByCode(code);
-        setJoinCode('');
-        setIsJoinModalOpen(false);
-        alert('已加入學生群組！');
-      } catch (e: any) {
-        alert(e?.message || '加入失敗，請確認群組編號是否正確。');
-      } finally {
-        setJoining(false);
-      }
+    const code = joinCode.trim();
+    if (code.length !== 9) return;
+    setJoining(true);
+    try {
+      await joinCohortByCode(code);
+      setJoinCode('');
+      setIsJoinModalOpen(false);
+      alert('已加入學生群組！');
+    } catch (e: any) {
+      alert(e?.message || '加入失敗，請確認群組編號是否正確。');
+    } finally {
+      setJoining(false);
+    }
   };
 
   const handleUpdateHighlight = async (id: string, updates: Partial<ExtendedHighlight>) => {
@@ -2256,16 +2582,17 @@ export default function StudentInterface() {
   useEffect(() => {
     const checkProjectDocuments = async () => {
       if (!activeProjectId) return;
-      
+
       // 載入專案綁定的文檔
       await loadDocuments(activeProjectId);
-      
+
       // 檢查是否有綁定的文檔（loadDocuments 已經過濾了，所以如果為空就表示沒有綁定）
       const currentDocs = useStore.getState().documents;
       if (currentDocs.length === 0 && !isDocumentSelectModalOpen) {
         // 沒有綁定文檔，載入所有可用文檔供選擇
         // 直接調用 API 獲取所有文檔，避免更新 store
-        const API_BASE = ((import.meta as any).env?.VITE_API_BASE as string) || 'http://localhost:8000';
+        const API_BASE =
+          ((import.meta as any).env?.VITE_API_BASE as string) || 'http://localhost:8000';
         const token = useAuthStore.getState().token;
         const res = await fetch(`${API_BASE}/api/documents`, {
           headers: {
@@ -2275,18 +2602,18 @@ export default function StudentInterface() {
         });
         if (res.ok) {
           const allDocs: Document[] = await res.json();
-          setAvailableDocuments(allDocs.filter(d => !d.project_id));
+          setAvailableDocuments(allDocs.filter((d) => !d.project_id));
           setIsDocumentSelectModalOpen(true);
         }
       }
     };
-    
+
     checkProjectDocuments();
   }, [activeProjectId, loadDocuments, isDocumentSelectModalOpen]);
 
   const handleBindDocuments = async () => {
     if (!activeProjectId || selectedDocumentIds.length === 0) return;
-    
+
     setIsBinding(true);
     try {
       await bindDocumentsToProject(selectedDocumentIds, activeProjectId);
@@ -2302,7 +2629,7 @@ export default function StudentInterface() {
 
   const toggleDocumentSelection = (docId: string) => {
     if (selectedDocumentIds.includes(docId)) {
-      setSelectedDocumentIds(selectedDocumentIds.filter(id => id !== docId));
+      setSelectedDocumentIds(selectedDocumentIds.filter((id) => id !== docId));
     } else {
       setSelectedDocumentIds([...selectedDocumentIds, docId]);
     }
@@ -2312,7 +2639,7 @@ export default function StudentInterface() {
   useEffect(() => {
     if (currentNode && currentStepId !== prevStepIdRef.current) {
       prevStepIdRef.current = currentStepId;
-      
+
       // 檢查是否已經有該節點的系統訊息
       const hasSystemMessage = chatTimeline.some(
         (msg) => msg.nodeId === currentStepId && msg.role === 'system'
@@ -2332,111 +2659,119 @@ export default function StudentInterface() {
   }, [currentStepId, currentNode, chatTimeline, addChatMessage]);
 
   const renderContent = () => {
-      if (!currentNode) return <div className="p-10 text-center">Loading Stage...</div>;
-      const type = currentNode.data.type; 
+    if (!currentNode) return <div className="p-10 text-center">Loading Stage...</div>;
+    const type = currentNode.data.type;
 
-      // start 和 end 節點顯示簡單畫面
-      if (type === 'start' || type === 'end') {
-        return (
-          <div className="flex h-full w-full relative">
-            <div className="flex-[0.7] h-full flex flex-col border-r border-slate-200">
-              <ReaderPanel />
-            </div>
-            <div className="flex-[0.3] h-full flex flex-col bg-white relative">
-              <div className="flex-1 p-6 overflow-hidden flex items-center justify-center">
-                {type === 'start' && (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                    <BookOpen size={64} className="text-indigo-600 mb-4 opacity-50"/>
-                    <h2 className="text-2xl font-bold mb-2 text-slate-800">開始本次學習流程</h2>
-                    <p className="text-slate-500 mb-6">
-                      請先確認左側文獻資源與任務說明，準備好後按下「開始第一階段」進入下一步。
-                    </p>
-                    <button className="btn btn-primary" onClick={navigateNext}>
-                      開始第一階段 <ArrowRight size={16}/>
-                    </button>
-                  </div>
-                )}
-                {type === 'end' && (
-                  <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                    <CheckCircle2 size={64} className="text-green-500 mb-4 opacity-50"/>
-                    <h2 className="text-2xl font-bold mb-2 text-slate-800">流程已完成</h2>
-                    <p className="text-slate-500 mb-6">恭喜你完成了所有任務！</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      }
-
-      // 其他節點使用 Chat 主區
+    // start 和 end 節點顯示簡單畫面
+    if (type === 'start' || type === 'end') {
       return (
         <div className="flex h-full w-full relative">
-          <div className={`transition-all duration-500 ease-in-out h-full relative ${isCollapsed ? 'w-[calc(100%-60px)]' : 'w-[70%]'}`}>
+          <div className="flex-[0.7] h-full flex flex-col border-r border-slate-200">
             <ReaderPanel />
           </div>
-          <div className={`transition-all duration-500 ease-in-out h-full bg-white border-l border-slate-200 shadow-[-5px_0_20px_rgba(0,0,0,0.02)] flex flex-col ${isCollapsed ? 'w-[60px]' : 'w-[30%]'}`}>
-            <div className="h-12 border-b border-slate-100 flex items-center justify-between px-2 bg-white sticky top-0 z-10">
-              {!isCollapsed ? (
-                <div className="flex space-x-1 p-1 bg-slate-100 rounded-lg w-full max-w-[240px] ml-2">
-                  <button
-                    onClick={() => setActiveTab('chat')}
-                    className={`flex-1 flex items-center justify-center py-1 rounded text-xs font-medium transition-all ${
-                      activeTab === 'chat' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    <MessageCircle size={14} className="mr-1.5" /> AI 對話
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('task')}
-                    className={`flex-1 flex items-center justify-center py-1 rounded text-xs font-medium transition-all ${
-                      activeTab === 'task' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    <ClipboardList size={14} className="mr-1.5" /> 任務表單
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center w-full space-y-4 pt-4">
-                  <button
-                    onClick={() => {
-                      setIsCollapsed(false);
-                      setActiveTab('chat');
-                    }}
-                    className="text-slate-400 hover:text-indigo-600 transition-colors"
-                  >
-                    <MessageCircle size={20} />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsCollapsed(false);
-                      setActiveTab('task');
-                    }}
-                    className="text-slate-400 hover:text-indigo-600 transition-colors"
-                  >
-                    <ClipboardList size={20} />
+          <div className="flex-[0.3] h-full flex flex-col bg-white relative">
+            <div className="flex-1 p-6 overflow-hidden flex items-center justify-center">
+              {type === 'start' && (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                  <BookOpen size={64} className="text-indigo-600 mb-4 opacity-50" />
+                  <h2 className="text-2xl font-bold mb-2 text-slate-800">開始本次學習流程</h2>
+                  <p className="text-slate-500 mb-6">
+                    請先確認左側文獻資源與任務說明，準備好後按下「開始第一階段」進入下一步。
+                  </p>
+                  <button className="btn btn-primary" onClick={navigateNext}>
+                    開始第一階段 <ArrowRight size={16} />
                   </button>
                 </div>
               )}
-              <button
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                {isCollapsed ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
-              </button>
+              {type === 'end' && (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                  <CheckCircle2 size={64} className="text-green-500 mb-4 opacity-50" />
+                  <h2 className="text-2xl font-bold mb-2 text-slate-800">流程已完成</h2>
+                  <p className="text-slate-500 mb-6">恭喜你完成了所有任務！</p>
+                </div>
+              )}
             </div>
-            {!isCollapsed && (
-              <div className="flex-1 overflow-hidden relative animate-fadeIn">
-                {activeTab === 'chat' ? (
-                  <ChatPanelWrapper currentNode={currentNode} />
-                ) : (
-                  <TaskPanelWrapper currentNode={currentNode} />
-                )}
-              </div>
-            )}
           </div>
         </div>
       );
+    }
+
+    // 其他節點使用 Chat 主區
+    return (
+      <div className="flex h-full w-full relative">
+        <div
+          className={`transition-all duration-500 ease-in-out h-full relative ${isCollapsed ? 'w-[calc(100%-60px)]' : 'w-[70%]'}`}
+        >
+          <ReaderPanel />
+        </div>
+        <div
+          className={`transition-all duration-500 ease-in-out h-full bg-white border-l border-slate-200 shadow-[-5px_0_20px_rgba(0,0,0,0.02)] flex flex-col ${isCollapsed ? 'w-[60px]' : 'w-[30%]'}`}
+        >
+          <div className="h-12 border-b border-slate-100 flex items-center justify-between px-2 bg-white sticky top-0 z-10">
+            {!isCollapsed ? (
+              <div className="flex space-x-1 p-1 bg-slate-100 rounded-lg w-full max-w-[240px] ml-2">
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`flex-1 flex items-center justify-center py-1 rounded text-xs font-medium transition-all ${
+                    activeTab === 'chat'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <MessageCircle size={14} className="mr-1.5" /> AI 對話
+                </button>
+                <button
+                  onClick={() => setActiveTab('task')}
+                  className={`flex-1 flex items-center justify-center py-1 rounded text-xs font-medium transition-all ${
+                    activeTab === 'task'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  <ClipboardList size={14} className="mr-1.5" /> 任務表單
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center w-full space-y-4 pt-4">
+                <button
+                  onClick={() => {
+                    setIsCollapsed(false);
+                    setActiveTab('chat');
+                  }}
+                  className="text-slate-400 hover:text-indigo-600 transition-colors"
+                >
+                  <MessageCircle size={20} />
+                </button>
+                <button
+                  onClick={() => {
+                    setIsCollapsed(false);
+                    setActiveTab('task');
+                  }}
+                  className="text-slate-400 hover:text-indigo-600 transition-colors"
+                >
+                  <ClipboardList size={20} />
+                </button>
+              </div>
+            )}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              {isCollapsed ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+            </button>
+          </div>
+          {!isCollapsed && (
+            <div className="flex-1 overflow-hidden relative animate-fadeIn">
+              {activeTab === 'chat' ? (
+                <ChatPanelWrapper currentNode={currentNode} />
+              ) : (
+                <TaskPanelWrapper currentNode={currentNode} />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const { user } = useAuthStore();
@@ -2492,142 +2827,138 @@ export default function StudentInterface() {
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 relative z-10 overflow-hidden">
-        {renderContent()}
-      </div>
+      <div className="flex-1 relative z-10 overflow-hidden">{renderContent()}</div>
       <HighlightEditModal
-          isOpen={!!editingHighlight}
-          onClose={() => setEditingHighlight(null)}
-          onSave={async (tag, note) => {
-            if (editingHighlight) {
-              await handleUpdateHighlight(editingHighlight.id, { tag, note });
-              setEditingHighlight(null);
-            }
-          }}
-          initialData={editingHighlight}
-        />
-        {isJoinModalOpen && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <Users size={18} className="text-primary" />
-                  加入學生群組
-                </h3>
-                <button
-                  className="btn btn-ghost btn-sm btn-circle"
-                  onClick={() => !joining && setIsJoinModalOpen(false)}
-                >
-                  <X size={16} />
-                </button>
-              </div>
-              <p className="text-sm text-slate-600">
-                請輸入老師提供的 <span className="font-mono tracking-[0.2em]">9</span> 位數群組編號。
-              </p>
-              <div className="flex gap-2">
-                <input
-                  className="input input-bordered input-sm flex-1 font-mono tracking-[0.35em]"
-                  placeholder="___ ___ ___"
-                  value={joinCode}
-                  maxLength={9}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/\s+/g, '').replace(/[^\d]/g, '');
-                    setJoinCode(v);
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  onClick={handleJoinCohort}
-                  disabled={joining || joinCode.trim().length !== 9}
-                >
-                  {joining ? '加入中...' : '加入'}
-                </button>
-              </div>
-              <p className="text-xs text-slate-400">
-                若無法順利加入，請再次確認編號或聯繫授課教師。
-              </p>
+        isOpen={!!editingHighlight}
+        onClose={() => setEditingHighlight(null)}
+        onSave={async (tag, note) => {
+          if (editingHighlight) {
+            await handleUpdateHighlight(editingHighlight.id, { tag, note });
+            setEditingHighlight(null);
+          }
+        }}
+        initialData={editingHighlight}
+      />
+      {isJoinModalOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Users size={18} className="text-primary" />
+                加入學生群組
+              </h3>
+              <button
+                className="btn btn-ghost btn-sm btn-circle"
+                onClick={() => !joining && setIsJoinModalOpen(false)}
+              >
+                <X size={16} />
+              </button>
             </div>
+            <p className="text-sm text-slate-600">
+              請輸入老師提供的 <span className="font-mono tracking-[0.2em]">9</span> 位數群組編號。
+            </p>
+            <div className="flex gap-2">
+              <input
+                className="input input-bordered input-sm flex-1 font-mono tracking-[0.35em]"
+                placeholder="___ ___ ___"
+                value={joinCode}
+                maxLength={9}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\s+/g, '').replace(/[^\d]/g, '');
+                  setJoinCode(v);
+                }}
+              />
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleJoinCohort}
+                disabled={joining || joinCode.trim().length !== 9}
+              >
+                {joining ? '加入中...' : '加入'}
+              </button>
+            </div>
+            <p className="text-xs text-slate-400">若無法順利加入，請再次確認編號或聯繫授課教師。</p>
           </div>
-        )}
-        {isDocumentSelectModalOpen && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-              <div className="p-6 border-b border-base-200 flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <BookOpen size={18} className="text-primary" />
-                    選擇要加入專案的文檔
-                  </h3>
-                  <p className="text-sm text-slate-600 mt-1">
-                    此專案尚未綁定任何文檔，請選擇要加入的文檔。
-                  </p>
-                </div>
-                <button
-                  className="btn btn-ghost btn-sm btn-circle"
-                  onClick={() => !isBinding && setIsDocumentSelectModalOpen(false)}
-                  disabled={isBinding}
-                >
-                  <X size={16} />
-                </button>
+        </div>
+      )}
+      {isDocumentSelectModalOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-base-200 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <BookOpen size={18} className="text-primary" />
+                  選擇要加入專案的文檔
+                </h3>
+                <p className="text-sm text-slate-600 mt-1">
+                  此專案尚未綁定任何文檔，請選擇要加入的文檔。
+                </p>
               </div>
-              <div className="flex-1 overflow-y-auto p-6">
-                {availableDocuments.length === 0 ? (
-                  <div className="text-center py-8 text-slate-400">
-                    <p className="text-sm">目前沒有可用的文檔。</p>
-                    <p className="text-xs mt-2">請先上傳文檔後再選擇。</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {availableDocuments.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                          selectedDocumentIds.includes(doc.id)
-                            ? 'border-primary bg-primary/5'
-                            : 'border-base-200 hover:border-primary/50'
-                        }`}
-                        onClick={() => toggleDocumentSelection(doc.id)}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedDocumentIds.includes(doc.id)}
-                            onChange={() => toggleDocumentSelection(doc.id)}
-                            className="checkbox checkbox-primary"
-                          />
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-slate-800">{doc.title}</h4>
-                            <p className="text-xs text-slate-500 mt-1">
-                              {doc.type?.toUpperCase() || 'FILE'} · 
-                              {' '}{new Date(doc.uploaded_at || Date.now()).toLocaleDateString()}
-                            </p>
-                          </div>
+              <button
+                className="btn btn-ghost btn-sm btn-circle"
+                onClick={() => !isBinding && setIsDocumentSelectModalOpen(false)}
+                disabled={isBinding}
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {availableDocuments.length === 0 ? (
+                <div className="text-center py-8 text-slate-400">
+                  <p className="text-sm">目前沒有可用的文檔。</p>
+                  <p className="text-xs mt-2">請先上傳文檔後再選擇。</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {availableDocuments.map((doc) => (
+                    <div
+                      key={doc.id}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        selectedDocumentIds.includes(doc.id)
+                          ? 'border-primary bg-primary/5'
+                          : 'border-base-200 hover:border-primary/50'
+                      }`}
+                      onClick={() => toggleDocumentSelection(doc.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedDocumentIds.includes(doc.id)}
+                          onChange={() => toggleDocumentSelection(doc.id)}
+                          className="checkbox checkbox-primary"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-slate-800">{doc.title}</h4>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {doc.type?.toUpperCase() || 'FILE'} ·{' '}
+                            {new Date(doc.uploaded_at || Date.now()).toLocaleDateString()}
+                          </p>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="p-6 border-t border-base-200 flex justify-end gap-2">
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => setIsDocumentSelectModalOpen(false)}
-                  disabled={isBinding}
-                >
-                  取消
-                </button>
-                <button
-                  className="btn btn-primary"
-                  onClick={handleBindDocuments}
-                  disabled={isBinding || selectedDocumentIds.length === 0}
-                >
-                  {isBinding ? '綁定中...' : `確認綁定 (${selectedDocumentIds.length})`}
-                </button>
-              </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-base-200 flex justify-end gap-2">
+              <button
+                className="btn btn-ghost"
+                onClick={() => setIsDocumentSelectModalOpen(false)}
+                disabled={isBinding}
+              >
+                取消
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleBindDocuments}
+                disabled={isBinding || selectedDocumentIds.length === 0}
+              >
+                {isBinding ? '綁定中...' : `確認綁定 (${selectedDocumentIds.length})`}
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 }

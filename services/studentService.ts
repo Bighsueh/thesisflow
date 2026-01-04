@@ -1,11 +1,15 @@
-import { api } from './api';
 import { Student } from '../types';
+import { api } from './api';
 
 export const studentService = {
   loadStudents: async (): Promise<Student[]> => {
     return api.get('/api/students');
   },
-  createStudent: async (payload: { email: string; name: string; password: string }): Promise<Student> => {
+  createStudent: async (payload: {
+    email: string;
+    name: string;
+    password: string;
+  }): Promise<Student> => {
     return api.post('/api/students', payload);
   },
   bulkCreateStudents: async (payload: {
@@ -19,7 +23,10 @@ export const studentService = {
   }): Promise<Student[]> => {
     return api.post('/api/students/bulk', payload);
   },
-  updateStudent: async (studentId: string, payload: { email?: string; name?: string; password?: string }): Promise<Student> => {
+  updateStudent: async (
+    studentId: string,
+    payload: { email?: string; name?: string; password?: string }
+  ): Promise<Student> => {
     return api.put(`/api/students/${studentId}`, payload);
   },
   deleteStudent: async (studentId: string): Promise<void> => {

@@ -1,26 +1,20 @@
-import React from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import {
-  Workflow,
-  Users,
-  User,
-  LogOut,
-  Home,
-} from 'lucide-react'
-import { Button } from '../ui/Button'
-import { useAuthStore } from '../../authStore'
+import { motion } from 'framer-motion';
+import { Workflow, Users, User, LogOut, Home } from 'lucide-react';
+import React from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../authStore';
+import { Button } from '../ui/Button';
 
 export function TeacherNavigation() {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
-  const isLanding = location.pathname === '/'
-  const isLogin = location.pathname === '/login'
-  
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
+  const isLanding = location.pathname === '/';
+  const isLogin = location.pathname === '/login';
+
   // 登入頁面不顯示導航
   if (isLogin) {
-    return null
+    return null;
   }
 
   const teacherNavItems = [
@@ -29,12 +23,12 @@ export function TeacherNavigation() {
       label: '教學管理',
       icon: <Workflow size={18} />,
     },
-  ]
+  ];
 
   const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
+    logout();
+    navigate('/login');
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 px-4 py-4">
@@ -77,7 +71,8 @@ export function TeacherNavigation() {
                 </div>
               </Link>
               {teacherNavItems.map((item) => {
-                const isActive = location.pathname === '/teacher' || location.pathname.startsWith('/teacher/')
+                const isActive =
+                  location.pathname === '/teacher' || location.pathname.startsWith('/teacher/');
                 return (
                   <Link key={item.path} to={item.path}>
                     <div
@@ -101,7 +96,7 @@ export function TeacherNavigation() {
                       {item.label}
                     </div>
                   </Link>
-                )
+                );
               })}
             </div>
           )}
@@ -124,12 +119,8 @@ export function TeacherNavigation() {
                 <Link to="/profile">
                   <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
                     <div className="text-right hidden sm:block">
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        教師
-                      </p>
+                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500">教師</p>
                     </div>
                     <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-violet-100 to-indigo-100 border border-white shadow-sm flex items-center justify-center text-violet-700">
                       <User size={18} />
@@ -149,6 +140,5 @@ export function TeacherNavigation() {
         </div>
       </div>
     </nav>
-  )
+  );
 }
-

@@ -30,18 +30,18 @@ graph TB
         B[教師介面 Teacher Interface]
         C[學生介面 Student Interface]
     end
-    
+
     subgraph "後端 Backend"
         D[FastAPI + Python]
         E[PostgreSQL 資料庫]
         F[認證服務 Auth Service]
     end
-    
+
     subgraph "外部服務 External Services"
         G[Azure OpenAI]
         H[MinIO/S3 儲存]
     end
-    
+
     A --> B
     A --> C
     B --> D
@@ -55,6 +55,7 @@ graph TB
 ## 🛠️ 技術棧
 
 ### 前端
+
 - **React 18.3** - UI 框架
 - **TypeScript** - 類型安全
 - **Vite** - 建置工具
@@ -64,6 +65,7 @@ graph TB
 - **React Router** - 路由管理
 
 ### 後端
+
 - **FastAPI** - Web 框架
 - **Python 3.11** - 程式語言
 - **PostgreSQL 16** - 關聯式資料庫
@@ -72,6 +74,7 @@ graph TB
 - **Boto3** - S3/MinIO 整合
 
 ### 部署與基礎設施
+
 - **Docker** - 容器化
 - **Docker Compose** - 多容器編排
 - **Nginx** - 前端靜態檔案服務
@@ -164,11 +167,11 @@ docker compose down -v
 
 系統包含三個 Docker 服務：
 
-| 服務 | 端口 | 說明 |
-|------|------|------|
+| 服務       | 端口 | 說明                         |
+| ---------- | ---- | ---------------------------- |
 | `frontend` | 3000 | React 前端應用（nginx 服務） |
-| `backend` | 8000 | FastAPI 後端服務 |
-| `postgres` | 5432 | PostgreSQL 16 資料庫 |
+| `backend`  | 8000 | FastAPI 後端服務             |
+| `postgres` | 5432 | PostgreSQL 16 資料庫         |
 
 所有服務都在 `thesisflow-network` 網路中，可以透過服務名稱互相訪問。
 
@@ -274,29 +277,29 @@ thesisflow-ai-flow/
 
 #### 前端環境變數
 
-| 變數名稱 | 說明 | 預設值 | 範例 |
-|---------|------|--------|------|
-| `VITE_API_BASE` | 後端 API 基礎 URL（建置時注入） | `http://localhost:8000` | `http://localhost:8000` 或 `https://api.yourdomain.com` |
-| `FRONTEND_DOMAIN` | 前端域名（用於 CORS，生產環境必填） | - | `https://yourdomain.com` |
-| `FRONTEND_PORT` | 前端服務端口 | `3000` | `3000` |
+| 變數名稱          | 說明                                | 預設值                  | 範例                                                    |
+| ----------------- | ----------------------------------- | ----------------------- | ------------------------------------------------------- |
+| `VITE_API_BASE`   | 後端 API 基礎 URL（建置時注入）     | `http://localhost:8000` | `http://localhost:8000` 或 `https://api.yourdomain.com` |
+| `FRONTEND_DOMAIN` | 前端域名（用於 CORS，生產環境必填） | -                       | `https://yourdomain.com`                                |
+| `FRONTEND_PORT`   | 前端服務端口                        | `3000`                  | `3000`                                                  |
 
 #### 後端環境變數
 
-| 變數名稱 | 說明 | 預設值 | 範例 |
-|---------|------|--------|------|
-| `DATABASE_URL` | PostgreSQL 連接字串（Docker 自動設定） | `postgresql://postgres:postgres@postgres:5432/thesisflow` | - |
-| `BACKEND_DOMAIN` | 後端域名（用於 CORS，生產環境可填） | - | `https://api.yourdomain.com` |
-| `BACKEND_PORT` | 後端服務端口 | `8000` | `8000` |
-| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI 端點 | - | `https://xxx.cognitiveservices.azure.com` |
-| `AZURE_OPENAI_API_KEY` | Azure OpenAI API 金鑰 | - | `your_api_key` |
-| `AZURE_OPENAI_DEPLOYMENT` | 部署名稱 | - | `gpt-4.1-mini` |
-| `AZURE_OPENAI_API_VERSION` | API 版本 | - | `2025-01-01-preview` |
-| `MINIO_ENDPOINT` | MinIO 服務端點 | - | `localhost:9000` |
-| `MINIO_ACCESS_KEY` | MinIO Access Key | - | `your_access_key` |
-| `MINIO_SECRET_KEY` | MinIO Secret Key | - | `your_secret_key` |
-| `MINIO_BUCKET` | MinIO Bucket 名稱 | - | `your-bucket-name` |
-| `MINIO_USE_SSL` | 是否使用 SSL | `false` | `true` 或 `false` |
-| `JWT_SECRET` | JWT 簽名密鑰 | `change-me` | `your-strong-secret-key` |
+| 變數名稱                   | 說明                                   | 預設值                                                    | 範例                                      |
+| -------------------------- | -------------------------------------- | --------------------------------------------------------- | ----------------------------------------- |
+| `DATABASE_URL`             | PostgreSQL 連接字串（Docker 自動設定） | `postgresql://postgres:postgres@postgres:5432/thesisflow` | -                                         |
+| `BACKEND_DOMAIN`           | 後端域名（用於 CORS，生產環境可填）    | -                                                         | `https://api.yourdomain.com`              |
+| `BACKEND_PORT`             | 後端服務端口                           | `8000`                                                    | `8000`                                    |
+| `AZURE_OPENAI_ENDPOINT`    | Azure OpenAI 端點                      | -                                                         | `https://xxx.cognitiveservices.azure.com` |
+| `AZURE_OPENAI_API_KEY`     | Azure OpenAI API 金鑰                  | -                                                         | `your_api_key`                            |
+| `AZURE_OPENAI_DEPLOYMENT`  | 部署名稱                               | -                                                         | `gpt-4.1-mini`                            |
+| `AZURE_OPENAI_API_VERSION` | API 版本                               | -                                                         | `2025-01-01-preview`                      |
+| `MINIO_ENDPOINT`           | MinIO 服務端點                         | -                                                         | `localhost:9000`                          |
+| `MINIO_ACCESS_KEY`         | MinIO Access Key                       | -                                                         | `your_access_key`                         |
+| `MINIO_SECRET_KEY`         | MinIO Secret Key                       | -                                                         | `your_secret_key`                         |
+| `MINIO_BUCKET`             | MinIO Bucket 名稱                      | -                                                         | `your-bucket-name`                        |
+| `MINIO_USE_SSL`            | 是否使用 SSL                           | `false`                                                   | `true` 或 `false`                         |
+| `JWT_SECRET`               | JWT 簽名密鑰                           | `change-me`                                               | `your-strong-secret-key`                  |
 
 ### 本地開發環境變數
 
@@ -321,11 +324,13 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/thesisflow
 ### 開發環境 vs 生產環境
 
 **開發環境**：
+
 - 不需要填寫 `FRONTEND_DOMAIN` 和 `BACKEND_DOMAIN`
 - 系統自動使用 `localhost` 和預設端口
 - CORS 自動允許 localhost 來源
 
 **生產環境**：
+
 - 必須填寫 `FRONTEND_DOMAIN` 和 `BACKEND_DOMAIN`（如果使用 Cloudflare Tunnel 等）
 - 建議使用 HTTPS
 - 使用強密碼的 `JWT_SECRET`
@@ -434,6 +439,7 @@ docker compose up -d
 #### Q: 前端無法連接到後端？
 
 A: 檢查以下項目：
+
 - 確認 `VITE_API_BASE` 環境變數正確設定（Docker 環境在 `.env` 中）
 - 確認後端服務正在運行：`docker compose ps`
 - 檢查瀏覽器控制台的錯誤訊息
@@ -442,13 +448,15 @@ A: 檢查以下項目：
 #### Q: 資料庫連接失敗？
 
 A: 確認：
+
 - PostgreSQL 服務正在運行：`docker compose ps postgres`
 - Docker 環境中 `DATABASE_URL` 應使用服務名稱 `postgres` 而非 `localhost`
 - 檢查資料庫健康狀態：`docker compose logs postgres`
 
 #### Q: CORS 錯誤？
 
-A: 
+A:
+
 - **開發環境**：不需要配置，系統自動允許 localhost
 - **生產環境**：必須在 `.env` 中填寫 `FRONTEND_DOMAIN`，例如：`FRONTEND_DOMAIN=https://yourdomain.com`
 

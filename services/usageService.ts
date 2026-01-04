@@ -1,8 +1,12 @@
-import { api } from './api';
 import { UsageRecord } from '../types';
+import { api } from './api';
 
 export const usageService = {
-  loadUsageRecords: async (filters: { cohortId?: string; projectId?: string; userId?: string }): Promise<UsageRecord[]> => {
+  loadUsageRecords: async (filters: {
+    cohortId?: string;
+    projectId?: string;
+    userId?: string;
+  }): Promise<UsageRecord[]> => {
     const params = new URLSearchParams();
     if (filters.cohortId) params.append('cohort_id', filters.cohortId);
     if (filters.projectId) params.append('project_id', filters.projectId);
@@ -10,7 +14,11 @@ export const usageService = {
     const query = params.toString();
     return api.get(`/api/usage${query ? `?${query}` : ''}`);
   },
-  recordUsage: async (payload: { action: string; resource: string; metadata?: any }): Promise<void> => {
+  recordUsage: async (payload: {
+    action: string;
+    resource: string;
+    metadata?: any;
+  }): Promise<void> => {
     return api.post('/api/usage', payload);
   },
 };

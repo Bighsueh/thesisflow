@@ -3,18 +3,29 @@ import { useStore } from '../../../store';
 import { ExtendedHighlight, EvidenceType } from '../StudentInterface.types';
 
 export const useHighlights = () => {
-  const { documents, currentDocId, addHighlight, removeHighlight, updateHighlight, loadDocuments, activeProjectId } = useStore();
+  const {
+    documents,
+    currentDocId,
+    addHighlight,
+    removeHighlight,
+    updateHighlight,
+    loadDocuments,
+    activeProjectId,
+  } = useStore();
   const [hoveredHighlightId, setHoveredHighlightId] = useState<string | null>(null);
   const [isEvidencePanelOpen, setIsEvidencePanelOpen] = useState(false);
 
-  const doc = documents.find(d => d.id === currentDocId);
+  const doc = documents.find((d) => d.id === currentDocId);
   const extendedHighlights: ExtendedHighlight[] = (doc?.highlights || []).map((h) => ({
     ...h,
     type: (h.evidence_type as EvidenceType) || 'Other',
     tag: h.name,
   }));
 
-  const handleLocateHighlight = (highlight: ExtendedHighlight, pageRefs: React.MutableRefObject<Map<number, HTMLDivElement>>) => {
+  const handleLocateHighlight = (
+    highlight: ExtendedHighlight,
+    pageRefs: React.MutableRefObject<Map<number, HTMLDivElement>>
+  ) => {
     if (highlight.page) {
       const pageElement = pageRefs.current.get(highlight.page);
       if (pageElement) {
@@ -47,10 +58,26 @@ export const useHighlights = () => {
   const handleQuickCreate = async (
     type: EvidenceType,
     toolbarRect: { x: number; y: number; w: number; h: number } | null,
-    pendingSelection: { x: number; y: number; width: number; height: number; page: number; text?: string } | null,
+    pendingSelection: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      page: number;
+      text?: string;
+    } | null,
     setToolbarRect: (rect: { x: number; y: number; w: number; h: number } | null) => void,
     setCurrentRect: (rect: { x: number; y: number; w: number; h: number } | null) => void,
-    setPendingSelection: (selection: { x: number; y: number; width: number; height: number; page: number; text?: string } | null) => void,
+    setPendingSelection: (
+      selection: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        page: number;
+        text?: string;
+      } | null
+    ) => void,
     setCurrentRectPage?: (page: number | null) => void
   ) => {
     if (toolbarRect && currentDocId && pendingSelection) {
@@ -72,8 +99,24 @@ export const useHighlights = () => {
   const handleCreateEvidenceFromDialog = async (
     snippet: string,
     name: string | undefined,
-    pendingSelection: { x: number; y: number; width: number; height: number; page: number; text?: string } | null,
-    setPendingSelection: (selection: { x: number; y: number; width: number; height: number; page: number; text?: string } | null) => void,
+    pendingSelection: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      page: number;
+      text?: string;
+    } | null,
+    setPendingSelection: (
+      selection: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        page: number;
+        text?: string;
+      } | null
+    ) => void,
     setIsCreateDialogOpen: (open: boolean) => void,
     setToolbarRect?: (rect: { x: number; y: number; w: number; h: number } | null) => void,
     setCurrentRect?: (rect: { x: number; y: number; w: number; h: number } | null) => void,
@@ -110,4 +153,3 @@ export const useHighlights = () => {
     handleCreateEvidenceFromDialog,
   };
 };
-

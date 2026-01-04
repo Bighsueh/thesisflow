@@ -28,4 +28,3 @@ export function useAutoSave(delay: number = 1000) {
 
   return debouncedSave;
 }
-

@@ -1,3 +1,14 @@
+import {
+  Settings,
+  Save,
+  FileText,
+  CheckSquare,
+  Columns,
+  Layers,
+  BookOpen,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactFlow, {
@@ -10,9 +21,15 @@ import ReactFlow, {
   MarkerType,
 } from 'reactflow';
 import { useStore } from '../store';
-import { ResourceNode, SummaryNode, ComparisonNode, SynthesisNode, StartNode, EndNode } from './CustomNodes';
-import { Settings, Save, FileText, CheckSquare, Columns, Layers, BookOpen, Plus, Trash2 } from 'lucide-react';
 import { AppNodeType } from '../types';
+import {
+  ResourceNode,
+  SummaryNode,
+  ComparisonNode,
+  SynthesisNode,
+  StartNode,
+  EndNode,
+} from './CustomNodes';
 
 const nodeTypes = {
   startNode: StartNode,
@@ -39,15 +56,15 @@ const Sidebar = () => {
       </div>
       <div className="p-4 space-y-3 overflow-y-auto">
         <div className="text-xs font-semibold text-slate-500 uppercase">階段模組</div>
-        
-         <div
-           className="card compact bg-white border border-orange-200 cursor-grab hover:shadow-md transition-all"
-           draggable
-           onDragStart={(e) => onDragStart(e, 'resource')}
-           onClick={() => appendStageNode('resource')}
-         >
+
+        <div
+          className="card compact bg-white border border-orange-200 cursor-grab hover:shadow-md transition-all"
+          draggable
+          onDragStart={(e) => onDragStart(e, 'resource')}
+          onClick={() => appendStageNode('resource')}
+        >
           <div className="card-body p-3 flex flex-row items-center gap-3">
-            <BookOpen size={18} className="text-orange-500"/>
+            <BookOpen size={18} className="text-orange-500" />
             <span className="font-medium">閱讀引導</span>
           </div>
         </div>
@@ -59,7 +76,7 @@ const Sidebar = () => {
           onClick={() => appendStageNode('task_summary')}
         >
           <div className="card-body p-3 flex flex-row items-center gap-3">
-            <CheckSquare size={18} className="text-blue-500"/>
+            <CheckSquare size={18} className="text-blue-500" />
             <span className="font-medium">任務：摘要</span>
           </div>
         </div>
@@ -71,7 +88,7 @@ const Sidebar = () => {
           onClick={() => appendStageNode('task_comparison')}
         >
           <div className="card-body p-3 flex flex-row items-center gap-3">
-            <Columns size={18} className="text-purple-500"/>
+            <Columns size={18} className="text-purple-500" />
             <span className="font-medium">任務：比較</span>
           </div>
         </div>
@@ -83,7 +100,7 @@ const Sidebar = () => {
           onClick={() => appendStageNode('task_synthesis')}
         >
           <div className="card-body p-3 flex flex-row items-center gap-3">
-            <Layers size={18} className="text-emerald-500"/>
+            <Layers size={18} className="text-emerald-500" />
             <span className="font-medium">任務：綜合</span>
           </div>
         </div>
@@ -94,7 +111,7 @@ const Sidebar = () => {
 
 const ConfigPanel = () => {
   const { nodes, updateNodeData, selectedNodeId, setSelectedNodeId, deleteNodeById } = useStore();
-  const selectedNode = nodes.find(n => n.id === selectedNodeId);
+  const selectedNode = nodes.find((n) => n.id === selectedNodeId);
 
   if (!selectedNode) {
     return (
@@ -120,239 +137,311 @@ const ConfigPanel = () => {
               刪除節點
             </button>
           )}
-          <button onClick={() => setSelectedNodeId(null)} className="btn btn-xs btn-circle btn-ghost">
+          <button
+            onClick={() => setSelectedNodeId(null)}
+            className="btn btn-xs btn-circle btn-ghost"
+          >
             ✕
           </button>
         </div>
       </div>
       <div className="p-4 overflow-y-auto flex-1 space-y-4">
-        
         <div className="form-control">
-          <label className="label"><span className="label-text">階段名稱</span></label>
-          <input 
-            type="text" 
-            className="input input-bordered w-full" 
+          <label className="label">
+            <span className="label-text">階段名稱</span>
+          </label>
+          <input
+            type="text"
+            className="input input-bordered w-full"
             value={selectedNode.data.label}
             onChange={(e) => updateNodeData(selectedNode.id, { label: e.target.value })}
           />
         </div>
 
         {selectedNode.data.type === 'resource' && (
-           <>
-             <div className="form-control">
-               <label className="label"><span className="label-text">閱讀指導語</span></label>
-               <textarea 
-                 className="textarea textarea-bordered h-32" 
-                 placeholder="例如：請閱讀關於 Attention Mechanism 的章節..."
-                 value={selectedNode.data.config?.guidance || ''}
-                 onChange={(e) => updateNodeData(selectedNode.id, { 
-                    config: { ...selectedNode.data.config, guidance: e.target.value } 
-                  })}
-               />
-             </div>
-             <div className="form-control">
-               <label className="label"><span className="label-text">最少標記片段數量</span></label>
-               <input 
-                 type="number" 
-                 className="input input-bordered w-full" 
-                 min="0"
-                 value={selectedNode.data.config?.minEvidence || 0}
-                 onChange={(e) => updateNodeData(selectedNode.id, { 
-                    config: { ...selectedNode.data.config, minEvidence: parseInt(e.target.value) || 0 } 
-                  })}
-               />
-               <label className="label">
-                 <span className="label-text-alt text-slate-500">學生在此節點至少需要建立多少則標記片段</span>
-               </label>
-             </div>
-           </>
+          <>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">閱讀指導語</span>
+              </label>
+              <textarea
+                className="textarea textarea-bordered h-32"
+                placeholder="例如：請閱讀關於 Attention Mechanism 的章節..."
+                value={selectedNode.data.config?.guidance || ''}
+                onChange={(e) =>
+                  updateNodeData(selectedNode.id, {
+                    config: { ...selectedNode.data.config, guidance: e.target.value },
+                  })
+                }
+              />
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">最少標記片段數量</span>
+              </label>
+              <input
+                type="number"
+                className="input input-bordered w-full"
+                min="0"
+                value={selectedNode.data.config?.minEvidence || 0}
+                onChange={(e) =>
+                  updateNodeData(selectedNode.id, {
+                    config: {
+                      ...selectedNode.data.config,
+                      minEvidence: parseInt(e.target.value) || 0,
+                    },
+                  })
+                }
+              />
+              <label className="label">
+                <span className="label-text-alt text-slate-500">
+                  學生在此節點至少需要建立多少則標記片段
+                </span>
+              </label>
+            </div>
+          </>
         )}
 
         {selectedNode.data.type === 'task_summary' && (
-           <>
-             <div className="form-control">
-               <label className="label"><span className="label-text">摘要指導語</span></label>
-               <textarea 
-                 className="textarea textarea-bordered h-24" 
-                 value={selectedNode.data.config?.guidance || ''}
-                 onChange={(e) => updateNodeData(selectedNode.id, { 
-                    config: { ...selectedNode.data.config, guidance: e.target.value } 
-                  })}
-               />
-             </div>
-             <div className="form-control">
-               <label className="label"><span className="label-text">字數要求</span></label>
-               <input 
-                 type="number" 
-                 className="input input-bordered w-full" 
-                 value={selectedNode.data.config?.minWords || 150}
-                 onChange={(e) => updateNodeData(selectedNode.id, { 
-                    config: { ...selectedNode.data.config, minWords: parseInt(e.target.value) } 
-                  })}
-               />
-             </div>
-             <div className="form-control">
-               <div className="flex items-center justify-between mb-2">
-                 <label className="label py-0"><span className="label-text font-bold">摘要段落設定</span></label>
-                 <button
-                   className="btn btn-xs btn-primary gap-1"
-                   onClick={() => {
-                     const currentSections = selectedNode.data.config?.sections || [];
-                     const newSection = {
-                       key: `section_${Date.now()}`,
-                       label: `段落 ${currentSections.length + 1}`,
-                       placeholder: '請輸入內容...',
-                       minEvidence: 1,
-                     };
-                     updateNodeData(selectedNode.id, {
-                       config: {
-                         ...selectedNode.data.config,
-                         sections: [...currentSections, newSection],
-                       },
-                     });
-                   }}
-                 >
-                   <Plus size={12} />
-                   新增段落
-                 </button>
-                 {(!selectedNode.data.config?.sections || selectedNode.data.config.sections.length === 0) && (
-                   <button
-                     className="btn btn-xs btn-outline gap-1"
-                     onClick={() => {
-                       updateNodeData(selectedNode.id, {
-                         config: {
-                           ...selectedNode.data.config,
-                           sections: [
-                             { key: 'a1_purpose', label: 'A1 研究目的 (Purpose)', placeholder: '研究問題為何？', minEvidence: 1 },
-                             { key: 'a2_method', label: 'A2 研究方法 (Method)', placeholder: '採用了什麼方法？', minEvidence: 1 },
-                             { key: 'a3_findings', label: 'A3 主要發現 (Findings)', placeholder: '核心結論為何？', minEvidence: 1 },
-                             { key: 'a4_limitations', label: 'A4 研究限制 (Limitations)', placeholder: '作者自述或觀察到的限制...', minEvidence: 1 },
-                           ],
-                         },
-                       });
-                     }}
-                   >
-                     使用預設值
-                   </button>
-                 )}
-               </div>
-               <div className="space-y-2 max-h-64 overflow-y-auto">
-                 {(selectedNode.data.config?.sections || []).map((section: any, idx: number) => (
-                   <div key={idx} className="card bg-base-200 border border-base-300 p-3">
-                     <div className="flex items-start gap-2">
-                       <div className="flex-1 space-y-2">
-                         <input
-                           type="text"
-                           className="input input-sm input-bordered w-full"
-                           placeholder="段落 Key (唯一識別碼，如 a1_purpose)"
-                           value={section.key || ''}
-                           onChange={(e) => {
-                             const sections = [...(selectedNode.data.config?.sections || [])];
-                             sections[idx] = { ...sections[idx], key: e.target.value };
-                             updateNodeData(selectedNode.id, {
-                               config: { ...selectedNode.data.config, sections },
-                             });
-                           }}
-                         />
-                         <input
-                           type="text"
-                           className="input input-sm input-bordered w-full"
-                           placeholder="段落標籤 (如 A1 研究目的)"
-                           value={section.label || ''}
-                           onChange={(e) => {
-                             const sections = [...(selectedNode.data.config?.sections || [])];
-                             sections[idx] = { ...sections[idx], label: e.target.value };
-                             updateNodeData(selectedNode.id, {
-                               config: { ...selectedNode.data.config, sections },
-                             });
-                           }}
-                         />
-                         <input
-                           type="text"
-                           className="input input-sm input-bordered w-full"
-                           placeholder="輸入提示文字"
-                           value={section.placeholder || ''}
-                           onChange={(e) => {
-                             const sections = [...(selectedNode.data.config?.sections || [])];
-                             sections[idx] = { ...sections[idx], placeholder: e.target.value };
-                             updateNodeData(selectedNode.id, {
-                               config: { ...selectedNode.data.config, sections },
-                             });
-                           }}
-                         />
-                         <div className="flex items-center gap-2">
-                           <label className="label py-0 text-xs">最少標記片段：</label>
-                           <input
-                             type="number"
-                             className="input input-sm input-bordered w-20"
-                             min="0"
-                             value={section.minEvidence || 1}
-                             onChange={(e) => {
-                               const sections = [...(selectedNode.data.config?.sections || [])];
-                               sections[idx] = { ...sections[idx], minEvidence: parseInt(e.target.value) || 1 };
-                               updateNodeData(selectedNode.id, {
-                                 config: { ...selectedNode.data.config, sections },
-                               });
-                             }}
-                           />
-                         </div>
-                       </div>
-                       <button
-                         className="btn btn-xs btn-ghost text-red-500 hover:text-red-700"
-                         onClick={() => {
-                           const sections = (selectedNode.data.config?.sections || []).filter((_: any, i: number) => i !== idx);
-                           updateNodeData(selectedNode.id, {
-                             config: { ...selectedNode.data.config, sections },
-                           });
-                         }}
-                       >
-                         <Trash2 size={14} />
-                       </button>
-                     </div>
-                   </div>
-                 ))}
-                 {(!selectedNode.data.config?.sections || selectedNode.data.config.sections.length === 0) && (
-                   <div className="text-sm text-slate-400 text-center py-4">
-                     尚未設定段落，點擊「新增段落」或「使用預設值」開始設定
-                   </div>
-                 )}
-               </div>
-             </div>
-           </>
+          <>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">摘要指導語</span>
+              </label>
+              <textarea
+                className="textarea textarea-bordered h-24"
+                value={selectedNode.data.config?.guidance || ''}
+                onChange={(e) =>
+                  updateNodeData(selectedNode.id, {
+                    config: { ...selectedNode.data.config, guidance: e.target.value },
+                  })
+                }
+              />
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">字數要求</span>
+              </label>
+              <input
+                type="number"
+                className="input input-bordered w-full"
+                value={selectedNode.data.config?.minWords || 150}
+                onChange={(e) =>
+                  updateNodeData(selectedNode.id, {
+                    config: { ...selectedNode.data.config, minWords: parseInt(e.target.value) },
+                  })
+                }
+              />
+            </div>
+            <div className="form-control">
+              <div className="flex items-center justify-between mb-2">
+                <label className="label py-0">
+                  <span className="label-text font-bold">摘要段落設定</span>
+                </label>
+                <button
+                  className="btn btn-xs btn-primary gap-1"
+                  onClick={() => {
+                    const currentSections = selectedNode.data.config?.sections || [];
+                    const newSection = {
+                      key: `section_${Date.now()}`,
+                      label: `段落 ${currentSections.length + 1}`,
+                      placeholder: '請輸入內容...',
+                      minEvidence: 1,
+                    };
+                    updateNodeData(selectedNode.id, {
+                      config: {
+                        ...selectedNode.data.config,
+                        sections: [...currentSections, newSection],
+                      },
+                    });
+                  }}
+                >
+                  <Plus size={12} />
+                  新增段落
+                </button>
+                {(!selectedNode.data.config?.sections ||
+                  selectedNode.data.config.sections.length === 0) && (
+                  <button
+                    className="btn btn-xs btn-outline gap-1"
+                    onClick={() => {
+                      updateNodeData(selectedNode.id, {
+                        config: {
+                          ...selectedNode.data.config,
+                          sections: [
+                            {
+                              key: 'a1_purpose',
+                              label: 'A1 研究目的 (Purpose)',
+                              placeholder: '研究問題為何？',
+                              minEvidence: 1,
+                            },
+                            {
+                              key: 'a2_method',
+                              label: 'A2 研究方法 (Method)',
+                              placeholder: '採用了什麼方法？',
+                              minEvidence: 1,
+                            },
+                            {
+                              key: 'a3_findings',
+                              label: 'A3 主要發現 (Findings)',
+                              placeholder: '核心結論為何？',
+                              minEvidence: 1,
+                            },
+                            {
+                              key: 'a4_limitations',
+                              label: 'A4 研究限制 (Limitations)',
+                              placeholder: '作者自述或觀察到的限制...',
+                              minEvidence: 1,
+                            },
+                          ],
+                        },
+                      });
+                    }}
+                  >
+                    使用預設值
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {(selectedNode.data.config?.sections || []).map((section: any, idx: number) => (
+                  <div key={idx} className="card bg-base-200 border border-base-300 p-3">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 space-y-2">
+                        <input
+                          type="text"
+                          className="input input-sm input-bordered w-full"
+                          placeholder="段落 Key (唯一識別碼，如 a1_purpose)"
+                          value={section.key || ''}
+                          onChange={(e) => {
+                            const sections = [...(selectedNode.data.config?.sections || [])];
+                            sections[idx] = { ...sections[idx], key: e.target.value };
+                            updateNodeData(selectedNode.id, {
+                              config: { ...selectedNode.data.config, sections },
+                            });
+                          }}
+                        />
+                        <input
+                          type="text"
+                          className="input input-sm input-bordered w-full"
+                          placeholder="段落標籤 (如 A1 研究目的)"
+                          value={section.label || ''}
+                          onChange={(e) => {
+                            const sections = [...(selectedNode.data.config?.sections || [])];
+                            sections[idx] = { ...sections[idx], label: e.target.value };
+                            updateNodeData(selectedNode.id, {
+                              config: { ...selectedNode.data.config, sections },
+                            });
+                          }}
+                        />
+                        <input
+                          type="text"
+                          className="input input-sm input-bordered w-full"
+                          placeholder="輸入提示文字"
+                          value={section.placeholder || ''}
+                          onChange={(e) => {
+                            const sections = [...(selectedNode.data.config?.sections || [])];
+                            sections[idx] = { ...sections[idx], placeholder: e.target.value };
+                            updateNodeData(selectedNode.id, {
+                              config: { ...selectedNode.data.config, sections },
+                            });
+                          }}
+                        />
+                        <div className="flex items-center gap-2">
+                          <label className="label py-0 text-xs">最少標記片段：</label>
+                          <input
+                            type="number"
+                            className="input input-sm input-bordered w-20"
+                            min="0"
+                            value={section.minEvidence || 1}
+                            onChange={(e) => {
+                              const sections = [...(selectedNode.data.config?.sections || [])];
+                              sections[idx] = {
+                                ...sections[idx],
+                                minEvidence: parseInt(e.target.value) || 1,
+                              };
+                              updateNodeData(selectedNode.id, {
+                                config: { ...selectedNode.data.config, sections },
+                              });
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <button
+                        className="btn btn-xs btn-ghost text-red-500 hover:text-red-700"
+                        onClick={() => {
+                          const sections = (selectedNode.data.config?.sections || []).filter(
+                            (_: any, i: number) => i !== idx
+                          );
+                          updateNodeData(selectedNode.id, {
+                            config: { ...selectedNode.data.config, sections },
+                          });
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {(!selectedNode.data.config?.sections ||
+                  selectedNode.data.config.sections.length === 0) && (
+                  <div className="text-sm text-slate-400 text-center py-4">
+                    尚未設定段落，點擊「新增段落」或「使用預設值」開始設定
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
         )}
 
         {selectedNode.data.type === 'task_comparison' && (
-           <>
-             <div className="form-control">
-               <label className="label"><span className="label-text">比較維度 (逗號分隔)</span></label>
-               <input 
-                   type="text" 
-                   className="input input-bordered w-full" 
-                   value={selectedNode.data.config?.dimensions?.join(',') || ''}
-                   onChange={(e) => updateNodeData(selectedNode.id, { 
-                      config: { ...selectedNode.data.config, dimensions: e.target.value.split(',').filter((x:string) => x.trim()) } 
-                    })}
-                 />
-               <label className="label">
-                 <span className="label-text-alt text-slate-500">例如：研究目的, 研究方法, 主要發現</span>
-               </label>
-             </div>
-             <div className="form-control">
-               <label className="label"><span className="label-text">最少標記片段數量</span></label>
-               <input 
-                 type="number" 
-                 className="input input-bordered w-full" 
-                 min="0"
-                 value={selectedNode.data.config?.minEvidence || 1}
-                 onChange={(e) => updateNodeData(selectedNode.id, { 
-                    config: { ...selectedNode.data.config, minEvidence: parseInt(e.target.value) || 1 } 
-                  })}
-               />
-               <label className="label">
-                 <span className="label-text-alt text-slate-500">每個比較維度至少需要的標記片段數量</span>
-               </label>
-             </div>
-           </>
+          <>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">比較維度 (逗號分隔)</span>
+              </label>
+              <input
+                type="text"
+                className="input input-bordered w-full"
+                value={selectedNode.data.config?.dimensions?.join(',') || ''}
+                onChange={(e) =>
+                  updateNodeData(selectedNode.id, {
+                    config: {
+                      ...selectedNode.data.config,
+                      dimensions: e.target.value.split(',').filter((x: string) => x.trim()),
+                    },
+                  })
+                }
+              />
+              <label className="label">
+                <span className="label-text-alt text-slate-500">
+                  例如：研究目的, 研究方法, 主要發現
+                </span>
+              </label>
+            </div>
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">最少標記片段數量</span>
+              </label>
+              <input
+                type="number"
+                className="input input-bordered w-full"
+                min="0"
+                value={selectedNode.data.config?.minEvidence || 1}
+                onChange={(e) =>
+                  updateNodeData(selectedNode.id, {
+                    config: {
+                      ...selectedNode.data.config,
+                      minEvidence: parseInt(e.target.value) || 1,
+                    },
+                  })
+                }
+              />
+              <label className="label">
+                <span className="label-text-alt text-slate-500">
+                  每個比較維度至少需要的標記片段數量
+                </span>
+              </label>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -430,48 +519,54 @@ const Flow = () => {
   }, []);
 
   // 檢測兩個節點是否重疊
-  const nodesOverlap = useCallback((node1: Node, node2: Node, nodeWidth = 256, nodeHeight = 120) => {
-    const x1 = node1.position.x;
-    const y1 = node1.position.y;
-    const x2 = node2.position.x;
-    const y2 = node2.position.y;
+  const nodesOverlap = useCallback(
+    (node1: Node, node2: Node, nodeWidth = 256, nodeHeight = 120) => {
+      const x1 = node1.position.x;
+      const y1 = node1.position.y;
+      const x2 = node2.position.x;
+      const y2 = node2.position.y;
 
-    // 檢查兩個節點的邊界框是否重疊
-    // 使用中心點距離來判斷，更寬鬆的重疊條件
-    const centerX1 = x1 + nodeWidth / 2;
-    const centerY1 = y1 + nodeHeight / 2;
-    const centerX2 = x2 + nodeWidth / 2;
-    const centerY2 = y2 + nodeHeight / 2;
+      // 檢查兩個節點的邊界框是否重疊
+      // 使用中心點距離來判斷，更寬鬆的重疊條件
+      const centerX1 = x1 + nodeWidth / 2;
+      const centerY1 = y1 + nodeHeight / 2;
+      const centerX2 = x2 + nodeWidth / 2;
+      const centerY2 = y2 + nodeHeight / 2;
 
-    const distanceX = Math.abs(centerX1 - centerX2);
-    const distanceY = Math.abs(centerY1 - centerY2);
+      const distanceX = Math.abs(centerX1 - centerX2);
+      const distanceY = Math.abs(centerY1 - centerY2);
 
-    // 如果兩個節點的中心點距離小於節點尺寸的一半，則認為重疊
-    return distanceX < nodeWidth * 0.8 && distanceY < nodeHeight * 0.8;
-  }, []);
+      // 如果兩個節點的中心點距離小於節點尺寸的一半，則認為重疊
+      return distanceX < nodeWidth * 0.8 && distanceY < nodeHeight * 0.8;
+    },
+    []
+  );
 
   // 處理節點拖動過程，檢測重疊並顯示視覺提示
   const onNodeDrag = useCallback(
     (event: React.MouseEvent, draggedNode: Node) => {
       if (!draggingNodeId || draggingNodeId !== draggedNode.id) return;
-      
+
       // draggedNode 已經包含最新的位置信息
       const currentNodes = useStore.getState().nodes;
-      
+
       // 找到與被拖動節點重疊的其他節點
-      const overlappingNode = currentNodes.find(
-        (node) => {
-          if (node.id === draggedNode.id) return false;
-          // 跳過 start 和 end 節點，不允許交換
-          const nodeType = (node as any).data?.type;
-          const draggedType = (draggedNode as any).data?.type;
-          if (nodeType === 'start' || nodeType === 'end' || draggedType === 'start' || draggedType === 'end') {
-            return false;
-          }
-          // 使用 draggedNode 的最新位置進行重疊檢測
-          return nodesOverlap(draggedNode, node);
+      const overlappingNode = currentNodes.find((node) => {
+        if (node.id === draggedNode.id) return false;
+        // 跳過 start 和 end 節點，不允許交換
+        const nodeType = (node as any).data?.type;
+        const draggedType = (draggedNode as any).data?.type;
+        if (
+          nodeType === 'start' ||
+          nodeType === 'end' ||
+          draggedType === 'start' ||
+          draggedType === 'end'
+        ) {
+          return false;
         }
-      );
+        // 使用 draggedNode 的最新位置進行重疊檢測
+        return nodesOverlap(draggedNode, node);
+      });
 
       // 更新重疊節點狀態
       setOverlappingNodeId(overlappingNode?.id || null);
@@ -485,7 +580,7 @@ const Flow = () => {
       // 清除拖動狀態
       setDraggingNodeId(null);
       setOverlappingNodeId(null);
-      
+
       // 如果正在交換中，跳過處理
       if (isSwappingRef.current) {
         return;
@@ -496,35 +591,38 @@ const Flow = () => {
       if (!latestDraggedNode) return;
 
       const currentNodes = useStore.getState().nodes;
-      
+
       // 找到與被拖動節點重疊的其他節點
-      const overlappingNode = currentNodes.find(
-        (node) => {
-          if (node.id === latestDraggedNode.id) return false;
-          // 跳過 start 和 end 節點，不允許交換
-          const nodeType = (node as any).data?.type;
-          const draggedType = (latestDraggedNode as any).data?.type;
-          if (nodeType === 'start' || nodeType === 'end' || draggedType === 'start' || draggedType === 'end') {
-            return false;
-          }
-          return nodesOverlap(latestDraggedNode, node);
+      const overlappingNode = currentNodes.find((node) => {
+        if (node.id === latestDraggedNode.id) return false;
+        // 跳過 start 和 end 節點，不允許交換
+        const nodeType = (node as any).data?.type;
+        const draggedType = (latestDraggedNode as any).data?.type;
+        if (
+          nodeType === 'start' ||
+          nodeType === 'end' ||
+          draggedType === 'start' ||
+          draggedType === 'end'
+        ) {
+          return false;
         }
-      );
+        return nodesOverlap(latestDraggedNode, node);
+      });
 
       if (overlappingNode) {
         isSwappingRef.current = true;
-        
+
         const draggedNodeId = latestDraggedNode.id;
         const overlappingNodeId = overlappingNode.id;
-        
+
         // 獲取兩個節點的原始位置
         const draggedOriginalPos = originalPositionsRef.current.get(draggedNodeId);
         const overlappingOriginalPos = originalPositionsRef.current.get(overlappingNodeId);
-        
+
         // 如果找不到原始位置，使用當前位置作為備選
         const draggedPos = draggedOriginalPos || latestDraggedNode.position;
         const overlappingPos = overlappingOriginalPos || overlappingNode.position;
-        
+
         // 交換兩個節點的原始位置
         const updatedNodes = currentNodes.map((node) => {
           if (node.id === draggedNodeId) {
@@ -538,30 +636,32 @@ const Flow = () => {
 
         // 交換兩個節點在 workflow 中的順序（交換邊連接）
         const currentEdges = useStore.getState().edges;
-        const updatedEdges = currentEdges.map((edge) => {
-          // 交換 source
-          let newSource = edge.source;
-          if (edge.source === draggedNodeId) {
-            newSource = overlappingNodeId;
-          } else if (edge.source === overlappingNodeId) {
-            newSource = draggedNodeId;
-          }
-          
-          // 交換 target
-          let newTarget = edge.target;
-          if (edge.target === draggedNodeId) {
-            newTarget = overlappingNodeId;
-          } else if (edge.target === overlappingNodeId) {
-            newTarget = draggedNodeId;
-          }
-          
-          // 如果 source 和 target 相同，跳過這條邊（避免自環）
-          if (newSource === newTarget) {
-            return null;
-          }
-          
-          return { ...edge, source: newSource, target: newTarget };
-        }).filter((edge): edge is typeof currentEdges[0] => edge !== null);
+        const updatedEdges = currentEdges
+          .map((edge) => {
+            // 交換 source
+            let newSource = edge.source;
+            if (edge.source === draggedNodeId) {
+              newSource = overlappingNodeId;
+            } else if (edge.source === overlappingNodeId) {
+              newSource = draggedNodeId;
+            }
+
+            // 交換 target
+            let newTarget = edge.target;
+            if (edge.target === draggedNodeId) {
+              newTarget = overlappingNodeId;
+            } else if (edge.target === overlappingNodeId) {
+              newTarget = draggedNodeId;
+            }
+
+            // 如果 source 和 target 相同，跳過這條邊（避免自環）
+            if (newSource === newTarget) {
+              return null;
+            }
+
+            return { ...edge, source: newSource, target: newTarget };
+          })
+          .filter((edge): edge is (typeof currentEdges)[0] => edge !== null);
 
         // 移除重複的邊
         const seenEdges = new Set<string>();
@@ -576,13 +676,13 @@ const Flow = () => {
 
         // 同時更新節點和邊
         useStore.setState({ nodes: updatedNodes, edges: uniqueEdges });
-        
+
         // 更新 autoLayout 的簽名，避免自動佈局覆蓋交換結果
         const signature = JSON.stringify(
-          updatedNodes.map((n) => ({ id: n.id, x: n.position.x, y: n.position.y })),
+          updatedNodes.map((n) => ({ id: n.id, x: n.position.x, y: n.position.y }))
         );
         lastLayoutSig.current = signature;
-        
+
         // 重置標記
         setTimeout(() => {
           isSwappingRef.current = false;
@@ -596,7 +696,8 @@ const Flow = () => {
     ensureSingleStartNode();
     const current = useStore.getState().nodes;
     const start =
-      current.find((n) => n.type === 'startNode') || current.find((n: any) => n.data?.type === 'start');
+      current.find((n) => n.type === 'startNode') ||
+      current.find((n: any) => n.data?.type === 'start');
     const end =
       current.find((n) => n.type === 'endNode') || current.find((n: any) => n.data?.type === 'end');
     const middle = current.filter(
@@ -604,7 +705,7 @@ const Flow = () => {
         n.id !== start?.id &&
         n.id !== end?.id &&
         (n as any).data?.type !== 'start' &&
-        (n as any).data?.type !== 'end',
+        (n as any).data?.type !== 'end'
     );
 
     // 依目前位置排序，維持穩定性
@@ -620,7 +721,7 @@ const Flow = () => {
     }));
 
     const signature = JSON.stringify(
-      positioned.map((n) => ({ id: n.id, x: n.position.x, y: n.position.y })),
+      positioned.map((n) => ({ id: n.id, x: n.position.x, y: n.position.y }))
     );
     if (signature === lastLayoutSig.current) return;
     lastLayoutSig.current = signature;
@@ -673,9 +774,13 @@ const Flow = () => {
 
 export default function TeacherInterface() {
   const navigate = useNavigate();
-  const { saveProject, nodes, addNode, activeProjectId, projects, ensureSingleStartNode } = useStore();
+  const { saveProject, nodes, addNode, activeProjectId, projects, ensureSingleStartNode } =
+    useStore();
   const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [saveMessage, setSaveMessage] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
   const [title, setTitle] = useState('');
   const [semester, setSemester] = useState('');
 
@@ -714,7 +819,12 @@ export default function TeacherInterface() {
     setSaving(true);
     setSaveMessage(null);
     try {
-      await saveProject({ id: activeProjectId || undefined, title: title.trim(), semester: semester.trim() || undefined, tags: [] });
+      await saveProject({
+        id: activeProjectId || undefined,
+        title: title.trim(),
+        semester: semester.trim() || undefined,
+        tags: [],
+      });
       setSaveMessage({ type: 'success', text: '設計已成功儲存。' });
     } catch (e: any) {
       setSaveMessage({ type: 'error', text: `儲存失敗：${e.message || e}` });
@@ -729,10 +839,7 @@ export default function TeacherInterface() {
         {/* Header */}
         <div className="navbar bg-white border-b border-slate-200 px-4 h-16 shrink-0 z-20 shadow-sm">
           <div className="flex-none mr-2">
-            <button
-              className="btn btn-ghost btn-sm btn-circle"
-              onClick={() => navigate(-1)}
-            >
+            <button className="btn btn-ghost btn-sm btn-circle" onClick={() => navigate(-1)}>
               ←
             </button>
           </div>
@@ -742,7 +849,9 @@ export default function TeacherInterface() {
                 ThesisFlow
                 <span className="ml-1 text-xs font-normal text-slate-500">文獻探討輔助平台</span>
               </span>
-              <span className="badge badge-outline border-slate-300 text-slate-500 mt-1 w-fit">教師端</span>
+              <span className="badge badge-outline border-slate-300 text-slate-500 mt-1 w-fit">
+                教師端
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -760,11 +869,7 @@ export default function TeacherInterface() {
             </div>
           </div>
           <div className="flex-none gap-2 flex items-center">
-            <button
-              className="btn btn-sm btn-primary gap-2"
-              onClick={handleSave}
-              disabled={saving}
-            >
+            <button className="btn btn-sm btn-primary gap-2" onClick={handleSave} disabled={saving}>
               {saving ? '儲存中...' : '儲存設計'}
               <Save size={16} />
             </button>

@@ -133,7 +133,10 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     );
   }
 
-  if (!doc?.content_type || (!doc.content_type.startsWith('image/') && doc.content_type !== 'application/pdf')) {
+  if (
+    !doc?.content_type ||
+    (!doc.content_type.startsWith('image/') && doc.content_type !== 'application/pdf')
+  ) {
     return (
       <div className="whitespace-pre-line text-slate-800">
         {doc?.raw_preview || '（此文獻內容需從物件儲存載入）'}
@@ -143,4 +146,3 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 
   return null;
 };
-

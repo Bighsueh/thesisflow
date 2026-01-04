@@ -1,53 +1,51 @@
-import React, { useEffect, useState } from 'react'
-import { GlassCard } from '../components/ui/GlassCard'
-import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
-import { Users, Hash, LogIn, School } from 'lucide-react'
-import { useStore } from '../store'
+import { Users, Hash, LogIn, School } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Button } from '../components/ui/Button';
+import { GlassCard } from '../components/ui/GlassCard';
+import { Input } from '../components/ui/Input';
+import { useStore } from '../store';
 
 export function GroupsPage() {
-  const { cohorts, loadCohorts, joinCohortByCode } = useStore()
-  const [joinCode, setJoinCode] = useState('')
-  const [joining, setJoining] = useState(false)
-  const [error, setError] = useState('')
+  const { cohorts, loadCohorts, joinCohortByCode } = useStore();
+  const [joinCode, setJoinCode] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    loadCohorts()
-  }, [loadCohorts])
+    loadCohorts();
+  }, [loadCohorts]);
 
   const handleJoinCohort = async () => {
-    const code = joinCode.trim()
+    const code = joinCode.trim();
     if (code.length !== 9) {
-      setError('群組代碼必須為 9 位數')
-      return
+      setError('群組代碼必須為 9 位數');
+      return;
     }
-    setJoining(true)
-    setError('')
+    setJoining(true);
+    setError('');
     try {
-      await joinCohortByCode(code)
-      await loadCohorts()
-      setJoinCode('')
-      alert('已加入學生群組！')
+      await joinCohortByCode(code);
+      await loadCohorts();
+      setJoinCode('');
+      alert('已加入學生群組！');
     } catch (e: any) {
-      setError(e?.message || '加入失敗，請確認群組編號是否正確。')
+      setError(e?.message || '加入失敗，請確認群組編號是否正確。');
     } finally {
-      setJoining(false)
+      setJoining(false);
     }
-  }
+  };
 
   const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code)
-    alert('已複製群組代碼！')
-  }
+    navigator.clipboard.writeText(code);
+    alert('已複製群組代碼！');
+  };
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">學生群組</h1>
-          <p className="text-gray-500 mt-1">
-            與同儕和指導老師協作
-          </p>
+          <p className="text-gray-500 mt-1">與同儕和指導老師協作</p>
         </div>
       </div>
 
@@ -72,9 +70,9 @@ export function GroupsPage() {
                 icon={<Hash size={16} />}
                 value={joinCode}
                 onChange={(e) => {
-                  const v = e.target.value.replace(/\s+/g, '').replace(/[^\d]/g, '')
-                  setJoinCode(v)
-                  setError('')
+                  const v = e.target.value.replace(/\s+/g, '').replace(/[^\d]/g, '');
+                  setJoinCode(v);
+                  setError('');
                 }}
                 maxLength={9}
                 error={error}
@@ -98,9 +96,7 @@ export function GroupsPage() {
           {cohorts.length === 0 ? (
             <GlassCard className="p-12 text-center">
               <School size={48} className="mx-auto mb-4 text-gray-400 opacity-50" />
-              <p className="text-gray-600 font-medium mb-2">
-                目前尚未加入任何學生群組
-              </p>
+              <p className="text-gray-600 font-medium mb-2">目前尚未加入任何學生群組</p>
               <p className="text-sm text-gray-500">
                 請向授課教師索取群組編號，或使用左側表單加入群組。
               </p>
@@ -114,9 +110,7 @@ export function GroupsPage() {
                       <School size={24} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">
-                        {group.name}
-                      </h3>
+                      <h3 className="text-lg font-bold text-gray-900">{group.name}</h3>
                       <div className="flex items-center gap-3 text-sm text-gray-500 mt-1">
                         <span className="flex items-center gap-1">
                           <Users size={14} /> Group
@@ -148,6 +142,5 @@ export function GroupsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

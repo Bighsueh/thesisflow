@@ -1,5 +1,5 @@
-import React from 'react';
 import { CheckCircle2, XCircle, Send } from 'lucide-react';
+import React from 'react';
 import { useStore } from '../../store';
 
 interface ChecklistSubmitProps {
@@ -21,8 +21,8 @@ export const ChecklistSubmit: React.FC<ChecklistSubmitProps> = ({
   onSubmitLabel = '完成此節點',
 }) => {
   const { completeNode } = useStore();
-  const allRequiredChecked = checks.filter(c => c.required).every(c => c.checked);
-  const allChecked = checks.every(c => c.checked);
+  const allRequiredChecked = checks.filter((c) => c.required).every((c) => c.checked);
+  const allChecked = checks.every((c) => c.checked);
 
   const handleSubmit = () => {
     if (onSubmit) {
@@ -62,21 +62,9 @@ export const ChecklistSubmit: React.FC<ChecklistSubmitProps> = ({
           {onSubmitLabel}
         </button>
         {!allChecked && (
-          <p className="text-xs text-slate-500 mt-2 text-center">
-            請完成所有必填項目（標記 *）
-          </p>
+          <p className="text-xs text-slate-500 mt-2 text-center">請完成所有必填項目（標記 *）</p>
         )}
       </div>
     </div>
   );
 };
-
-
-
-
-
-
-
-
-
-

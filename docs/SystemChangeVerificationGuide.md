@@ -1,6 +1,7 @@
 # 系統級變更檢查指引（System Change Verification Guide）
 
 ## 1. 文件總覽
+
 - **適用情境**：凡涉及 `docker-compose.yml`、環境變數、資料庫 schema/migration、FastAPI 後端模組（`auth.py`, `models.py`, `schemas.py`, `services.py`）、核心 React 狀態或共用元件（`store.ts`, `authStore.ts`, `components/`, `pages/`）的程式碼變更。
 - **必須執行完整流程的時機**：
   - 準備送出 PR 或合併到 `main` 前。
@@ -9,6 +10,7 @@
   - 針對事故修復、性能調優、或使用者體驗重大調整後的驗證階段。
 
 ## 2. 變更類型分類
+
 1. **系統級設定變更**：`docker-compose.yml`、Dockerfile、`env` 檔、啟動腳本。
 2. **資料庫相關變更**：`models.py`, `migration_*.sql`, `db.py`, schema 說明文件。
 3. **後端 API / 商業邏輯變更**：`main.py`, `services.py`, `schemas.py`, 任何 FastAPI router。
@@ -18,6 +20,7 @@
 ## 3. 各類變更檢查清單
 
 ### 3.1 系統級設定變更
+
 - **應檢查組件**：`docker-compose.yml`, `.env*`, `backend/Dockerfile`, `frontend/vite.config.ts`, `check_env.sh`.
 - **檢查項目**：
   - [ ] 服務名稱、port、volume、network 是否與文件及其他環境一致（避免 CI/CD 無法啟動）。
@@ -28,6 +31,7 @@
 - **未檢查可能後果**：部署失敗、服務無法互通、意外使用舊環境設定，導致資料讀寫錯誤或 API time-out。
 
 ### 3.2 資料庫相關變更
+
 - **應檢查組件**：`models.py`, `db.py`, SQL migration, `schemas.py`, `services.py`, 受影響的前端表單/列表。
 - **檢查項目**：
   - [ ] migration 與 ORM 模型欄位一一對齊（型別、nullable、預設值）。
@@ -39,6 +43,7 @@
 - **未檢查可能後果**：API 500、資料遺失或無法序列化、舊資料造成 migration 失敗、前端顯示空白或崩潰。
 
 ### 3.3 後端 API / 商業邏輯變更
+
 - **應檢查組件**：`main.py` router、`services.py`, `schemas.py`, 單元測試/整合測試、前端呼叫這些 API 的頁面與 `store.ts`.
 - **檢查項目**：
   - [ ] 新增/調整的 endpoint 有相對應 schema、驗證與對應 service 層。
@@ -50,6 +55,7 @@
 - **未檢查可能後果**：API 套件版本不兼容、前端拿到舊格式導致不可用、背景任務持續寫入錯誤資料、權限穿透。
 
 ### 3.4 前端核心狀態或共用元件變更
+
 - **應檢查組件**：`store.ts`, `authStore.ts`, `pages/*`, `components/*`, `hooks/useAutoSave.ts`, `widgets/*`.
 - **檢查項目**：
   - [ ] Global store state shape 是否改變，並同步更新使用該 state 的所有 selector/hook。
@@ -60,6 +66,7 @@
 - **未檢查可能後果**：頁面崩潰、狀態不同步造成資料遺失、權限頁面顯示錯誤內容、TypeScript 編譯錯誤。
 
 ### 3.5 Auth / 權限 / 角色流程變更
+
 - **應檢查組件**：`backend/auth.py`, `services.py` 的角色判斷、`schemas.py` 的 token payload、前端 `authStore.ts`, `LoginPage`, `TeacherHome`, `StudentHome`, Route Guard。
 - **檢查項目**：
   - [ ] Token 生成/驗證（過期時間、簽章、claim）是否同步改動，並確保前端 refresh/儲存策略一致。
@@ -70,12 +77,14 @@
 - **未檢查可能後果**：未授權存取、永久登入失效、使用者被錯誤導至錯誤頁、資料洩漏。
 
 ## 4. 跨層影響檢查（Critical）
+
 - **Backend ↔ Frontend**：每個調整的 endpoint 都要對應一次端對端測試，確認 HTTP method、路由、payload、錯誤碼完全一致。
 - **Schema ↔ Pydantic ↔ API Response ↔ UI**：當欄位新增/移除/型別改變時，須同步更新 migration → ORM → Pydantic → Response serializer → 前端資料模型，確保 UI 不會顯示 `undefined` 或送出錯 payload。
 - **Auth 狀態 ↔ Store ↔ Route/Page**：任何 token 或角色結構調整，必須逐頁檢查：登入流程、重新導向、保護路由、前端 store 初始化、錯誤提示、登出流程。
 - **部署設定 ↔ 執行時行為**：Docker 或 env 調整後，需檢查以 Postgres 為例的連線字串、volume 持久化、備援策略是否生效。
 
 ## 5. 建議檢查順序
+
 1. **環境與設定**：確認 `docker-compose up` 可成功啟動所有服務；`check_env.sh` 無錯。
 2. **資料層**：執行/驗證 migration，在本地與 staging DB 各跑一次，並檢查資料完整性。
 3. **後端 API**：跑單元測試、以 Postman/HTTPie/自動化測試逐一驗證受影響的 endpoint（含錯誤情境）。
@@ -84,6 +93,7 @@
 6. **回歸檢查**：與 QA/產品確認核心使用旅程（Teacher workflow、Student workflow、登入、資料瀏覽）均無退化。
 
 ## 6. 常見踩雷與反模式
+
 - 忽略 Pydantic schema 更新，導致 FastAPI response 仍回舊欄位或型別不符。
 - 只修改 `store.ts` 而未更新使用該 state 的 selector，導致 runtime `undefined`.
 - Migration 未考慮既有資料（未設定預設值或 backfill），造成啟動即失敗。
@@ -92,12 +102,8 @@
 - 忘記更新文件與 `.env.example`，使得其他開發者無法重現環境。
 
 ## 7. 文件使用方式建議
+
 - **閱讀時機**：在規劃變更時先瀏覽一次，於開發完成後逐項勾檢；PR 審查或發版前再快速回顧。
 - **PR / Code Review 基準**：Reviewer 應以本指引為核對清單，要求開發者提供相關驗證證據（log、截圖、測試結果）。
 - **知識傳承**：可納入 `README` 或 `docs/`，並在新人 onboarding、變更審查會議中引用。
 - **持續維護**：每次出現新型態變更或事故時，更新本文件以反映最新教訓，確保系統級穩定性。
-
-
-
-
-

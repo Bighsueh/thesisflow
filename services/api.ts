@@ -5,7 +5,7 @@ export const api = {
     const token = localStorage.getItem('thesisflow_token');
     const res = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
+        Authorization: token ? `Bearer ${token}` : '',
         'Content-Type': 'application/json',
       },
     });
@@ -19,7 +19,7 @@ export const api = {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: 'POST',
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
+        Authorization: token ? `Bearer ${token}` : '',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -34,7 +34,7 @@ export const api = {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: 'PUT',
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
+        Authorization: token ? `Bearer ${token}` : '',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -49,7 +49,7 @@ export const api = {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
+        Authorization: token ? `Bearer ${token}` : '',
         'Content-Type': 'application/json',
       },
     });

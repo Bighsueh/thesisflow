@@ -1,4 +1,3 @@
-import { create } from 'zustand';
 import {
   Edge,
   addEdge,
@@ -10,6 +9,16 @@ import {
   getOutgoers,
   getIncomers,
 } from 'reactflow';
+import { create } from 'zustand';
+import { api } from './services/api';
+import { chatService } from './services/chatService';
+import { cohortService } from './services/cohortService';
+import { documentService } from './services/documentService';
+import { fileService } from './services/fileService';
+import { projectService } from './services/projectService';
+import { studentService } from './services/studentService';
+import { taskService } from './services/taskService';
+import { usageService } from './services/usageService';
 import {
   AppNode,
   Message,
@@ -28,15 +37,6 @@ import {
   UsageRecord,
   ChatContext,
 } from './types';
-import { api } from './services/api';
-import { projectService } from './services/projectService';
-import { cohortService } from './services/cohortService';
-import { studentService } from './services/studentService';
-import { documentService } from './services/documentService';
-import { taskService } from './services/taskService';
-import { chatService } from './services/chatService';
-import { fileService } from './services/fileService';
-import { usageService } from './services/usageService';
 
 interface AppState {
   nodes: AppNode[];
@@ -55,21 +55,40 @@ interface AppState {
   activeProjectId: string | null;
   enterProject: (projectId: string) => Promise<void>;
   exitProject: () => void;
-  saveProject: (meta: { id?: string; title: string; semester?: string; tags?: string[] }) => Promise<Project>;
+  saveProject: (meta: {
+    id?: string;
+    title: string;
+    semester?: string;
+    tags?: string[];
+  }) => Promise<Project>;
   deleteProject: (projectId: string) => Promise<void>;
   ensureSingleStartNode: () => void;
-  appendStageNode: (nodeType: 'resource' | 'task_summary' | 'task_comparison' | 'task_synthesis', position?: { x: number; y: number }) => void;
+  appendStageNode: (
+    nodeType: 'resource' | 'task_summary' | 'task_comparison' | 'task_synthesis',
+    position?: { x: number; y: number }
+  ) => void;
   deleteNodeById: (id: string) => void;
   cohorts: Cohort[];
   loadCohorts: () => Promise<void>;
-  createCohort: (payload: { name: string; code?: string; project_id?: string | null }) => Promise<void>;
-  updateCohort: (cohortId: string, payload: { name?: string; code?: string | null; project_id?: string | null }) => Promise<void>;
+  createCohort: (payload: {
+    name: string;
+    code?: string;
+    project_id?: string | null;
+  }) => Promise<void>;
+  updateCohort: (
+    cohortId: string,
+    payload: { name?: string; code?: string | null; project_id?: string | null }
+  ) => Promise<void>;
   deleteCohort: (cohortId: string) => Promise<void>;
   cohortMembers: Record<string, CohortMember[]>;
   loadCohortMembers: (cohortId: string) => Promise<CohortMember[]>;
   addCohortMember: (cohortId: string, userId: string) => Promise<void>;
   removeCohortMember: (cohortId: string, userId: string) => Promise<void>;
-  updateCohortMember: (cohortId: string, userId: string, payload: { status?: string; progress?: number }) => Promise<void>;
+  updateCohortMember: (
+    cohortId: string,
+    userId: string,
+    payload: { status?: string; progress?: number }
+  ) => Promise<void>;
   students: Student[];
   loadStudents: () => Promise<void>;
   createStudent: (payload: { email: string; name: string; password: string }) => Promise<void>;
@@ -83,10 +102,17 @@ interface AppState {
     zeroPad?: number;
   }) => Promise<void>;
   joinCohortByCode: (code: string) => Promise<void>;
-  updateStudent: (studentId: string, payload: { email?: string; name?: string; password?: string }) => Promise<void>;
+  updateStudent: (
+    studentId: string,
+    payload: { email?: string; name?: string; password?: string }
+  ) => Promise<void>;
   deleteStudent: (studentId: string) => Promise<void>;
   usageRecords: UsageRecord[];
-  loadUsageRecords: (filters: { cohortId?: string; projectId?: string; userId?: string }) => Promise<UsageRecord[]>;
+  loadUsageRecords: (filters: {
+    cohortId?: string;
+    projectId?: string;
+    userId?: string;
+  }) => Promise<UsageRecord[]>;
 
   currentStepId: string | null;
 
@@ -99,9 +125,33 @@ interface AppState {
   uploadFileDocument: (title: string, file: File) => Promise<void>;
   removeDocument: (id: string) => Promise<void>;
   selectDocument: (docId: string) => void;
-  addHighlight: (docId: string, text: string, options?: { name?: string; page?: number; x?: number; y?: number; width?: number; height?: number; evidence_type?: string }) => Promise<void>;
+  addHighlight: (
+    docId: string,
+    text: string,
+    options?: {
+      name?: string;
+      page?: number;
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      evidence_type?: string;
+    }
+  ) => Promise<void>;
   removeHighlight: (highlightId: string) => Promise<void>;
-  updateHighlight: (highlightId: string, payload: { snippet?: string; name?: string; page?: number; x?: number; y?: number; width?: number; height?: number; evidence_type?: string }) => Promise<void>;
+  updateHighlight: (
+    highlightId: string,
+    payload: {
+      snippet?: string;
+      name?: string;
+      page?: number;
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      evidence_type?: string;
+    }
+  ) => Promise<void>;
   removeAllHighlights: (docId: string) => Promise<void>;
 
   taskAVersions: TaskVersion[];
@@ -123,7 +173,11 @@ interface AppState {
   navigatePrev: () => void;
 
   submitTaskA: (docId: string, content: TaskAContent) => Promise<void>;
-  updateTaskBRow: (index: number, field: keyof ComparisonRow | 'doc1Claim' | 'doc2Claim', value: any) => void;
+  updateTaskBRow: (
+    index: number,
+    field: keyof ComparisonRow | 'doc1Claim' | 'doc2Claim',
+    value: any
+  ) => void;
   addTaskBRow: () => void;
   removeTaskBRow: (index: number) => void;
   submitTaskBCheck: () => Promise<void>;
@@ -135,7 +189,7 @@ interface AppState {
   initializeTaskBDataForNode: (nodeId: string, dimensions: string[]) => void;
   saveWorkflowState: () => Promise<void>;
   loadWorkflowState: (projectId: string) => Promise<void>;
-  
+
   // Chat 相關方法
   addChatMessage: (message: Message) => void;
   updateWidgetState: (nodeId: string, widgetData: any) => void;
@@ -170,9 +224,12 @@ export const useStore = create<AppState>((set, get) => ({
   onConnect: (connection) => set({ edges: addEdge(connection, get().edges) }),
   setNodes: (nodes) => set({ nodes }),
   addNode: (node) => set((state) => ({ nodes: [...state.nodes, node] })),
-  updateNodeData: (id, data) => set((state) => ({
-    nodes: state.nodes.map((node) => (node.id === id ? { ...node, data: { ...node.data, ...data } } : node)),
-  })),
+  updateNodeData: (id, data) =>
+    set((state) => ({
+      nodes: state.nodes.map((node) =>
+        node.id === id ? { ...node, data: { ...node.data, ...data } } : node
+      ),
+    })),
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
 
   projects: [],
@@ -202,7 +259,9 @@ export const useStore = create<AppState>((set, get) => ({
     await cohortService.deleteCohort(cohortId);
     set((s) => ({
       cohorts: s.cohorts.filter((c) => c.id !== cohortId),
-      cohortMembers: Object.fromEntries(Object.entries(s.cohortMembers).filter(([k]) => k !== cohortId)),
+      cohortMembers: Object.fromEntries(
+        Object.entries(s.cohortMembers).filter(([k]) => k !== cohortId)
+      ),
     }));
   },
   loadCohortMembers: async (cohortId) => {
@@ -284,8 +343,19 @@ export const useStore = create<AppState>((set, get) => ({
       config: n.data.config,
       position: n.position,
     }));
-    const edgesPayload = state.edges.map((e) => ({ id: e.id, source: e.source, target: e.target, data: e.data }));
-    const body = JSON.stringify({ title: meta.title, semester: meta.semester, tags: meta.tags || [], nodes: nodesPayload, edges: edgesPayload });
+    const edgesPayload = state.edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      data: e.data,
+    }));
+    const body = JSON.stringify({
+      title: meta.title,
+      semester: meta.semester,
+      tags: meta.tags || [],
+      nodes: nodesPayload,
+      edges: edgesPayload,
+    });
 
     let saved: Project;
     if (meta.id) {
@@ -354,7 +424,7 @@ export const useStore = create<AppState>((set, get) => ({
 
       // 僅保留有效節點的 edges，並去除重複 source-target
       const edgeSeen = new Set<string>();
-      let filteredEdges = state.edges.filter((e) => {
+      const filteredEdges = state.edges.filter((e) => {
         if (!nodeIdsToKeep.has(e.source) || !nodeIdsToKeep.has(e.target)) return false;
         const key = `${e.source}->${e.target}`;
         if (edgeSeen.has(key)) return false;
@@ -368,11 +438,11 @@ export const useStore = create<AppState>((set, get) => ({
           n.id !== startNode!.id &&
           n.id !== endNode!.id &&
           (n as any).data?.type !== 'start' &&
-          (n as any).data?.type !== 'end',
+          (n as any).data?.type !== 'end'
       ).length;
       if (middleCount === 0) {
         const hasStartEnd = filteredEdges.some(
-          (e) => e.source === startNode!.id && e.target === endNode!.id,
+          (e) => e.source === startNode!.id && e.target === endNode!.id
         );
         if (!hasStartEnd) {
           filteredEdges.push({ id: genId(), source: startNode.id, target: endNode.id, data: {} });
@@ -396,7 +466,7 @@ export const useStore = create<AppState>((set, get) => ({
         return state;
       }
 
-      let nodes = [...state.nodes];
+      const nodes = [...state.nodes];
       let edges = [...state.edges];
 
       let startNode =
@@ -427,8 +497,7 @@ export const useStore = create<AppState>((set, get) => ({
 
       // 找到目前接到 end 的節點，作為插入點；若沒有，使用 start
       const edgeToEnd = edges.find((e) => e.target === endNode!.id);
-      const tailNode =
-        (edgeToEnd && nodes.find((n) => n.id === edgeToEnd.source)) || startNode!;
+      const tailNode = (edgeToEnd && nodes.find((n) => n.id === edgeToEnd.source)) || startNode!;
 
       // 移除 tail -> end 的連線
       edges = edges.filter((e) => !(e.source === tailNode.id && e.target === endNode!.id));
@@ -438,22 +507,42 @@ export const useStore = create<AppState>((set, get) => ({
         y: tailNode.position.y + 140,
       };
 
-      let newNodeData: any = { label: '', type: nodeType, config: {} };
+      const newNodeData: any = { label: '', type: nodeType, config: {} };
       if (nodeType === 'resource') {
         newNodeData.label = '閱讀引導';
         newNodeData.config = { guidance: '請閱讀相關文獻...', minEvidence: 0 };
       }
       if (nodeType === 'task_summary') {
         newNodeData.label = '任務：摘要';
-        newNodeData.config = { 
-          minWords: 150, 
+        newNodeData.config = {
+          minWords: 150,
           guidance: '請撰寫摘要...',
           sections: [
-            { key: 'a1_purpose', label: 'A1 研究目的 (Purpose)', placeholder: '研究問題為何？', minEvidence: 1 },
-            { key: 'a2_method', label: 'A2 研究方法 (Method)', placeholder: '採用了什麼方法？', minEvidence: 1 },
-            { key: 'a3_findings', label: 'A3 主要發現 (Findings)', placeholder: '核心結論為何？', minEvidence: 1 },
-            { key: 'a4_limitations', label: 'A4 研究限制 (Limitations)', placeholder: '作者自述或觀察到的限制...', minEvidence: 1 },
-          ]
+            {
+              key: 'a1_purpose',
+              label: 'A1 研究目的 (Purpose)',
+              placeholder: '研究問題為何？',
+              minEvidence: 1,
+            },
+            {
+              key: 'a2_method',
+              label: 'A2 研究方法 (Method)',
+              placeholder: '採用了什麼方法？',
+              minEvidence: 1,
+            },
+            {
+              key: 'a3_findings',
+              label: 'A3 主要發現 (Findings)',
+              placeholder: '核心結論為何？',
+              minEvidence: 1,
+            },
+            {
+              key: 'a4_limitations',
+              label: 'A4 研究限制 (Limitations)',
+              placeholder: '作者自述或觀察到的限制...',
+              minEvidence: 1,
+            },
+          ],
         };
       }
       if (nodeType === 'task_comparison') {
@@ -471,10 +560,10 @@ export const useStore = create<AppState>((set, get) => ({
           nodeType === 'resource'
             ? 'resourceNode'
             : nodeType === 'task_summary'
-            ? 'summaryNode'
-            : nodeType === 'task_comparison'
-            ? 'comparisonNode'
-            : 'synthesisNode',
+              ? 'summaryNode'
+              : nodeType === 'task_comparison'
+                ? 'comparisonNode'
+                : 'synthesisNode',
         position: basePos,
         data: newNodeData,
       };
@@ -495,7 +584,7 @@ export const useStore = create<AppState>((set, get) => ({
 
       const incoming = state.edges.filter((e) => e.target === id);
       const outgoing = state.edges.filter((e) => e.source === id);
-      let edges = state.edges.filter((e) => e.source !== id && e.target !== id);
+      const edges = state.edges.filter((e) => e.source !== id && e.target !== id);
 
       if (incoming.length > 0 && outgoing.length > 0) {
         const src = incoming[0].source;
@@ -517,7 +606,7 @@ export const useStore = create<AppState>((set, get) => ({
   enterProject: async (projectId: string) => {
     const project = get().projects.find((p) => p.id === projectId);
     if (!project) return;
-    
+
     // 根據節點類型提供繁體中文預設 label
     const getDefaultLabel = (nodeType: string, currentLabel?: string): string => {
       // 如果已有 label 且不是英文預設值，則使用現有 label
@@ -542,7 +631,7 @@ export const useStore = create<AppState>((set, get) => ({
           return currentLabel || '未命名節點';
       }
     };
-    
+
     const nodes: AppNode[] = project.nodes.map((n) => {
       const defaultLabel = getDefaultLabel(n.type, n.label);
       // 如果 config 中的 guidance 是英文預設值，也替換成繁體中文
@@ -556,33 +645,33 @@ export const useStore = create<AppState>((set, get) => ({
       // 如果 dimensions 是英文，替換成繁體中文
       if (n.type === 'task_comparison' && config.dimensions) {
         const dimensionMap: Record<string, string> = {
-          'Purpose': '研究目的',
-          'Method': '研究方法',
-          'Result': '主要發現',
-          'Findings': '主要發現',
+          Purpose: '研究目的',
+          Method: '研究方法',
+          Result: '主要發現',
+          Findings: '主要發現',
         };
         config = {
           ...config,
           dimensions: config.dimensions.map((d: string) => dimensionMap[d] || d),
         };
       }
-      
+
       return {
         id: n.id,
         type:
           n.type === 'start'
             ? 'startNode'
             : n.type === 'end'
-            ? 'endNode'
-            : n.type === 'resource'
-            ? 'resourceNode'
-            : n.type === 'task_summary'
-            ? 'summaryNode'
-            : n.type === 'task_comparison'
-            ? 'comparisonNode'
-            : n.type === 'task_synthesis'
-            ? 'synthesisNode'
-            : 'default',
+              ? 'endNode'
+              : n.type === 'resource'
+                ? 'resourceNode'
+                : n.type === 'task_summary'
+                  ? 'summaryNode'
+                  : n.type === 'task_comparison'
+                    ? 'comparisonNode'
+                    : n.type === 'task_synthesis'
+                      ? 'synthesisNode'
+                      : 'default',
         position: {
           x: (n.position as any)?.x ?? 0,
           y: (n.position as any)?.y ?? 0,
@@ -590,10 +679,15 @@ export const useStore = create<AppState>((set, get) => ({
         data: { label: defaultLabel, type: n.type as any, config },
       };
     });
-    const edges: Edge[] = project.edges.map((e) => ({ id: e.id, source: e.source, target: e.target, data: e.data }));
-    set({ 
-      activeProjectId: projectId, 
-      nodes, 
+    const edges: Edge[] = project.edges.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      data: e.data,
+    }));
+    set({
+      activeProjectId: projectId,
+      nodes,
       edges,
       chatTimeline: [], // 重置對話時間線
       currentWidgetState: {}, // 重置 Widget 狀態
@@ -643,7 +737,19 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({ documents: state.documents.filter((d) => d.id !== id), currentDocId: null }));
   },
   selectDocument: (docId: string) => set({ currentDocId: docId }),
-  addHighlight: async (docId: string, text: string, options?: { name?: string; page?: number; x?: number; y?: number; width?: number; height?: number; evidence_type?: string }) => {
+  addHighlight: async (
+    docId: string,
+    text: string,
+    options?: {
+      name?: string;
+      page?: number;
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      evidence_type?: string;
+    }
+  ) => {
     const res = await documentService.addHighlight(docId, text, options);
     set((state) => ({
       documents: state.documents.map((d) =>
@@ -660,7 +766,19 @@ export const useStore = create<AppState>((set, get) => ({
       })),
     }));
   },
-  updateHighlight: async (highlightId: string, payload: { snippet?: string; name?: string; page?: number; x?: number; y?: number; width?: number; height?: number; evidence_type?: string }) => {
+  updateHighlight: async (
+    highlightId: string,
+    payload: {
+      snippet?: string;
+      name?: string;
+      page?: number;
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      evidence_type?: string;
+    }
+  ) => {
     const res = await documentService.updateHighlight(highlightId, payload);
     set((state) => {
       const updatedState = {
@@ -681,9 +799,7 @@ export const useStore = create<AppState>((set, get) => ({
   removeAllHighlights: async (docId: string) => {
     await documentService.removeAllHighlights(docId);
     set((state) => ({
-      documents: state.documents.map((d) =>
-        d.id === docId ? { ...d, highlights: [] } : d
-      ),
+      documents: state.documents.map((d) => (d.id === docId ? { ...d, highlights: [] } : d)),
     }));
   },
 
@@ -706,7 +822,9 @@ export const useStore = create<AppState>((set, get) => ({
   toggleChat: () => set((state) => ({ isChatOpen: !state.isChatOpen })),
 
   addLog: (eventType, details) =>
-    set((state) => ({ logs: [...state.logs, { id: crypto.randomUUID(), timestamp: Date.now(), eventType, details }] })),
+    set((state) => ({
+      logs: [...state.logs, { id: crypto.randomUUID(), timestamp: Date.now(), eventType, details }],
+    })),
 
   startFlow: () => {
     const { nodes } = get();
@@ -729,7 +847,9 @@ export const useStore = create<AppState>((set, get) => ({
       return;
     }
     // 若沒有連出去的邊，嘗試選擇下一個非 start 節點，避免流程卡住
-    const fallback = nodes.find((n) => n.id !== currentStepId && n.type !== 'startNode') || nodes.find((n) => n.id !== currentStepId);
+    const fallback =
+      nodes.find((n) => n.id !== currentStepId && n.type !== 'startNode') ||
+      nodes.find((n) => n.id !== currentStepId);
     if (fallback) set({ currentStepId: fallback.id });
   },
 
@@ -746,7 +866,9 @@ export const useStore = create<AppState>((set, get) => ({
       return;
     }
     // 若沒有連進來的邊，嘗試選擇 start 節點
-    const startNode = nodes.find((n) => n.type === 'startNode' || (n as any).data?.type === 'start');
+    const startNode = nodes.find(
+      (n) => n.type === 'startNode' || (n as any).data?.type === 'start'
+    );
     if (startNode) set({ currentStepId: startNode.id });
   },
 
@@ -757,7 +879,8 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const res = await taskService.submitTaskA(state.activeProjectId, docId, content);
       set((s) => {
-        const nextVersion = (s.taskAVersions.filter((v) => v.targetDocId === docId).length || 0) + 1;
+        const nextVersion =
+          (s.taskAVersions.filter((v) => v.targetDocId === docId).length || 0) + 1;
         const newVersion: TaskVersion = {
           id: res.id,
           projectId: state.activeProjectId!,
@@ -773,7 +896,10 @@ export const useStore = create<AppState>((set, get) => ({
         return {
           isAiThinking: false,
           taskAVersions: [...s.taskAVersions, newVersion],
-          chatMessages: [...s.chatMessages, { id: crypto.randomUUID(), role: 'ai', content: res.feedback, timestamp: Date.now() }],
+          chatMessages: [
+            ...s.chatMessages,
+            { id: crypto.randomUUID(), role: 'ai', content: res.feedback, timestamp: Date.now() },
+          ],
         };
       });
     } catch (e: any) {
@@ -795,10 +921,20 @@ export const useStore = create<AppState>((set, get) => ({
     set((state) => ({
       taskBData: [
         ...state.taskBData,
-        { id: crypto.randomUUID(), dimension: '', doc1Id: '', doc1Claim: { text: '', snippetIds: [] }, doc2Id: '', doc2Claim: { text: '', snippetIds: [] }, similarity: '', difference: '' },
+        {
+          id: crypto.randomUUID(),
+          dimension: '',
+          doc1Id: '',
+          doc1Claim: { text: '', snippetIds: [] },
+          doc2Id: '',
+          doc2Claim: { text: '', snippetIds: [] },
+          similarity: '',
+          difference: '',
+        },
       ],
     })),
-  removeTaskBRow: (index) => set((state) => ({ taskBData: state.taskBData.filter((_, i) => i !== index) })),
+  removeTaskBRow: (index) =>
+    set((state) => ({ taskBData: state.taskBData.filter((_, i) => i !== index) })),
   submitTaskBCheck: async () => {
     const state = get();
     if (!state.activeProjectId) throw new Error('尚未選擇專案');
@@ -820,7 +956,10 @@ export const useStore = create<AppState>((set, get) => ({
         return {
           isAiThinking: false,
           taskAVersions: [...s.taskAVersions, newVersion],
-          chatMessages: [...s.chatMessages, { id: crypto.randomUUID(), role: 'ai', content: res.feedback, timestamp: Date.now() }],
+          chatMessages: [
+            ...s.chatMessages,
+            { id: crypto.randomUUID(), role: 'ai', content: res.feedback, timestamp: Date.now() },
+          ],
         };
       });
     } catch (e) {
@@ -855,7 +994,10 @@ export const useStore = create<AppState>((set, get) => ({
         return {
           isAiThinking: false,
           taskAVersions: [...s.taskAVersions, newVersion],
-          chatMessages: [...s.chatMessages, { id: crypto.randomUUID(), role: 'ai', content: res.feedback, timestamp: Date.now() }],
+          chatMessages: [
+            ...s.chatMessages,
+            { id: crypto.randomUUID(), role: 'ai', content: res.feedback, timestamp: Date.now() },
+          ],
         };
       });
     } catch (e) {
@@ -871,7 +1013,8 @@ export const useStore = create<AppState>((set, get) => ({
       tasks: { A: state.taskAVersions, B: state.taskBData, C: state.taskCData },
       documents: state.documents,
     };
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportObj, null, 2));
+    const dataStr =
+      'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportObj, null, 2));
     const a = document.createElement('a');
     a.href = dataStr;
     a.download = 'thesis_data.json';
@@ -901,7 +1044,7 @@ export const useStore = create<AppState>((set, get) => ({
       if (entries.length >= MAX_CACHE_ITEMS) {
         const [oldestKey] = entries.reduce(
           (acc, [key, value]) => (value.createdAt < acc[1].createdAt ? [key, value] : acc),
-          entries[0] as [string, { url: string; createdAt: number }],
+          entries[0] as [string, { url: string; createdAt: number }]
         );
         const { [oldestKey]: _removed, ...rest } = nextCache;
         nextCache = rest;
@@ -942,7 +1085,7 @@ export const useStore = create<AppState>((set, get) => ({
     const evidenceTokenRegex = /\[E([a-f0-9]{8})\]/g;
     const extractedEvidenceIds: string[] = [];
     const evidenceInfoMap: Record<string, any> = {};
-    
+
     let match;
     while ((match = evidenceTokenRegex.exec(message)) !== null) {
       const shortId = match[1];
@@ -953,7 +1096,7 @@ export const useStore = create<AppState>((set, get) => ({
             if (highlight.id.substring(0, 8) === shortId) {
               extractedEvidenceIds.push(highlight.id);
               // 找到對應的文檔
-              const document = state.documents.find(d => d.id === highlight.document_id);
+              const document = state.documents.find((d) => d.id === highlight.document_id);
               evidenceInfoMap[highlight.id] = {
                 id: highlight.id,
                 name: highlight.name || null,
@@ -989,7 +1132,12 @@ export const useStore = create<AppState>((set, get) => ({
         ...context,
       };
 
-      const res = await chatService.sendMessage(state.activeProjectId, state.currentStepId!, message, chatContext);
+      const res = await chatService.sendMessage(
+        state.activeProjectId,
+        state.currentStepId!,
+        message,
+        chatContext
+      );
 
       const aiMessage: Message = {
         id: genId(),
@@ -1077,7 +1225,7 @@ export const useStore = create<AppState>((set, get) => ({
   saveWorkflowState: async () => {
     const state = get();
     if (!state.activeProjectId || !state.currentStepId) return;
-    
+
     try {
       const payload = {
         project_id: state.activeProjectId,

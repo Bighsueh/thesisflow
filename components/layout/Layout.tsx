@@ -1,17 +1,17 @@
-import React from 'react'
-import { Navigation } from './Navigation'
-import { TeacherNavigation } from './TeacherNavigation'
-import { GradientBackground } from '../ui/GradientBackground'
-import { motion } from 'framer-motion'
-import { useAuthStore } from '../../authStore'
+import { motion } from 'framer-motion';
+import React from 'react';
+import { useAuthStore } from '../../authStore';
+import { GradientBackground } from '../ui/GradientBackground';
+import { Navigation } from './Navigation';
+import { TeacherNavigation } from './TeacherNavigation';
 
 interface LayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { user } = useAuthStore()
-  const isTeacher = user?.role === 'teacher'
+  const { user } = useAuthStore();
+  const isTeacher = user?.role === 'teacher';
 
   return (
     <div className="min-h-screen font-sans text-gray-900 relative">
@@ -39,6 +39,5 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </main>
     </div>
-  )
+  );
 }
-

@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
 import type { PDFPageProxy } from 'pdfjs-dist';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface PDFSelectorProps {
   pageNumber: number;
@@ -35,7 +35,7 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
   ): Promise<string> => {
     try {
       if (!pageData?.page) return '';
-      
+
       const page = pageData.page;
 
       // 添加错误处理，防止 worker 终止错误
@@ -56,7 +56,7 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
       // 需要考慮 viewport 的實際尺寸
       const pageWidth = viewport.width;
       const pageHeight = viewport.height;
-      
+
       // 相對座標轉換為 PDF 座標（注意 Y 軸需要翻轉）
       const left = x * pageWidth;
       const top = (1 - y) * pageHeight; // Y 軸翻轉
@@ -71,7 +71,7 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
 
       // 過濾出在選中區域內的文本項目
       const selectedTexts: Array<{ text: string; y: number; x: number }> = [];
-      
+
       for (const item of textContent.items) {
         if ('transform' in item && Array.isArray(item.transform)) {
           // transform: [a, b, c, d, e, f]
@@ -79,7 +79,7 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
           const tx = item.transform[4];
           const ty = item.transform[5];
           const fontSize = Math.abs(item.transform[0]) || Math.abs(item.transform[3]) || 12;
-          
+
           // 檢查文本項目的位置是否在選中區域內
           // 考慮字體大小，允許一些容差
           const tolerance = fontSize * 0.5;
@@ -106,7 +106,10 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
         return a.x - b.x;
       });
 
-      return selectedTexts.map(item => item.text).join(' ').trim();
+      return selectedTexts
+        .map((item) => item.text)
+        .join(' ')
+        .trim();
     } catch (error) {
       console.error('提取文本失敗:', error);
       return '';
@@ -123,14 +126,14 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (disabled) return;
-    
+
     // 檢查是否點擊到已存在的標記
     const target = e.target as HTMLElement;
     if (target.dataset.isHighlight === 'true' || target.closest('[data-is-highlight="true"]')) {
       // 點擊到標記，不開始選擇，讓標記的事件處理器處理
       return;
     }
-    
+
     const coords = getRelativeCoordinates(e.clientX, e.clientY);
     if (coords) {
       e.preventDefault();
@@ -155,7 +158,7 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
     if (!isSelecting || disabled || !startPos || !currentPos) return;
     e.preventDefault();
     e.stopPropagation();
-    
+
     const x = Math.min(startPos.x, currentPos.x);
     const y = Math.min(startPos.y, currentPos.y);
     const width = Math.abs(currentPos.x - startPos.x);
@@ -165,7 +168,7 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
     if (width > 0.01 && height > 0.01) {
       // 提取選中區域的文本
       const extractedText = await extractTextFromSelection(x, y, width, height);
-      
+
       onSelect({
         x,
         y,
@@ -184,9 +187,7 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
   useEffect(() => {
     const handleGlobalMouseUp = async (e: MouseEvent) => {
       if (isSelecting) {
-        const coords = overlayRef.current
-          ? getRelativeCoordinates(e.clientX, e.clientY)
-          : null;
+        const coords = overlayRef.current ? getRelativeCoordinates(e.clientX, e.clientY) : null;
         if (coords && startPos) {
           const x = Math.min(startPos.x, coords.x);
           const y = Math.min(startPos.y, coords.y);
@@ -196,7 +197,7 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
           if (width > 0.01 && height > 0.01) {
             // 提取選中區域的文本
             const extractedText = await extractTextFromSelection(x, y, width, height);
-            
+
             onSelect({
               x,
               y,
@@ -270,13 +271,14 @@ export const PDFSelector: React.FC<PDFSelectorProps> = ({
       >
         {/* 選擇框 - 在選擇時提高 z-index 到 20，確保在 highlight 之上 */}
         {isSelecting && startPos && currentPos && (
-          <div style={{
-            ...getSelectionStyle(),
-            zIndex: 20,
-          }} />
+          <div
+            style={{
+              ...getSelectionStyle(),
+              zIndex: 20,
+            }}
+          />
         )}
       </div>
     </>
   );
 };
-

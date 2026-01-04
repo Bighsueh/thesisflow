@@ -12,13 +12,14 @@
 
 在 RAG 系統中，文件解析是核心環節。不同的解析工具各有優劣：
 
-| 工具 | 優勢 | 劣勢 | 適用場景 |
-|------|------|------|----------|
-| **PyMuPDF** | 快速、免費、本地運行 | 對複雜版面支持較弱 | 簡單文字 PDF |
-| **Azure DI** | 高品質、支持表格/圖表 | 需付費、有延遲 | 複雜財報、表格 |
-| **Marker** | 極快、支持 GPU 並行 | 需要 GPU 資源 | 大量併發場景 |
+| 工具         | 優勢                  | 劣勢               | 適用場景       |
+| ------------ | --------------------- | ------------------ | -------------- |
+| **PyMuPDF**  | 快速、免費、本地運行  | 對複雜版面支持較弱 | 簡單文字 PDF   |
+| **Azure DI** | 高品質、支持表格/圖表 | 需付費、有延遲     | 複雜財報、表格 |
+| **Marker**   | 極快、支持 GPU 並行   | 需要 GPU 資源      | 大量併發場景   |
 
 **核心問題**：如何設計系統，讓我們能夠：
+
 1. 根據文件類型選擇最合適的解析工具
 2. 當某個工具不可用時，快速切換到備用方案
 3. 進行 A/B 測試，比較不同工具的解析品質
@@ -27,6 +28,7 @@
 **解決方案**：建立統一的 Parser 介面
 
 即使階段一只使用 PyMuPDF，我們也要預留擴展空間。核心概念是：
+
 - 所有 Parser 都返回相同格式的結果（content + metadata）
 - 上層代碼（Chunking、Embedding）不需要知道用的是哪個 Parser
 - 新增 Parser 時，只需要實作相同的介面，無需修改其他代碼
@@ -37,11 +39,11 @@
 
 ### 基本資訊
 
-| 項目 | 說明 |
-|------|------|
-| **週期** | 第 1-2 週 |
+| 項目     | 說明                                               |
+| -------- | -------------------------------------------------- |
+| **週期** | 第 1-2 週                                          |
 | **目標** | 在現有 Backend 中引入 RAG，並確立 Parsing 介面標準 |
-| **限制** | 不引入 Queue，不引入 Ray |
+| **限制** | 不引入 Queue，不引入 Ray                           |
 
 ---
 
@@ -57,13 +59,13 @@ graph TB
 
     Client(["Client"])
     API["Backend API"]:::gateway
-    
+
     subgraph InProcess["In-Process Modules"]
         ParserModule["PyMuPDF Parser"]:::logic
         ChunkingModule["Chunking Module"]:::logic
         EmbedModule["Embed Module"]:::logic
     end
-    
+
     VectorDB[("Chroma / Local Qdrant")]:::data
 
     Client --> API
@@ -83,23 +85,18 @@ graph TB
   - 建立 `parsers/pymupdf_parser.py`
   - 實作 `parse_pdf(file_path: str) -> dict` 函數
   - 返回格式：`{ "content": str, "metadata": dict, "success": bool }`
-  
 - **實作 Chunking 模組**
   - 將解析後的長文本切分成適合 Embedding 的小塊
   - 使用簡單的固定長度切分（如 500 字元，overlap 50 字元）
-  
 - **實作 Embedding 模組**
   - 使用 OpenAI Embedding API 或本地模型（如 sentence-transformers）
   - 將 chunks 轉換為向量
-  
 - **Vector DB 整合**
   - 使用 Chroma 或本地 Qdrant
   - 儲存 chunks 和對應的向量
-  
 - **資料庫遷移**
   - 建立 `documents` 表：儲存上傳的文件基本資訊
   - 建立 `document_chunks` 表：儲存切分後的文本塊
-  
 - **同步處理**
   - 用戶上傳時，API 會 Block 住（等待解析完成）
 
@@ -114,7 +111,7 @@ graph TB
 def parse_pdf(file_path: str) -> dict:
     """
     使用 PyMuPDF 解析 PDF
-    
+
     Returns:
         {
             "content": str,      # Markdown 格式的文本
@@ -129,25 +126,25 @@ def parse_pdf(file_path: str) -> dict:
     """
     import pymupdf
     import time
-    
+
     start_time = time.time()
-    
+
     try:
         doc = pymupdf.open(file_path)
         content = ""
-        
+
         for page_num, page in enumerate(doc, start=1):
             text = page.get_text()
             content += f"## Page {page_num}\n\n{text}\n\n"
-        
+
         metadata = {
             "page_count": len(doc),
             "file_size": doc.metadata.get("fileSize", 0),
             "parse_time": time.time() - start_time
         }
-        
+
         doc.close()
-        
+
         return {
             "content": content,
             "metadata": metadata,
@@ -185,10 +182,10 @@ def parse_pdf(file_path: str) -> dict:
 
 ### 基本資訊
 
-| 項目 | 說明 |
-|------|------|
-| **週期** | 第 3-4 週 |
-| **目標** | 解決「上傳卡死」問題，引入隊列 |
+| 項目     | 說明                            |
+| -------- | ------------------------------- |
+| **週期** | 第 3-4 週                       |
+| **目標** | 解決「上傳卡死」問題，引入隊列  |
 | **重點** | Parser 代碼完全不變，只是搬家了 |
 
 ---
@@ -207,13 +204,13 @@ graph TB
     Client(["Client"])
     API["Backend API"]:::gateway
     Redis[("Redis Queue")]:::queue
-    
+
     subgraph WorkerService["Worker Service (New Process)"]
         Worker["Celery/BullMQ Worker"]:::logic
         ParserModule["Parser Module"]:::logic
         EmbedModule["Embed Module"]:::logic
     end
-    
+
     VectorDB[("Vector DB")]:::data
 
     Client --> API
@@ -234,10 +231,8 @@ graph TB
 - **引入 Celery/BullMQ**
   - 將階段一的 `parse_pdf()` 函數封裝進 Worker Task
   - 代碼幾乎不需要改動，只是執行環境從 API 進程搬到 Worker 進程
-  
 - **實作簡易狀態機**
   - 在 Redis 中記錄 `task_id: { status: "parsing", progress: 20% }`
-  
 - **前端改造**
   - 上傳後不再轉圈圈，而是顯示進度條，輪詢後端狀態 API
 
@@ -283,9 +278,9 @@ def upload_file(file: UploadFile):
 
 ### 基本資訊
 
-| 項目 | 說明 |
-|------|------|
-| **週期** | 第 5-8 週 |
+| 項目     | 說明                                                      |
+| -------- | --------------------------------------------------------- |
+| **週期** | 第 5-8 週                                                 |
 | **目標** | 引入 Marker + Ray (方案 E)，解決 50+ 併發時的解析速度瓶頸 |
 
 ---
@@ -301,13 +296,13 @@ graph TB
     classDef highlight fill:#707070,stroke:#eee,stroke-width:3px,color:#fff
 
     Worker["Celery Worker"]:::logic
-    
+
     subgraph ParserOptions["Parser 選擇"]
         PyMuPDF["PyMuPDF<br/>(簡單文件)"]:::logic
         Azure["Azure DI<br/>(複雜表格)"]:::logic
         MarkerParser["Marker Parser<br/>(高性能)"]:::highlight
     end
-    
+
     subgraph RayCluster["Ray Cluster (GPU Nodes)"]
         RayHead["Ray Head"]:::gpu
         RayWorker1["Marker Model"]:::gpu
@@ -330,12 +325,10 @@ graph TB
 
 - **部署 Ray Cluster**
   - 可以先在單台 GPU 機器上部署 Ray
-  
 - **實作 Marker Parser 模組**
   - 建立 `parsers/marker_parser.py`
   - 返回相同格式的 dict（與 PyMuPDF 一致）
   - 內部調用 Ray 進行分佈式處理
-  
 - **頁面級並行**
   - 在 Parser 內部實作「拆分 PDF -> 分發給 Ray -> 合併結果」的邏輯
 
@@ -349,12 +342,12 @@ def parse_pdf(file_path: str) -> dict:
     """使用 Marker + Ray 進行高性能解析"""
     if not ray.is_initialized():
         ray.init(address="ray://your-cluster:10001")
-    
+
     try:
         # 提交到 Ray 集群
         result_ref = parse_with_marker.remote(file_path)
         content, metadata = ray.get(result_ref)
-        
+
         return {
             "content": content,
             "metadata": metadata,
@@ -401,10 +394,10 @@ result = parse_pdf(file_path)  # 介面完全相同！
 
 ### 基本資訊
 
-| 項目 | 說明 |
-|------|------|
+| 項目     | 說明                         |
+| -------- | ---------------------------- |
 | **週期** | 第 3 個月後 (視業務規模而定) |
-| **目標** | 團隊分工，獨立部署 |
+| **目標** | 團隊分工，獨立部署           |
 
 ---
 
@@ -421,11 +414,11 @@ graph TB
 
     Client(["Client"])
     API["API Gateway"]:::gateway
-    
+
     Orchestrator["Ingestion Orchestrator"]:::logic
     ParserService["Parser Service"]:::logic
     EmbedService["Embedding Service"]:::gpu
-    
+
     Queue[("Message Queue")]:::queue
 
     Client --> API
@@ -441,23 +434,23 @@ graph TB
 
 #### Ingestion Orchestrator
 
-| 項目 | 說明 |
-|------|------|
+| 項目     | 說明                                   |
+| -------- | -------------------------------------- |
 | **職責** | 取代簡單的 Celery Worker，管理複雜流程 |
-| **優勢** | 可視化流程編排，支持重試與錯誤處理 |
+| **優勢** | 可視化流程編排，支持重試與錯誤處理     |
 
 #### Parser Service
 
-| 項目 | 說明 |
-|------|------|
+| 項目     | 說明                                      |
+| -------- | ----------------------------------------- |
 | **職責** | 獨立部署，專門跑 Ray Adapter 或 Azure SDK |
-| **優勢** | 可獨立擴展，不影響其他服務 |
+| **優勢** | 可獨立擴展，不影響其他服務                |
 
 #### Embedding Service
 
-| 項目 | 說明 |
-|------|------|
-| **職責** | 獨立部署 GPU 服務 |
+| 項目     | 說明                   |
+| -------- | ---------------------- |
+| **職責** | 獨立部署 GPU 服務      |
 | **優勢** | GPU 資源隔離，成本可控 |
 
 > 參考 `microservices_rag_architecture_decoupled.md` 的完整圖表
@@ -478,10 +471,8 @@ graph TB
 
 - **代碼不浪費**
   - 階段一寫的 Parser 邏輯，到階段二、三時，是可以直接 Ctrl+C / Ctrl+V 到 Worker 裡的
-  
 - **風險最低**
   - 在沒有複雜基礎設施的情況下，您明天就能看到 RAG 的效果
-  
 - **簡單直接**
   - 不引入過度設計，專注於驗證核心價值
 
@@ -506,6 +497,7 @@ graph TB
 如果未來需要新增 Azure DI 或 Marker，建議的做法：
 
 1. **建立新的 Parser 模組**
+
    ```python
    # parsers/azure_parser.py
    def parse_pdf(file_path: str) -> dict:
@@ -515,6 +507,7 @@ graph TB
    ```
 
 2. **建立 Parser 選擇邏輯**
+
    ```python
    # parsers/__init__.py
    def get_parser(parser_type: str = "pymupdf"):
@@ -528,15 +521,17 @@ graph TB
    ```
 
 3. **在 API 層使用**
+
    ```python
    # api/upload.py
    from parsers import get_parser
-   
+
    parser = get_parser("pymupdf")  # 或從配置讀取
    result = parser(file_path)
    ```
 
 這樣的設計：
+
 - ✅ 保持簡單（沒有複雜的抽象類和工廠模式）
 - ✅ 易於擴展（新增 Parser 只需新增一個文件）
 - ✅ 易於測試（每個 Parser 都是獨立的函數）

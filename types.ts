@@ -2,7 +2,13 @@ import { Node, Edge } from 'reactflow';
 
 // --- Flow & Node Types ---
 
-export type AppNodeType = 'resource' | 'task_summary' | 'task_comparison' | 'task_synthesis' | 'start' | 'end';
+export type AppNodeType =
+  | 'resource'
+  | 'task_summary'
+  | 'task_comparison'
+  | 'task_synthesis'
+  | 'start'
+  | 'end';
 
 export interface NodeData {
   label: string;
@@ -18,10 +24,10 @@ export interface TaskConfig {
   synthesisSlots?: { key: string; label: string }[];
   // Widget 配置參數
   sections?: Array<{
-    key: string;           // 唯一識別碼，如 'a1_purpose'
-    label: string;         // 顯示標籤，如 'A1 研究目的 (Purpose)'
-    placeholder?: string;   // 輸入提示文字
-    minEvidence?: number;  // 該段至少需要的 evidence 數量
+    key: string; // 唯一識別碼，如 'a1_purpose'
+    label: string; // 顯示標籤，如 'A1 研究目的 (Purpose)'
+    placeholder?: string; // 輸入提示文字
+    minEvidence?: number; // 該段至少需要的 evidence 數量
   }>; // 用於 Summary Node
   minEvidence?: number; // 每段至少需要的 evidence 數量（全域預設值）
   requirePageNumber?: boolean; // 是否必須引用頁碼
@@ -63,13 +69,13 @@ export interface Highlight {
   id: string;
   document_id: string;
   snippet: string;
-  name?: string;  // 標記片段名稱，使用者自訂
+  name?: string; // 標記片段名稱，使用者自訂
   page?: number;
-  x?: number;  // 相對座標 0-1
-  y?: number;  // 相對座標 0-1
-  width?: number;  // 相對寬度 0-1
-  height?: number;  // 相對高度 0-1
-  evidence_type?: string;  // Purpose/Method/Findings/Limitation/Other (保留以向後相容)
+  x?: number; // 相對座標 0-1
+  y?: number; // 相對座標 0-1
+  width?: number; // 相對寬度 0-1
+  height?: number; // 相對高度 0-1
+  evidence_type?: string; // Purpose/Method/Findings/Limitation/Other (保留以向後相容)
   created_at: number;
 }
 
@@ -189,7 +195,12 @@ export interface LogEntry {
 
 export type MessageRole = 'ai' | 'user' | 'system' | 'coach' | 'widget' | 'evidence' | 'status';
 
-export type WidgetType = 'instruction' | 'section_writer' | 'matrix_compare' | 'synthesis_writer' | 'checklist_submit';
+export type WidgetType =
+  | 'instruction'
+  | 'section_writer'
+  | 'matrix_compare'
+  | 'synthesis_writer'
+  | 'checklist_submit';
 
 export interface Message {
   id: string;

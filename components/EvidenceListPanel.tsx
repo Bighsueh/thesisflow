@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
 import { X, Filter, Edit2, Trash2, MapPin, Trash } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
 import { Highlight, Document } from '../types';
 import { EvidenceCard } from './EvidenceCard';
-import { EvidenceEditDialog } from './EvidenceEditDialog';
 import { EvidenceCreateDialog } from './EvidenceCreateDialog';
+import { EvidenceEditDialog } from './EvidenceEditDialog';
 
 interface EvidenceListPanelProps {
   document: Document;
@@ -94,7 +94,9 @@ export const EvidenceListPanel: React.FC<EvidenceListPanelProps> = ({
         {/* 標題欄 */}
         <div className="sticky top-0 bg-white border-b border-base-200 p-4 flex items-center justify-between z-10 shadow-sm">
           <div className="flex items-center gap-2">
-            <h2 id="evidence-panel-title" className="font-bold text-lg">標記片段管理</h2>
+            <h2 id="evidence-panel-title" className="font-bold text-lg">
+              標記片段管理
+            </h2>
             <span className="badge badge-primary badge-sm">{highlights.length}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -169,68 +171,68 @@ export const EvidenceListPanel: React.FC<EvidenceListPanelProps> = ({
             <div className="space-y-3">
               {filteredHighlights.map((highlight) => {
                 return (
-                <div
-                  key={highlight.id}
-                  className="card bg-base-100 border border-base-300 shadow-sm"
-                >
-                  <div className="card-body p-3">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-bold text-slate-500 truncate">
-                          {document.title}
-                        </div>
-                        {highlight.name && (
-                          <div className="text-xs font-semibold text-primary mt-1">
-                            {highlight.name}
+                  <div
+                    key={highlight.id}
+                    className="card bg-base-100 border border-base-300 shadow-sm"
+                  >
+                    <div className="card-body p-3">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-bold text-slate-500 truncate">
+                            {document.title}
                           </div>
+                          {highlight.name && (
+                            <div className="text-xs font-semibold text-primary mt-1">
+                              {highlight.name}
+                            </div>
+                          )}
+                          {highlight.page && (
+                            <div className="text-[10px] text-slate-400">頁碼: {highlight.page}</div>
+                          )}
+                          {highlight.evidence_type && (
+                            <span className="badge badge-xs badge-primary mt-1">
+                              {highlight.evidence_type}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-xs text-slate-700 mb-2 line-clamp-2">
+                        "{highlight.snippet}"
+                      </div>
+                      <div className="flex gap-1 flex-wrap">
+                        {onLocate && (
+                          <button
+                            className="btn btn-xs btn-ghost gap-1"
+                            onClick={() => onLocate(highlight, document)}
+                            title="定位到 PDF"
+                          >
+                            <MapPin size={10} />
+                            定位
+                          </button>
                         )}
-                        {highlight.page && (
-                          <div className="text-[10px] text-slate-400">頁碼: {highlight.page}</div>
+                        {onEdit && (
+                          <button
+                            className="btn btn-xs btn-ghost gap-1"
+                            onClick={() => handleEdit(highlight)}
+                            title="編輯標記片段"
+                          >
+                            <Edit2 size={10} />
+                            編輯
+                          </button>
                         )}
-                        {highlight.evidence_type && (
-                          <span className="badge badge-xs badge-primary mt-1">
-                            {highlight.evidence_type}
-                          </span>
+                        {onRemove && (
+                          <button
+                            className="btn btn-xs btn-ghost gap-1 text-red-500 hover:text-red-700"
+                            onClick={() => handleRemove(highlight.id)}
+                            title="刪除標記片段"
+                          >
+                            <Trash2 size={10} />
+                            刪除
+                          </button>
                         )}
                       </div>
                     </div>
-                    <div className="text-xs text-slate-700 mb-2 line-clamp-2">
-                      "{highlight.snippet}"
-                    </div>
-                    <div className="flex gap-1 flex-wrap">
-                      {onLocate && (
-                        <button
-                          className="btn btn-xs btn-ghost gap-1"
-                          onClick={() => onLocate(highlight, document)}
-                          title="定位到 PDF"
-                        >
-                          <MapPin size={10} />
-                          定位
-                        </button>
-                      )}
-                      {onEdit && (
-                        <button
-                          className="btn btn-xs btn-ghost gap-1"
-                          onClick={() => handleEdit(highlight)}
-                          title="編輯標記片段"
-                        >
-                          <Edit2 size={10} />
-                          編輯
-                        </button>
-                      )}
-                      {onRemove && (
-                        <button
-                          className="btn btn-xs btn-ghost gap-1 text-red-500 hover:text-red-700"
-                          onClick={() => handleRemove(highlight.id)}
-                          title="刪除標記片段"
-                        >
-                          <Trash2 size={10} />
-                          刪除
-                        </button>
-                      )}
-                    </div>
                   </div>
-                </div>
                 );
               })}
             </div>
@@ -266,4 +268,3 @@ export const EvidenceListPanel: React.FC<EvidenceListPanelProps> = ({
     </>
   );
 };
-

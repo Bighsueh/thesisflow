@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
 import { CheckCircle2, XCircle, Link as LinkIcon, X } from 'lucide-react';
-import { FieldWithEvidence, Highlight, Document } from '../../types';
-import { useStore } from '../../store';
-import { EvidenceCard } from '../EvidenceCard';
+import React, { useState, useEffect } from 'react';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import { useStore } from '../../store';
+import { FieldWithEvidence, Highlight, Document } from '../../types';
+import { EvidenceCard } from '../EvidenceCard';
 
 interface SectionWriterProps {
   nodeId: string;
@@ -40,7 +40,7 @@ export const SectionWriter: React.FC<SectionWriterProps> = ({
     const newSnippetIds = currentValue.snippetIds.includes(highlightId)
       ? currentValue.snippetIds.filter((id) => id !== highlightId)
       : [...currentValue.snippetIds, highlightId];
-    
+
     onUpdate(sectionKey, { ...currentValue, snippetIds: newSnippetIds });
     autoSave();
   };
@@ -51,7 +51,7 @@ export const SectionWriter: React.FC<SectionWriterProps> = ({
     const hasText = value.text.trim().length > 0;
     const hasEvidence = value.snippetIds.length > 0;
     const minEvidence = sections.find((s) => s.key === sectionKey)?.minEvidence || 1;
-    
+
     if (hasText && hasEvidence && value.snippetIds.length >= minEvidence) return 'complete';
     if (hasText || hasEvidence) return 'partial';
     return 'empty';
@@ -63,9 +63,7 @@ export const SectionWriter: React.FC<SectionWriterProps> = ({
         const value = values[section.key] || { text: '', snippetIds: [] };
         const status = getSectionStatus(section.key);
         const minEvidence = section.minEvidence || 1;
-        const selectedHighlights = allHighlights.filter((h) =>
-          value.snippetIds.includes(h.id)
-        );
+        const selectedHighlights = allHighlights.filter((h) => value.snippetIds.includes(h.id));
 
         return (
           <div
@@ -74,15 +72,17 @@ export const SectionWriter: React.FC<SectionWriterProps> = ({
               expandedSection === section.key
                 ? 'border-primary shadow-md'
                 : status === 'complete'
-                ? 'border-green-300'
-                : status === 'partial'
-                ? 'border-yellow-300'
-                : 'border-base-300'
+                  ? 'border-green-300'
+                  : status === 'partial'
+                    ? 'border-yellow-300'
+                    : 'border-base-300'
             }`}
           >
             <div
               className="card-body p-4 cursor-pointer"
-              onClick={() => setExpandedSection(expandedSection === section.key ? null : section.key)}
+              onClick={() =>
+                setExpandedSection(expandedSection === section.key ? null : section.key)
+              }
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -177,19 +177,17 @@ export const SectionWriter: React.FC<SectionWriterProps> = ({
                       <div className="flex flex-wrap gap-2 mt-2">
                         {selectedHighlights.map((h) => {
                           // 優先顯示名稱，如果沒有名稱則顯示內容摘要
-                          const displayText = h.name 
-                            ? h.name 
-                            : h.snippet.length > 30 
-                              ? h.snippet.substring(0, 30) + '...' 
+                          const displayText = h.name
+                            ? h.name
+                            : h.snippet.length > 30
+                              ? h.snippet.substring(0, 30) + '...'
                               : h.snippet;
                           return (
                             <div
                               key={h.id}
                               className="badge badge-sm badge-warning gap-1 h-auto py-1 text-left"
                             >
-                              <span className="truncate max-w-[120px] text-xs">
-                                {displayText}
-                              </span>
+                              <span className="truncate max-w-[120px] text-xs">{displayText}</span>
                               <button
                                 onClick={() => toggleEvidenceSelection(section.key, h.id)}
                                 className="hover:text-red-700"
@@ -217,5 +215,3 @@ export const SectionWriter: React.FC<SectionWriterProps> = ({
     </div>
   );
 };
-
-

@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import { ExtendedHighlight } from '../StudentInterface.types';
 import { EVIDENCE_TYPES } from '../StudentInterface.constants';
+import { ExtendedHighlight } from '../StudentInterface.types';
 import { HighlightHoverCard } from './HighlightHoverCard';
 
 interface PDFPageHighlightsProps {
@@ -31,7 +31,7 @@ export const PDFPageHighlights: React.FC<PDFPageHighlightsProps> = ({
   // 過濾出當前頁面的標記
   const pageHighlights = highlights.filter((h) => h.page === pageNumber);
   const hoveredHighlight = pageHighlights.find((h) => h.id === hoveredHighlightId);
-  
+
   // 用於延遲顯示 HoverCard 的計時器
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -41,7 +41,7 @@ export const PDFPageHighlights: React.FC<PDFPageHighlightsProps> = ({
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
-    
+
     // 設置延遲後顯示
     hoverTimeoutRef.current = setTimeout(() => {
       onHighlightHover(highlightId);
@@ -55,7 +55,7 @@ export const PDFPageHighlights: React.FC<PDFPageHighlightsProps> = ({
       clearTimeout(hoverTimeoutRef.current);
       hoverTimeoutRef.current = null;
     }
-    
+
     // 立即隱藏 HoverCard
     onHighlightHover(null);
   };
@@ -99,7 +99,7 @@ export const PDFPageHighlights: React.FC<PDFPageHighlightsProps> = ({
 
       {/* Hover card for the hovered highlight on this page */}
       {hoveredHighlight && (
-        <div 
+        <div
           style={{ pointerEvents: 'auto' }}
           data-is-highlight="true"
           onMouseEnter={() => {
@@ -138,4 +138,3 @@ export const PDFPageHighlights: React.FC<PDFPageHighlightsProps> = ({
     </div>
   );
 };
-

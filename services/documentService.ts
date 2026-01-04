@@ -1,5 +1,5 @@
-import { api } from './api';
 import { Document, Highlight } from '../types';
+import { api } from './api';
 
 export const documentService = {
   loadDocuments: async (projectId?: string | null): Promise<Document[]> => {
@@ -24,7 +24,7 @@ export const documentService = {
     const res = await fetch(`${API_BASE}/api/documents/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
+        Authorization: token ? `Bearer ${token}` : '',
       },
       body: formData,
     });
@@ -36,13 +36,37 @@ export const documentService = {
   removeDocument: async (id: string): Promise<void> => {
     return api.delete(`/api/documents/${id}`);
   },
-  addHighlight: async (docId: string, text: string, options?: { name?: string; page?: number; x?: number; y?: number; width?: number; height?: number; evidence_type?: string }): Promise<Highlight> => {
+  addHighlight: async (
+    docId: string,
+    text: string,
+    options?: {
+      name?: string;
+      page?: number;
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      evidence_type?: string;
+    }
+  ): Promise<Highlight> => {
     return api.post(`/api/documents/${docId}/highlights`, { snippet: text, ...options });
   },
   removeHighlight: async (highlightId: string): Promise<void> => {
     return api.delete(`/api/highlights/${highlightId}`);
   },
-  updateHighlight: async (highlightId: string, payload: { snippet?: string; name?: string; page?: number; x?: number; y?: number; width?: number; height?: number; evidence_type?: string }): Promise<Highlight> => {
+  updateHighlight: async (
+    highlightId: string,
+    payload: {
+      snippet?: string;
+      name?: string;
+      page?: number;
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+      evidence_type?: string;
+    }
+  ): Promise<Highlight> => {
     return api.put(`/api/highlights/${highlightId}`, payload);
   },
   removeAllHighlights: async (docId: string): Promise<void> => {

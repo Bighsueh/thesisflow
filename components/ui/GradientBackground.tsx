@@ -1,5 +1,5 @@
-import React from 'react'
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion';
+import React from 'react';
 export function GradientBackground() {
   return (
     <div className="fixed inset-0 z-0 overflow-hidden bg-white">
@@ -51,6 +51,5 @@ export function GradientBackground() {
         className="absolute top-[20%] left-[30%] w-[40vw] h-[40vw] rounded-full bg-gradient-to-br from-blue-200 via-cyan-200 to-indigo-200 blur-3xl opacity-50"
       />
     </div>
-  )
+  );
 }
-

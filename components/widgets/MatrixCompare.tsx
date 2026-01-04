@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
 import { Plus, Trash2, Link as LinkIcon, X } from 'lucide-react';
-import { ComparisonRow, FieldWithEvidence } from '../../types';
-import { useStore } from '../../store';
+import React, { useState } from 'react';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import { useStore } from '../../store';
+import { ComparisonRow, FieldWithEvidence } from '../../types';
 
 interface MatrixCompareProps {
   nodeId: string;
   rows: ComparisonRow[];
-  onUpdateRow: (index: number, field: keyof ComparisonRow | 'doc1Claim' | 'doc2Claim', value: any) => void;
+  onUpdateRow: (
+    index: number,
+    field: keyof ComparisonRow | 'doc1Claim' | 'doc2Claim',
+    value: any
+  ) => void;
   onAddRow: () => void;
   onRemoveRow: (index: number) => void;
   documents: Array<{ id: string; title: string }>;
@@ -23,7 +27,7 @@ export const MatrixCompare: React.FC<MatrixCompareProps> = ({
 }) => {
   const { documents: allDocuments } = useStore();
   const autoSave = useAutoSave(1000);
-  
+
   // 獲取所有 highlights
   const allHighlights = allDocuments.flatMap((d) =>
     (d.highlights || []).map((h) => ({ ...h, docTitle: d.title, document: d }))
@@ -159,10 +163,7 @@ export const MatrixCompare: React.FC<MatrixCompareProps> = ({
         </div>
       ))}
 
-      <button
-        className="btn btn-outline btn-sm w-full border-dashed"
-        onClick={onAddRow}
-      >
+      <button className="btn btn-outline btn-sm w-full border-dashed" onClick={onAddRow}>
         <Plus size={14} />
         新增比較維度
       </button>
@@ -190,9 +191,7 @@ const EvidenceSelector: React.FC<{
       {isOpen && (
         <div className="border border-base-300 rounded-lg p-2 bg-base-50 max-h-32 overflow-y-auto mt-1">
           {highlights.length === 0 ? (
-            <div className="text-xs text-slate-400 text-center py-2">
-              尚無標註資料
-            </div>
+            <div className="text-xs text-slate-400 text-center py-2">尚無標註資料</div>
           ) : (
             <div className="space-y-1">
               {highlights.map((h) => (
@@ -230,10 +229,7 @@ const EvidenceSelector: React.FC<{
             return (
               <span key={id} className="badge badge-xs badge-warning gap-1">
                 <span className="truncate max-w-[80px]">{h.snippet.substring(0, 20)}...</span>
-                <button
-                  onClick={() => onToggle(id)}
-                  className="hover:text-red-700"
-                >
+                <button onClick={() => onToggle(id)} className="hover:text-red-700">
                   <X size={8} />
                 </button>
               </span>
@@ -244,4 +240,3 @@ const EvidenceSelector: React.FC<{
     </div>
   );
 };
-

@@ -21,7 +21,14 @@ export const PDFHighlightOverlay: React.FC<PDFHighlightOverlayProps> = ({
   onHighlightClick,
 }) => {
   // 篩選出當前頁面的證據
-  const pageHighlights = highlights.filter((h) => h.page === pageNumber && h.x !== undefined && h.y !== undefined && h.width !== undefined && h.height !== undefined);
+  const pageHighlights = highlights.filter(
+    (h) =>
+      h.page === pageNumber &&
+      h.x !== undefined &&
+      h.y !== undefined &&
+      h.width !== undefined &&
+      h.height !== undefined
+  );
 
   if (pageHighlights.length === 0) return null;
 
@@ -38,7 +45,8 @@ export const PDFHighlightOverlay: React.FC<PDFHighlightOverlayProps> = ({
       }}
     >
       {pageHighlights.map((highlight) => {
-        const colors = EVIDENCE_TYPE_COLORS[highlight.evidence_type || 'Other'] || EVIDENCE_TYPE_COLORS.Other;
+        const colors =
+          EVIDENCE_TYPE_COLORS[highlight.evidence_type || 'Other'] || EVIDENCE_TYPE_COLORS.Other;
         return (
           <div
             key={highlight.id}
@@ -67,12 +75,3 @@ export const PDFHighlightOverlay: React.FC<PDFHighlightOverlayProps> = ({
     </div>
   );
 };
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 
 interface EvidenceCreateDialogProps {
   isOpen: boolean;
@@ -68,7 +68,9 @@ export const EvidenceCreateDialog: React.FC<EvidenceCreateDialogProps> = ({
             <div>
               <label className="label">
                 <span className="label-text font-bold text-sm">標記片段名稱</span>
-                <span className="label-text-alt text-xs text-slate-500">（方便識別此標記片段的用途）</span>
+                <span className="label-text-alt text-xs text-slate-500">
+                  （方便識別此標記片段的用途）
+                </span>
               </label>
               <input
                 type="text"
@@ -94,7 +96,7 @@ export const EvidenceCreateDialog: React.FC<EvidenceCreateDialogProps> = ({
                 rows={4}
                 value={snippet}
                 onChange={(e) => setSnippet(e.target.value)}
-                placeholder={initialText ? "已自動提取文本，可在此編輯..." : "請輸入證據內容..."}
+                placeholder={initialText ? '已自動提取文本，可在此編輯...' : '請輸入證據內容...'}
               />
               {!initialText && (
                 <div className="text-xs text-slate-400 mt-1">
@@ -131,4 +133,3 @@ export const EvidenceCreateDialog: React.FC<EvidenceCreateDialogProps> = ({
     </>
   );
 };
-

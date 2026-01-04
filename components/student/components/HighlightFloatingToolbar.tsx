@@ -1,7 +1,7 @@
-import React from 'react';
 import { X, Edit2 } from 'lucide-react';
-import { EvidenceType, ToolbarPosition } from '../StudentInterface.types';
+import React from 'react';
 import { EVIDENCE_TYPES } from '../StudentInterface.constants';
+import { EvidenceType, ToolbarPosition } from '../StudentInterface.types';
 
 interface HighlightFloatingToolbarProps {
   position: ToolbarPosition;
@@ -55,4 +55,3 @@ export const HighlightFloatingToolbar: React.FC<HighlightFloatingToolbarProps> =
     </div>
   );
 };
-
