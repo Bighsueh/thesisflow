@@ -1119,6 +1119,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({ isAiThinking: true });
     try {
       const chatContext = {
+        current_document_id: state.currentDocId, // RAG: 當前正在查看的文檔
         evidence_ids: state.activeEvidenceIds,
         evidence_info: evidenceInfoMap, // 新增：傳遞標記片段的完整信息
         widget_states: state.currentWidgetState,
