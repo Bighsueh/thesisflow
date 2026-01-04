@@ -17,7 +17,7 @@ interface CohortMemberUser {
   role: string;
 }
 
-interface CohortMember {
+interface _CohortMember {
   user: CohortMemberUser;
   status?: string;
   progress: number;
@@ -51,7 +51,7 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
   const [studentSearch, setStudentSearch] = useState('');
   const [addingStudents, setAddingStudents] = useState(false);
   const [isDragOverTarget, setIsDragOverTarget] = useState(false);
-  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+  const [_isAutoRefreshing, setIsAutoRefreshing] = useState(false);
 
   useEffect(() => {
     hydrate();

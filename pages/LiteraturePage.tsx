@@ -1,6 +1,6 @@
 import { Upload, FileText, Trash2, Eye, Search, Filter, X } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
-import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
+import { Document as PdfDocument, Page } from 'react-pdf';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Input } from '../components/ui/Input';
@@ -20,7 +20,7 @@ export function LiteraturePage() {
   } = useStore();
   const [activeTab, setActiveTab] = useState<'list' | 'upload'>('list');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isUploadModalOpen, setUploadModalOpen] = useState(false);
+  const [_isUploadModalOpen, setUploadModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [isDragging, setIsDragging] = useState(false);

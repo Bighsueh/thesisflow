@@ -1,7 +1,6 @@
 import {
   Settings,
   Save,
-  FileText,
   CheckSquare,
   Columns,
   Layers,

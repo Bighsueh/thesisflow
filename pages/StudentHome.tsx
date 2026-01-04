@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
+import { Document as PdfDocument, Page } from 'react-pdf';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../authStore';
 import { useStore } from '../store';

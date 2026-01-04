@@ -1,5 +1,4 @@
 import {
-  FileText,
   CheckSquare,
   Layers,
   Columns,
@@ -43,7 +42,7 @@ const NodeWrapper = ({
   </div>
 );
 
-export const StartNode = memo(({ data }: NodeProps<NodeData>) => {
+export const StartNode = memo(({ data: _data }: NodeProps<NodeData>) => {
   return (
     <>
       <NodeWrapper colorClass="border-slate-800" title="開始" icon={PlayCircle} isStart={true}>
@@ -135,7 +134,7 @@ export const SynthesisNode = memo(({ data }: NodeProps<NodeData>) => {
   );
 });
 
-export const EndNode = memo(({ data }: NodeProps<NodeData>) => {
+export const EndNode = memo(({ data: _data }: NodeProps<NodeData>) => {
   return (
     <>
       <Handle type="target" position={Position.Top} className="!bg-slate-800 !w-4 !h-4" />

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import Lottie from 'lottie-react';
-import { ArrowRight, Sparkles, Brain, Zap, Users } from 'lucide-react';
+import { Sparkles, Brain, Zap, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';

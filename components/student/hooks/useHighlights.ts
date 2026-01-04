@@ -48,11 +48,7 @@ export const useHighlights = () => {
   };
 
   const handleRemoveHighlight = async (highlightId: string) => {
-    try {
-      await removeHighlight(highlightId);
-    } catch (error: any) {
-      throw error;
-    }
+    await removeHighlight(highlightId);
   };
 
   const handleQuickCreate = async (

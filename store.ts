@@ -10,7 +10,6 @@ import {
   getIncomers,
 } from 'reactflow';
 import { create } from 'zustand';
-import { api } from './services/api';
 import { chatService } from './services/chatService';
 import { cohortService } from './services/cohortService';
 import { documentService } from './services/documentService';
@@ -35,7 +34,6 @@ import {
   Student,
   CohortMember,
   UsageRecord,
-  ChatContext,
 } from './types';
 
 interface AppState {
@@ -709,12 +707,8 @@ export const useStore = create<AppState>((set, get) => ({
   pdfCache: {},
   currentDocId: null,
   loadDocuments: async (projectId?: string | null) => {
-    try {
-      const docs = await documentService.loadDocuments(projectId);
-      set({ documents: docs, currentDocId: docs[0]?.id || null });
-    } catch (error: any) {
-      throw error;
-    }
+    const docs = await documentService.loadDocuments(projectId);
+    set({ documents: docs, currentDocId: docs[0]?.id || null });
   },
   bindDocumentsToProject: async (documentIds: string[], projectId: string) => {
     await documentService.bindDocumentsToProject(documentIds, projectId);
@@ -1163,7 +1157,6 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   completeNode: (nodeId: string) => {
-    const state = get();
     const completeMessage: Message = {
       id: genId(),
       role: 'status',

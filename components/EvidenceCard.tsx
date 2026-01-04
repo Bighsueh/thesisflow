@@ -1,6 +1,5 @@
 import { X, MapPin, MessageSquare, Link as LinkIcon, Edit2 } from 'lucide-react';
 import React from 'react';
-import { useStore } from '../store';
 import { Highlight, Document } from '../types';
 
 interface EvidenceCardProps {

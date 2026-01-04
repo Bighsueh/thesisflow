@@ -9,7 +9,7 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
-  const isLanding = location.pathname === '/';
+  const _isLanding = location.pathname === '/';
   const isLogin = location.pathname === '/login';
 
   // 登入頁面不顯示導航

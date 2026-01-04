@@ -1,9 +1,8 @@
 import { CheckCircle2, XCircle, Link as LinkIcon, X } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { useStore } from '../../store';
-import { FieldWithEvidence, Highlight, Document } from '../../types';
-import { EvidenceCard } from '../EvidenceCard';
+import { FieldWithEvidence } from '../../types';
 
 interface SectionWriterProps {
   nodeId: string;
@@ -19,13 +18,14 @@ interface SectionWriterProps {
 }
 
 export const SectionWriter: React.FC<SectionWriterProps> = ({
-  nodeId,
+  nodeId: _nodeId,
   sections,
-  selectedDocId,
+  selectedDocId: _selectedDocId,
   onUpdate,
   values,
 }) => {
-  const { documents, activeEvidenceIds, setActiveEvidenceIds } = useStore();
+  const { documents } = useStore();
+  const [_activeEvidenceIds, _setActiveEvidenceIds] = useState<string[]>([]);
   const [expandedSection, setExpandedSection] = useState<string | null>(sections[0]?.key || null);
   const [showEvidenceSelector, setShowEvidenceSelector] = useState<string | null>(null);
   const autoSave = useAutoSave(1000);
