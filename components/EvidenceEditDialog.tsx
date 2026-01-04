@@ -31,7 +31,7 @@ export const EvidenceEditDialog: React.FC<EvidenceEditDialogProps> = ({
     try {
       const trimmedName = name.trim();
       // 總是傳遞 name 欄位，即使是空字串，這樣後端才能正確更新
-      const response = await updateHighlight(highlight.id, {
+      await updateHighlight(highlight.id, {
         snippet,
         name: trimmedName, // 傳遞空字串以清除名稱，而不是 undefined
       });

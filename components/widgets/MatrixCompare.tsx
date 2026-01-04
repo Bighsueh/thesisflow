@@ -2,7 +2,7 @@ import { Plus, Trash2, Link as LinkIcon, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { useStore } from '../../store';
-import { ComparisonRow, FieldWithEvidence } from '../../types';
+import { ComparisonRow } from '../../types';
 
 interface MatrixCompareProps {
   nodeId: string;
@@ -18,7 +18,7 @@ interface MatrixCompareProps {
 }
 
 export const MatrixCompare: React.FC<MatrixCompareProps> = ({
-  nodeId,
+  nodeId: _nodeId,
   rows,
   onUpdateRow,
   onAddRow,

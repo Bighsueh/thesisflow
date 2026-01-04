@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Workflow, Users, User, LogOut, Home } from 'lucide-react';
+import { Workflow, User, LogOut, Home } from 'lucide-react';
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../authStore';
@@ -9,7 +9,7 @@ export function TeacherNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
-  const isLanding = location.pathname === '/';
+  const _isLanding = location.pathname === '/';
   const isLogin = location.pathname === '/login';
 
   // 登入頁面不顯示導航

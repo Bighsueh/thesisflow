@@ -1,6 +1,6 @@
-import { BookOpen, LayoutGrid, FileText, ArrowRight, Settings, Plus, Trash2 } from 'lucide-react';
+import { LayoutGrid, FileText, ArrowRight, Settings, Plus, Trash2 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
+import { Document as PdfDocument, Page } from 'react-pdf';
 import { useStore } from '../store';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';

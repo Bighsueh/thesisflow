@@ -3,9 +3,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import { getIncomers, getOutgoers } from 'reactflow';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { useStore } from '../store';
-import { AppNode, Message, TaskAContent, ComparisonRow, TaskCContent } from '../types';
+import { AppNode, TaskAContent, ComparisonRow, TaskCContent } from '../types';
 import { ChatMessage } from './ChatMessage';
-import { EvidenceCard } from './EvidenceCard';
 import { ChecklistSubmit } from './widgets/ChecklistSubmit';
 import { InstructionCard } from './widgets/InstructionCard';
 import { MatrixCompare } from './widgets/MatrixCompare';
@@ -52,7 +51,6 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
     documents,
     currentWidgetState,
     updateWidgetState,
-    activeProjectId,
     currentStepId,
     submitTaskA,
     taskBData,
@@ -67,7 +65,6 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
     completeNode,
     nodes,
     edges,
-    navigateNext,
     navigatePrev,
   } = useStore();
 

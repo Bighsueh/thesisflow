@@ -1,7 +1,6 @@
 import { X, Filter, Edit2, Trash2, MapPin, Trash } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import { Highlight, Document } from '../types';
-import { EvidenceCard } from './EvidenceCard';
 import { EvidenceCreateDialog } from './EvidenceCreateDialog';
 import { EvidenceEditDialog } from './EvidenceEditDialog';
 

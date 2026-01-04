@@ -1,4 +1,4 @@
-import { Node, Edge } from 'reactflow';
+import { Node } from 'reactflow';
 
 // --- Flow & Node Types ---
 

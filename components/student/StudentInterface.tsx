@@ -5,14 +5,10 @@ import {
   File,
   Highlighter,
   ChevronRight,
-  LayoutList,
-  Columns,
-  Layers,
   ArrowRight,
   X,
   MessageCircle,
   ClipboardList,
-  Plus,
   Trash2,
   BookOpen,
   ChevronLeft,
@@ -33,7 +29,7 @@ import {
   LayoutTemplate,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
-import { Document as PdfDocument, Page, pdfjs } from 'react-pdf';
+import { Document as PdfDocument, Page } from 'react-pdf';
 import { useNavigate } from 'react-router-dom';
 import { getIncomers, getOutgoers } from 'reactflow';
 import { useAuthStore } from '../../authStore';
@@ -41,8 +37,6 @@ import { useAutoSave } from '../../hooks/useAutoSave';
 import { useStore } from '../../store';
 import { ChatMessage } from '../ChatMessage';
 import { EvidenceCreateDialog } from '../EvidenceCreateDialog';
-import { EvidenceListPanel } from '../EvidenceListPanel';
-import { PDFHighlightOverlay } from '../PDFHighlightOverlay';
 import { PDFSelector } from '../PDFSelector';
 import {
   AppNode,
@@ -55,7 +49,6 @@ import {
 } from '../types';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { GradientBackground } from '../ui/GradientBackground';
 import { ChecklistSubmit } from '../widgets/ChecklistSubmit';
 import { InstructionCard } from '../widgets/InstructionCard';
 import { MatrixCompare } from '../widgets/MatrixCompare';
@@ -327,7 +320,7 @@ const HighlightHoverCard = ({
   if (!highlight.x || !highlight.y || !highlight.width || !highlight.height) return null;
 
   // 計算最佳位置，避免超出邊界
-  const cardWidth = 320; // w-80 = 20rem = 320px
+  const _cardWidth = 320; // w-80 = 20rem = 320px
   const highlightLeft = highlight.x * 100;
   const highlightTop = highlight.y * 100;
   const highlightBottom = (highlight.y + highlight.height) * 100;
@@ -626,7 +619,7 @@ const HighlightSidebar = ({
 
 // --- Chat & Task Panel Wrappers ---
 
-const ChatPanelWrapper = ({ currentNode }: { currentNode: AppNode | null }) => {
+const ChatPanelWrapper = ({ currentNode: _currentNode }: { currentNode: AppNode | null }) => {
   const { documents, chatTimeline, isAiThinking, sendCoachMessage } = useStore();
   const allHighlights: ExtendedHighlight[] = documents.flatMap((d) =>
     (d.highlights || []).map((h) => ({
@@ -822,7 +815,6 @@ const TaskWidget = ({ currentNode }: { currentNode: AppNode | null }) => {
     documents,
     currentWidgetState,
     updateWidgetState,
-    activeProjectId,
     currentStepId,
     submitTaskA,
     taskBData,
@@ -1549,11 +1541,9 @@ const ReaderPanel = () => {
   const {
     documents,
     currentDocId,
-    selectDocument,
     addHighlight,
     removeHighlight,
     updateHighlight,
-    getFileUrl,
     getCachedFileUrl,
     activeProjectId,
     bindDocumentsToProject,
@@ -1573,7 +1563,7 @@ const ReaderPanel = () => {
   } | null>(null);
   const [evidenceType, setEvidenceType] = useState<string>('Other');
   const [isDragOver, setIsDragOver] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<'text' | 'box'>('box'); // 'text' 或 'box'
+  const [selectionMode, _setSelectionMode] = useState<'text' | 'box'>('box'); // 'text' 或 'box'
   const [pendingSelection, setPendingSelection] = useState<{
     x: number;
     y: number;
@@ -1802,21 +1792,17 @@ const ReaderPanel = () => {
     navigator.clipboard.writeText(text);
   };
 
-  const handleEditHighlight = async (highlight: Highlight) => {
+  const _handleEditHighlight = async (_highlight: Highlight) => {
     // 編輯功能由 EvidenceListPanel 中的對話框處理
     // 這裡只需要確保狀態更新
     await loadDocuments(activeProjectId || undefined);
   };
 
   const handleRemoveHighlight = async (highlightId: string) => {
-    try {
-      await removeHighlight(highlightId);
-    } catch (error: any) {
-      throw error;
-    }
+    await removeHighlight(highlightId);
   };
 
-  const handleCreateHighlight = async (snippet: string, name?: string, page?: number) => {
+  const _handleCreateHighlight = async (snippet: string, name?: string, page?: number) => {
     if (!currentDocId) return;
     await addHighlight(currentDocId, snippet, {
       name,
@@ -1824,13 +1810,9 @@ const ReaderPanel = () => {
     });
   };
 
-  const handleRemoveAllHighlights = async () => {
+  const _handleRemoveAllHighlights = async () => {
     if (!currentDocId) return;
-    try {
-      await removeAllHighlights(currentDocId);
-    } catch (error: any) {
-      throw error;
-    }
+    await removeAllHighlights(currentDocId);
   };
 
   const handleCancelSelection = () => {
@@ -2315,6 +2297,7 @@ const ReaderPanel = () => {
 
 // --- Task Components (保留但不再使用，邏輯已移至 ChatMainPanel) ---
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TaskATab = ({ nodeData }: { nodeData: any }) => {
   const { documents, submitTaskA, taskAVersions, isAiThinking } = useStore();
   const [selectedDocId, setSelectedDocId] = useState<string>('');
@@ -2429,9 +2412,10 @@ const TaskATab = ({ nodeData }: { nodeData: any }) => {
   );
 };
 
-const TaskBTab = ({ nodeData }: { nodeData: any }) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const TaskBTab = ({ nodeData: _nodeData }: { nodeData: any }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const {
-    documents,
     taskBData,
     updateTaskBRow,
     addTaskBRow,
@@ -2538,7 +2522,8 @@ const TaskBTab = ({ nodeData }: { nodeData: any }) => {
   );
 };
 
-const TaskCTab = ({ nodeData }: { nodeData: any }) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const TaskCTab = ({ nodeData: _nodeData }: { nodeData: any }) => {
   const { taskCData, updateTaskC, submitTaskCCheck, isAiThinking } = useStore();
 
   return (
@@ -2588,6 +2573,7 @@ const TaskCTab = ({ nodeData }: { nodeData: any }) => {
   );
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const FloatingChat = () => {
   const { chatMessages, isChatOpen, toggleChat, isAiThinking } = useStore();
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -2658,21 +2644,18 @@ export default function StudentInterface() {
     navigateNext,
     projects,
     activeProjectId,
-    exitProject,
     cohorts,
     joinCohortByCode,
     chatTimeline,
     addChatMessage,
-    currentWidgetState,
-    documents,
     loadDocuments,
     bindDocumentsToProject,
     updateHighlight,
   } = useStore();
-  const navigate = useNavigate();
+  const _navigate = useNavigate();
   const currentNode = nodes.find((n) => n.id === currentStepId);
-  const currentProject = projects.find((p) => p.id === activeProjectId);
-  const projectCohorts = cohorts.filter((c) => c.project_id === activeProjectId);
+  const _currentProject = projects.find((p) => p.id === activeProjectId);
+  const _projectCohorts = cohorts.filter((c) => c.project_id === activeProjectId);
   const [joinCode, setJoinCode] = useState('');
   const [joining, setJoining] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);

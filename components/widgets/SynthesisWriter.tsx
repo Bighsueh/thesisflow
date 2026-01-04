@@ -17,7 +17,7 @@ interface SynthesisWriterProps {
 }
 
 export const SynthesisWriter: React.FC<SynthesisWriterProps> = ({
-  nodeId,
+  nodeId: _nodeId,
   slots,
   values,
   onUpdate,

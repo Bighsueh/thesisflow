@@ -16,7 +16,7 @@ import TeacherCohort from './pages/TeacherCohort';
 import TeacherHome from './pages/TeacherHome';
 
 export function App() {
-  const { hydrate, user } = useAuthStore();
+  const { hydrate } = useAuthStore();
 
   useEffect(() => {
     hydrate();
