@@ -5,10 +5,14 @@ import models
 import schemas
 from auth import get_current_user
 from services import presign_upload, presign_get, get_s3_client
+from rag_services import process_document_rag, delete_document_vectors
 import uuid
 from datetime import datetime
 from typing import Optional
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Ensure forward refs are resolved (for Pydantic v1 compatibility)
 try:
@@ -73,6 +77,8 @@ def list_documents(
                         uploaded_at=int(d.uploaded_at.timestamp() * 1000) if d.uploaded_at else 0,
                         raw_preview=d.raw_preview,
                         highlights=highlights,
+                        rag_status=d.rag_status or "pending",
+                        chunk_count=d.chunk_count or 0,
                     )
                 )
             except Exception as e:
@@ -103,6 +109,7 @@ def create_document(
         size=payload.size,
         type=payload.type,
         raw_preview=payload.raw_preview,
+        rag_status="pending" if payload.type == "pdf" else "not_applicable",
     )
     db.add(doc)
     db.commit()
@@ -118,6 +125,8 @@ def create_document(
         uploaded_at=int(doc.uploaded_at.timestamp() * 1000),
         raw_preview=doc.raw_preview,
         highlights=[],
+        rag_status=doc.rag_status or "pending",
+        chunk_count=doc.chunk_count or 0,
     )
 
 @router.post("/upload", response_model=schemas.DocumentOut)
@@ -183,10 +192,27 @@ async def upload_document(
         size=file.size,
         type=doc_type,
         raw_preview=None,
+        rag_status="pending" if doc_type == "pdf" else "not_applicable",
     )
     db.add(doc)
     db.commit()
     db.refresh(doc)
+
+    # 若為 PDF，執行 RAG 處理
+    if doc_type == "pdf":
+        try:
+            success, error = process_document_rag(doc.id, file_content, db)
+            if not success:
+                logger.warning(f"RAG processing failed for document {doc.id}: {error}")
+            # 重新載入文檔以取得更新後的 RAG 狀態
+            db.refresh(doc)
+        except Exception as e:
+            logger.error(f"RAG processing error for document {doc.id}: {e}")
+            # RAG 處理失敗不影響文件上傳成功
+            doc.rag_status = "failed"
+            doc.rag_error = str(e)[:500]
+            db.commit()
+
     return schemas.DocumentOut(
         id=doc.id,
         project_id=doc.project_id,
@@ -198,6 +224,8 @@ async def upload_document(
         uploaded_at=int(doc.uploaded_at.timestamp() * 1000),
         raw_preview=doc.raw_preview,
         highlights=[],
+        rag_status=doc.rag_status or "pending",
+        chunk_count=doc.chunk_count or 0,
     )
 
 @router.post("/bind")
@@ -282,6 +310,8 @@ def update_document(
         uploaded_at=int(doc.uploaded_at.timestamp() * 1000),
         raw_preview=doc.raw_preview,
         highlights=highlights,
+        rag_status=doc.rag_status or "pending",
+        chunk_count=doc.chunk_count or 0,
     )
 
 @router.post("/{doc_id}/highlights", response_model=schemas.HighlightOut)
@@ -362,6 +392,15 @@ def delete_document(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    # 先刪除 ChromaDB 中的向量資料
+    try:
+        deleted_vectors = delete_document_vectors(doc_id)
+        if deleted_vectors > 0:
+            logger.info(f"Deleted {deleted_vectors} vectors for document {doc_id}")
+    except Exception as e:
+        logger.warning(f"Failed to delete vectors for document {doc_id}: {e}")
+        # 向量刪除失敗不影響文檔刪除
+
     deleted = db.query(models.Document).filter(models.Document.id == doc_id).delete()
     db.commit()
     if deleted == 0:
