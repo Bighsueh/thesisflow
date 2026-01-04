@@ -70,6 +70,23 @@ class DocumentOut(BaseModel):
     uploaded_at: int
     raw_preview: Optional[str] = None
     highlights: List["HighlightOut"] = Field(default_factory=list)
+    # RAG 相關欄位
+    rag_status: str = "pending"  # pending|processing|completed|failed
+    chunk_count: int = 0
+
+    class Config:
+        from_attributes = True
+
+
+class DocumentChunkOut(BaseModel):
+    """文檔切片輸出格式"""
+    id: str
+    document_id: str
+    chunk_index: int
+    content_preview: Optional[str] = None
+    page_numbers: List[int] = Field(default_factory=list)
+    char_count: int = 0
+    created_at: int
 
     class Config:
         from_attributes = True
@@ -267,7 +284,14 @@ class ChatRequest(BaseModel):
     project_id: str
     node_id: str
     message: str
-    context: dict  # 包含 evidence_ids, widget_states, chat_history
+    context: dict  # 包含 current_document_id, evidence_ids, widget_states, chat_history
+    # context = {
+    #     "current_document_id": str | None,  # 當前查看的文檔 ID（用於 RAG 檢索）
+    #     "evidence_ids": [...],
+    #     "evidence_info": {...},
+    #     "widget_states": {...},
+    #     "chat_history": [...]
+    # }
 
 
 class ChatResponse(BaseModel):
