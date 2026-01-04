@@ -197,8 +197,9 @@ const HighlightFloatingToolbar = ({
         top: `${position.y}%`, 
         left: `${position.x}%`,
         zIndex: 100,
+        cursor: 'auto',
       }}
-      className="absolute transform -translate-y-full -translate-x-1/2 mt-[-10px] bg-white shadow-xl rounded-full p-1.5 flex items-center space-x-2 border border-slate-200 animate-bounce-in"
+      className="absolute transform -translate-y-full -translate-x-1/2 mt-[-10px] bg-white shadow-xl rounded-full p-1.5 flex items-center space-x-2 border border-slate-200 animate-bounce-in pointer-events-auto"
     >
       {EVIDENCE_TYPES.map((typeDef) => (
         <button
