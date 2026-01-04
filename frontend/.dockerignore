@@ -43,13 +43,12 @@ logs
 .DS_Store
 Thumbs.db
 
-# Python (for frontend build context)
+# Python cache (if any tooling uses Python)
 __pycache__
 *.pyc
 *.pyo
 *.pyd
 .Python
-backend/
 
 # Other
 .cursor
