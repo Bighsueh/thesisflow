@@ -534,6 +534,7 @@ const HighlightSidebar = ({
 
   return (
     <div
+      data-tour="highlight-sidebar"
       className={`
       absolute top-12 bottom-0 left-0 z-20 w-[300px] bg-white border-r border-slate-200 shadow-xl transform transition-transform duration-300 flex flex-col
       ${isOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -763,6 +764,7 @@ const ChatPanelWrapper = ({ currentNode: _currentNode }: { currentNode: AppNode 
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyPress}
             rows={2}
+            data-tour="chat-input"
           />
           <button
             className="btn btn-primary btn-sm gap-2"
@@ -1368,6 +1370,7 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         onClick={onClose}
       ></div>
       <div
+        data-tour="library-panel"
         className={`absolute inset-y-0 left-0 z-50 w-[800px] bg-white shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="h-14 border-b border-slate-100 flex items-center justify-between px-6 bg-white shrink-0">
@@ -1909,6 +1912,7 @@ const ReaderPanel = () => {
 
       {/* PDF Toolbar */}
       <div
+        data-tour="reader-toolbar"
         className={`h-12 bg-white/80 backdrop-blur-md border-b border-slate-200/60 flex items-center justify-between px-4 sticky top-0 z-10 transition-colors ${
           isDragOver ? 'bg-indigo-50 border-indigo-300' : ''
         }`}
@@ -1933,6 +1937,7 @@ const ReaderPanel = () => {
       >
         <div className="flex items-center space-x-3 max-w-[60%]">
           <button
+            data-tour="library-toggle"
             className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-200 rounded-lg text-slate-600 hover:text-indigo-600 transition-all shadow-sm group shrink-0"
             onClick={() => setLibraryOpen(!isLibraryOpen)}
           >
@@ -1943,6 +1948,7 @@ const ReaderPanel = () => {
             <span className="text-xs font-medium">文獻庫</span>
           </button>
           <button
+            data-tour="highlight-sidebar-toggle"
             className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-200 rounded-lg text-slate-600 hover:text-indigo-600 transition-all shadow-sm group shrink-0"
             onClick={() => setIsEvidencePanelOpen((prev) => !prev)}
             disabled={!doc}
@@ -2380,6 +2386,7 @@ const TaskATab = ({ nodeData }: { nodeData: any }) => {
               className="btn btn-primary w-full mb-8"
               onClick={handleSubmit}
               disabled={isAiThinking}
+              data-tour="submit-task-button"
             >
               {isAiThinking ? 'AI 驗證中...' : '提交檢核'} <Send size={14} />
             </button>
@@ -2808,6 +2815,7 @@ export default function StudentInterface() {
     return (
       <div className="flex h-full w-full relative">
         <div
+          data-tour="reader-panel"
           className={`transition-all duration-500 ease-in-out h-full relative ${isCollapsed ? 'w-[calc(100%-60px)]' : 'w-[70%]'}`}
         >
           <ReaderPanel />
@@ -2862,6 +2870,7 @@ export default function StudentInterface() {
               </div>
             )}
             <button
+              data-tour="panel-collapse-buttons"
               onClick={() => setIsCollapsed(!isCollapsed)}
               className="p-1.5 hover:bg-slate-100 rounded-md text-slate-400 hover:text-slate-600 transition-colors"
             >
@@ -2871,9 +2880,13 @@ export default function StudentInterface() {
           {!isCollapsed && (
             <div className="flex-1 overflow-hidden relative animate-fadeIn">
               {activeTab === 'chat' ? (
-                <ChatPanelWrapper currentNode={currentNode} />
+                <div data-tour="chat-panel" className="h-full">
+                  <ChatPanelWrapper currentNode={currentNode} />
+                </div>
               ) : (
-                <TaskPanelWrapper currentNode={currentNode} />
+                <div data-tour="task-panel" className="h-full">
+                  <TaskPanelWrapper currentNode={currentNode} />
+                </div>
               )}
             </div>
           )}

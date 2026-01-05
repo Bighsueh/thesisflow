@@ -173,6 +173,7 @@ export function LiteraturePage() {
           variant="primary"
           onClick={() => setUploadModalOpen(true)}
           leftIcon={<Upload size={18} />}
+          data-tour="upload-button"
         >
           上傳新文獻
         </Button>
@@ -180,7 +181,7 @@ export function LiteraturePage() {
 
       <div className="space-y-6">
         {/* Search Bar */}
-        <GlassCard className="p-4 flex gap-4">
+        <GlassCard className="p-4 flex gap-4" data-tour="search-bar">
           <div className="flex-1">
             <Input
               icon={<Search size={18} />}
@@ -208,12 +209,16 @@ export function LiteraturePage() {
             </p>
           </GlassCard>
         ) : (
-          <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
-            {filteredDocuments.map((item) => (
+          <div
+            className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar"
+            data-tour="document-list"
+          >
+            {filteredDocuments.map((item, index) => (
               <GlassCard
                 key={item.id}
                 className="p-4 flex items-center justify-between group"
                 hoverEffect
+                data-tour={index === 0 ? 'document-card-example' : undefined}
               >
                 <div className="flex items-center gap-4">
                   <div
@@ -234,6 +239,7 @@ export function LiteraturePage() {
                           chunkCount={item.chunk_count}
                           compact
                           docId={item.id}
+                          data-tour={index === 0 ? 'rag-status-badge' : undefined}
                         />
                       )}
                     </div>
@@ -332,6 +338,7 @@ export function LiteraturePage() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
+                  data-tour="upload-dropzone"
                 >
                   <div className="w-16 h-16 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center mx-auto mb-4">
                     <Upload size={32} />
@@ -357,12 +364,17 @@ export function LiteraturePage() {
                     placeholder="輸入文件標題"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
+                    data-tour="document-title-input"
                   />
                   <div className="flex justify-end gap-3 pt-4">
                     <Button variant="ghost" onClick={closeUploadModal}>
                       取消
                     </Button>
-                    <Button onClick={handleUpload} isLoading={uploading}>
+                    <Button
+                      onClick={handleUpload}
+                      isLoading={uploading}
+                      data-tour="confirm-upload-button"
+                    >
                       新增至文獻庫
                     </Button>
                   </div>

@@ -96,7 +96,7 @@ export function ProjectsPage() {
       </div>
 
       {/* Search Bar */}
-      <GlassCard className="p-4">
+      <GlassCard className="p-4" data-tour="projects-search">
         <Input
           icon={<Search size={18} />}
           placeholder="搜尋專案..."
@@ -119,7 +119,10 @@ export function ProjectsPage() {
           </p>
         </GlassCard>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          data-tour="project-list"
+        >
           {filteredProjects.map((project, index) => (
             <GlassCard
               key={project.id}

@@ -59,7 +59,7 @@ export function Dashboard() {
       </div>
 
       {/* PRIMARY: Active Projects - Most Prominent */}
-      <div className="space-y-6">
+      <div className="space-y-6" data-tour="projects-section">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">您的專案</h2>
@@ -89,6 +89,7 @@ export function Dashboard() {
                   className="p-6 group"
                   hoverEffect
                   onClick={() => handleEnterProject(project.id)}
+                  data-tour={i === 0 ? 'project-card-example' : undefined}
                 >
                   <div className="flex items-start gap-4 mb-4">
                     <div
@@ -117,6 +118,7 @@ export function Dashboard() {
                   <Button
                     variant="secondary"
                     className="w-full group-hover:bg-violet-50 group-hover:text-violet-700 group-hover:border-violet-200 transition-all"
+                    data-tour={i === 0 ? 'enter-project-button' : undefined}
                   >
                     進入專案 <ArrowRight size={16} className="ml-2" />
                   </Button>
@@ -138,7 +140,7 @@ export function Dashboard() {
       </div>
 
       {/* SECONDARY: Recent Literature */}
-      <div className="space-y-4">
+      <div className="space-y-4" data-tour="literature-section">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">最近文獻</h2>
@@ -159,12 +161,13 @@ export function Dashboard() {
           </GlassCard>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recentDocuments.map((doc) => (
+            {recentDocuments.map((doc, index) => (
               <GlassCard
                 key={doc.id}
                 className="p-4 flex items-center gap-3"
                 hoverEffect
                 onClick={() => navigate('/literature')}
+                data-tour={index === 0 ? 'literature-card-example' : undefined}
               >
                 <div
                   className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0 ${
@@ -200,7 +203,7 @@ export function Dashboard() {
       </div>
 
       {/* TERTIARY: Groups - Minimal */}
-      <div className="pt-4 border-t border-gray-100">
+      <div className="pt-4 border-t border-gray-100" data-tour="cohorts-section">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2 text-gray-600">
             <Users size={16} />
