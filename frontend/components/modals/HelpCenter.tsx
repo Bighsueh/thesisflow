@@ -48,10 +48,27 @@ const TOUR_ROUTE_MAP: Record<string, string> = {
   'groups-join': '/groups',
 };
 
+// 路由到導覽 ID 的反向映射
+const ROUTE_TO_TOUR_ID: Record<string, string> = {
+  '/dashboard': 'dashboard-intro',
+  '/literature': 'literature-upload',
+  '/student/project': 'student-interface',
+  '/projects': 'projects-management',
+  '/groups': 'groups-join',
+};
+
 export function HelpCenter({ onClose }: HelpCenterProps) {
   const { completedTours, startTour, resetProgress } = useTourStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // 獲取當前頁面對應的導覽 ID
+  const currentTourId = ROUTE_TO_TOUR_ID[location.pathname];
+
+  // 過濾只顯示當前頁面的導覽
+  const visibleTours = currentTourId
+    ? allTours.filter((tour) => tour.id === currentTourId)
+    : allTours; // 如果路由未映射，顯示所有導覽
 
   const handleStartTour = (tour: TourConfig) => {
     onClose();
@@ -133,7 +150,7 @@ export function HelpCenter({ onClose }: HelpCenterProps) {
 
         {/* Tour List */}
         <div className="p-6 space-y-3 overflow-y-auto max-h-[calc(80vh-200px)]">
-          {allTours.map((tour) => {
+          {visibleTours.map((tour) => {
             const isCompleted = completedTours.has(tour.id);
             const icon = tourIcons[tour.id] || <HelpCircle size={20} />;
             const iconBg = tourIconBgs[tour.id] || 'bg-gray-100 text-gray-600';
