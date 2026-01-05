@@ -42,6 +42,11 @@ def log_rag_event(
         db.add(log)
         db.commit()
     except Exception as e:
+        # 確保 session 狀態一致，避免後續操作出錯
+        try:
+            db.rollback()
+        except Exception:
+            pass
         logger.error(f"Failed to log rag event: {e}")
 
 

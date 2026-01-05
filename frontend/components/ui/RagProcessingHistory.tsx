@@ -10,7 +10,7 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { documentService } from '../../services/documentService';
 import { RagProcessingLog } from '../../types';
@@ -43,13 +43,7 @@ export const RagProcessingHistory: React.FC<RagProcessingHistoryProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen && docId) {
-      loadLogs();
-    }
-  }, [isOpen, docId]);
-
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
       const data = await documentService.getRagLogs(docId);
@@ -61,7 +55,25 @@ export const RagProcessingHistory: React.FC<RagProcessingHistoryProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [docId]);
+
+  // 載入日誌
+  useEffect(() => {
+    if (isOpen && docId) {
+      loadLogs();
+    }
+  }, [isOpen, docId, loadLogs]);
+
+  // Escape 鍵關閉 modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -124,6 +136,14 @@ export const RagProcessingHistory: React.FC<RagProcessingHistoryProps> = ({
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[9998] bg-black/5"
             onClick={onClose}
+            role="button"
+            aria-label="關閉處理歷程視窗"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                onClose();
+              }
+            }}
           />
 
           {/* Popover */}
@@ -139,9 +159,17 @@ export const RagProcessingHistory: React.FC<RagProcessingHistoryProps> = ({
               transform: targetRef?.current ? 'translateX(-50%)' : 'translate(-50%, -50%)',
             }}
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rag-history-title"
           >
             <div className="px-4 py-3 border-b border-gray-100 bg-white/50 flex justify-between items-center">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">處理歷程</h3>
+              <h3
+                id="rag-history-title"
+                className="text-xs font-bold text-gray-500 uppercase tracking-wider"
+              >
+                處理歷程
+              </h3>
               {loading && <Loader2 size={12} className="animate-spin text-gray-400" />}
             </div>
 

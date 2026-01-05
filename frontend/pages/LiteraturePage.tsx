@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Upload, FileText, Trash2, Eye, Search, Filter, X } from 'lucide-react';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
@@ -53,6 +53,30 @@ export function LiteraturePage() {
       setPreviewPages(0);
     }
   }, [previewId, documents, getCachedFileUrl]);
+
+  // Escape 鍵關閉 modal
+  const closeUploadModal = useCallback(() => setUploadModalOpen(false), []);
+  const closePreview = useCallback(() => setPreviewId(null), []);
+  const closeDeleteConfirm = useCallback(() => setDeleteConfirmId(null), []);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isUploadModalOpen) closeUploadModal();
+        else if (previewId) closePreview();
+        else if (deleteConfirmId) closeDeleteConfirm();
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [
+    isUploadModalOpen,
+    previewId,
+    deleteConfirmId,
+    closeUploadModal,
+    closePreview,
+    closeDeleteConfirm,
+  ]);
 
   const filteredDocuments = documents.filter((doc) => {
     if (!searchQuery) return true;
@@ -256,7 +280,15 @@ export function LiteraturePage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[100] bg-black/20 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setUploadModalOpen(false)}
+            onClick={closeUploadModal}
+            role="button"
+            aria-label="關閉上傳視窗"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                closeUploadModal();
+              }
+            }}
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -270,6 +302,9 @@ export function LiteraturePage() {
               }}
               className="relative overflow-hidden bg-white/90 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] shadow-violet-500/10 w-full max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="upload-modal-title"
             >
               {/* Subtle shine effect overlay - matching GlassCard style */}
               <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-white/20 to-transparent pointer-events-none" />
@@ -277,10 +312,13 @@ export function LiteraturePage() {
 
               <div className="relative z-10 p-6 sm:p-8">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">上傳文獻</h2>
+                  <h2 id="upload-modal-title" className="text-xl font-bold text-gray-900">
+                    上傳文獻
+                  </h2>
                   <button
                     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    onClick={() => setUploadModalOpen(false)}
+                    onClick={closeUploadModal}
+                    aria-label="關閉上傳視窗"
                   >
                     <X size={20} />
                   </button>
@@ -321,7 +359,7 @@ export function LiteraturePage() {
                     onChange={(e) => setNewTitle(e.target.value)}
                   />
                   <div className="flex justify-end gap-3 pt-4">
-                    <Button variant="ghost" onClick={() => setUploadModalOpen(false)}>
+                    <Button variant="ghost" onClick={closeUploadModal}>
                       取消
                     </Button>
                     <Button onClick={handleUpload} isLoading={uploading}>
