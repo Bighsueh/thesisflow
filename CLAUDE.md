@@ -237,10 +237,11 @@ When updating documentation (from `docs/AI_DOCUMENTATION_GUIDE.md`):
 - 即使用戶授權也應謹慎進行，並清楚說明可能的後果
 - 優先使用常規 push 而非 force push
 
-### Push to Remote 限制 (Push to Remote Restrictions)
+### Remote 推送限制 (Remote Push Restrictions)
 
-**重要**: 任何將變更推上 remote 的操作（`git push` 等）**必須在獲得用戶明確同意後**才能進行。
+**禁止令**: 所有推送到 remote 的操作（`git push` 等任何 push 命令）在未獲得用戶**明確同意**前是禁止的。
 
-- 不可在未經用戶確認的情況下執行任何 push 操作
-- Push 前必須詢問用戶並獲得明確授權
-- 在執行 push 前應向用戶確認要推送的變更內容和目標分支
+- 不可在未經用戶確認的情況下執行任何推送操作
+- 執行任何 push 前必須詢問用戶並獲得明確授權
+- 包括常規 push、pull request push 等所有類型的 remote 操作
+- 作為替代，可以創建本地分支並提醒用戶何時準備推送
