@@ -4,6 +4,7 @@ import { Document as PdfDocument, Page } from 'react-pdf';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Input } from '../components/ui/Input';
+import { RagStatusBadge } from '../components/ui/RagStatusBadge';
 import { useStore } from '../store';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -224,14 +225,26 @@ export function LiteraturePage() {
                     >
                       {item.type === 'pdf' ? 'PDF' : 'TXT'}
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 group-hover:text-violet-700 transition-colors">
-                        {item.title}
-                      </h3>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 group-hover:text-violet-700 transition-colors">
+                          {item.title}
+                        </h3>
+                        {item.type === 'pdf' && (
+                          <RagStatusBadge
+                            status={item.rag_status}
+                            chunkCount={item.chunk_count}
+                            compact
+                          />
+                        )}
+                      </div>
                       <p className="text-sm text-gray-500">
                         {new Date(item.uploaded_at || Date.now()).toLocaleDateString()}
                         {item.size && ` • ${(item.size / 1024 / 1024).toFixed(2)} MB`}
                       </p>
+                      {item.rag_status === 'processing' && (
+                        <progress className="progress progress-primary w-full h-1 mt-1" />
+                      )}
                     </div>
                   </div>
 

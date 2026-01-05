@@ -7,6 +7,8 @@ import {
   X,
   ChevronLeft,
   FileText,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import React, { useRef, useEffect, useState } from 'react';
 import { getIncomers, getOutgoers } from 'reactflow';
@@ -81,6 +83,12 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
 
   // 取得當前文檔資訊
   const currentDoc = documents.find((d) => d.id === currentDocId);
+
+  // 檢查 RAG 是否就緒，決定是否允許聊天
+  const isRagNotReady =
+    currentDoc?.type === 'pdf' &&
+    currentDoc.rag_status !== 'completed' &&
+    currentDoc.rag_status !== 'not_applicable';
 
   const [inputMessage, setInputMessage] = useState('');
   const [showEvidenceSelector, setShowEvidenceSelector] = useState(false);
@@ -637,20 +645,40 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
           </div>
         )}
 
+        {/* RAG 處理中警告 */}
+        {isRagNotReady && (
+          <div className="flex items-center gap-2 p-2 bg-warning/10 rounded-lg text-warning text-sm mb-2">
+            {currentDoc?.rag_status === 'failed' ? (
+              <>
+                <AlertCircle size={16} className="shrink-0" />
+                <span>文件處理失敗，無法使用 AI 對話功能</span>
+              </>
+            ) : (
+              <>
+                <Loader2 size={16} className="animate-spin shrink-0" />
+                <span>文件正在處理中，完成後即可開始對話</span>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-2">
           <textarea
             ref={inputRef}
-            className="textarea textarea-bordered textarea-sm flex-1 resize-none"
-            placeholder="輸入訊息給 AI 教練..."
+            className={`textarea textarea-bordered textarea-sm flex-1 resize-none ${
+              isRagNotReady ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            placeholder={isRagNotReady ? '文件處理中，請稍候...' : '輸入訊息給 AI 教練...'}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyPress}
             rows={2}
+            disabled={isRagNotReady}
           />
           <button
             className="btn btn-primary btn-sm gap-2"
             onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isAiThinking}
+            disabled={!inputMessage.trim() || isAiThinking || isRagNotReady}
           >
             <Send size={14} />
             發送

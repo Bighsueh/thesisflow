@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, BackgroundTasks
 from sqlalchemy.orm import Session
-from db import get_db
+from db import get_db, SessionLocal
 import models
 import schemas
 from auth import get_current_user
@@ -13,6 +13,31 @@ import os
 import logging
 
 logger = logging.getLogger(__name__)
+
+def process_rag_background(document_id: str, file_content: bytes):
+    """背景執行 RAG 處理"""
+    db = SessionLocal()
+    try:
+        # 更新狀態為 processing
+        doc = db.query(models.Document).filter(models.Document.id == document_id).first()
+        if doc:
+            doc.rag_status = "processing"
+            db.commit()
+
+        # 執行 RAG 處理
+        success, error = process_document_rag(document_id, file_content, db)
+        if not success:
+            logger.warning(f"RAG processing failed for document {document_id}: {error}")
+    except Exception as e:
+        logger.error(f"RAG background processing error for document {document_id}: {e}")
+        # 更新為失敗狀態
+        doc = db.query(models.Document).filter(models.Document.id == document_id).first()
+        if doc:
+            doc.rag_status = "failed"
+            doc.rag_error = str(e)[:500]
+            db.commit()
+    finally:
+        db.close()
 
 # Ensure forward refs are resolved (for Pydantic v1 compatibility)
 try:
@@ -131,6 +156,7 @@ def create_document(
 
 @router.post("/upload", response_model=schemas.DocumentOut)
 async def upload_document(
+    background_tasks: BackgroundTasks,
     title: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -198,20 +224,9 @@ async def upload_document(
     db.commit()
     db.refresh(doc)
 
-    # 若為 PDF，執行 RAG 處理
+    # 若為 PDF，背景執行 RAG 處理（非同步）
     if doc_type == "pdf":
-        try:
-            success, error = process_document_rag(doc.id, file_content, db)
-            if not success:
-                logger.warning(f"RAG processing failed for document {doc.id}: {error}")
-            # 重新載入文檔以取得更新後的 RAG 狀態
-            db.refresh(doc)
-        except Exception as e:
-            logger.error(f"RAG processing error for document {doc.id}: {e}")
-            # RAG 處理失敗不影響文件上傳成功
-            doc.rag_status = "failed"
-            doc.rag_error = str(e)[:500]
-            db.commit()
+        background_tasks.add_task(process_rag_background, doc.id, file_content)
 
     return schemas.DocumentOut(
         id=doc.id,

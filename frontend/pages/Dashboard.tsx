@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../authStore';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
+import { RagStatusBadge } from '../components/ui/RagStatusBadge';
 import { useStore } from '../store';
 
 export function Dashboard() {
@@ -173,10 +174,22 @@ export function Dashboard() {
                   {doc.type === 'pdf' ? 'PDF' : 'TXT'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 text-sm truncate">{doc.title}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 text-sm truncate">{doc.title}</p>
+                    {doc.type === 'pdf' && (
+                      <RagStatusBadge
+                        status={doc.rag_status}
+                        chunkCount={doc.chunk_count}
+                        compact
+                      />
+                    )}
+                  </div>
                   <p className="text-xs text-gray-500">
                     {new Date(doc.uploaded_at || Date.now()).toLocaleDateString()}
                   </p>
+                  {doc.rag_status === 'processing' && (
+                    <progress className="progress progress-primary w-full h-1 mt-1" />
+                  )}
                 </div>
                 <ArrowRight size={16} className="text-gray-400 flex-shrink-0" />
               </GlassCard>
