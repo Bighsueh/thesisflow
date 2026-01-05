@@ -22,6 +22,34 @@ from rag import (
 logger = logging.getLogger(__name__)
 
 
+def log_rag_event(
+    db: Session,
+    document_id: str,
+    stage: str,
+    status: str,
+    message: Optional[str] = None,
+    metadata: Optional[dict] = None
+):
+    """記錄 RAG 處理事件"""
+    try:
+        log = models.RagProcessingLog(
+            document_id=document_id,
+            stage=stage,
+            status=status,
+            message=message,
+            metadata_=metadata or {}
+        )
+        db.add(log)
+        db.commit()
+    except Exception as e:
+        # 確保 session 狀態一致，避免後續操作出錯
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        logger.error(f"Failed to log rag event: {e}")
+
+
 def process_document_rag(
     document_id: str,
     file_content: bytes,
@@ -46,6 +74,8 @@ def process_document_rag(
     doc.rag_status = "processing"
     db.commit()
 
+    log_rag_event(db, document_id, "start", "pending", "開始 RAG 處理流程")
+
     try:
         # Step 1: 將檔案內容寫入臨時檔案
         with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_file:
@@ -66,6 +96,15 @@ def process_document_rag(
             if not content or not content.strip():
                 raise Exception("PDF 內容為空")
 
+            log_rag_event(
+                db, 
+                document_id, 
+                "parsing", 
+                "success", 
+                f"PDF 解析完成，共 {len(pages)} 頁",
+                {"page_count": len(pages)}
+            )
+
             # Step 3: 切分文本
             config = ChunkingConfig(
                 chunk_size=500,
@@ -77,6 +116,15 @@ def process_document_rag(
             if not chunks:
                 raise Exception("切分結果為空")
 
+            log_rag_event(
+                db, 
+                document_id, 
+                "chunking", 
+                "success", 
+                f"文本切分完成，共 {len(chunks)} 個片段",
+                {"chunk_count": len(chunks)}
+            )
+
             # Step 4: 生成 Embeddings
             embedding_client = get_embedding_client()
             chunk_contents = [c.content for c in chunks]
@@ -84,6 +132,15 @@ def process_document_rag(
 
             if len(embeddings) != len(chunks):
                 raise Exception("Embedding 數量與 chunk 數量不匹配")
+
+            log_rag_event(
+                db, 
+                document_id, 
+                "embedding", 
+                "success", 
+                f"Embedding 生成完成，共 {len(embeddings)} 個向量",
+                {"embedding_count": len(embeddings)}
+            )
 
             # Step 5: 儲存到 ChromaDB
             vector_store = get_vector_store()
@@ -103,6 +160,15 @@ def process_document_rag(
 
             # 新增到向量庫
             added_count = vector_store.add_chunks(document_id, chunk_data, embeddings)
+
+            log_rag_event(
+                db, 
+                document_id, 
+                "indexing", 
+                "success", 
+                f"向量庫索引完成，儲存 {added_count} 筆資料",
+                {"indexed_count": added_count}
+            )
 
             # Step 6: 在資料庫中記錄 chunk 資訊
             # 先刪除舊的 chunk 記錄
@@ -128,6 +194,14 @@ def process_document_rag(
             doc.chunk_count = added_count
             db.commit()
 
+            log_rag_event(
+                db, 
+                document_id, 
+                "complete", 
+                "success", 
+                "RAG 處理流程全部完成"
+            )
+
             logger.info(f"RAG 處理完成: document_id={document_id}, chunks={added_count}")
             return True, None
 
@@ -146,6 +220,15 @@ def process_document_rag(
         doc.rag_status = "failed"
         doc.rag_error = error_msg[:500]  # 限制錯誤訊息長度
         db.commit()
+
+        log_rag_event(
+            db, 
+            document_id, 
+            "failed", 
+            "error", 
+            f"處理失敗: {error_msg}",
+            {"error": error_msg}
+        )
 
         return False, error_msg
 

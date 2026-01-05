@@ -441,6 +441,7 @@ export default function StudentHome() {
                           status={doc.rag_status}
                           chunkCount={doc.chunk_count}
                           compact
+                          docId={doc.id}
                         />
                       )}
                     </div>

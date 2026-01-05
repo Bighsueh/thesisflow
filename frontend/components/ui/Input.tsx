@@ -1,9 +1,11 @@
 import React from 'react';
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   icon?: React.ReactNode;
 }
+
 export function Input({ label, error, icon, className = '', ...props }: InputProps) {
   return (
     <div className="w-full">

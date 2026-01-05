@@ -1,16 +1,18 @@
 import { motion } from 'framer-motion';
 import React from 'react';
-interface GlassCardProps {
+
+export interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
-  className?: string;
+  // className 和 onClick 已從 HTMLAttributes 繼承，無需重複定義
   hoverEffect?: boolean;
-  onClick?: () => void;
 }
+
 export function GlassCard({
   children,
   className = '',
   hoverEffect = false,
   onClick,
+  ...rest
 }: GlassCardProps) {
   return (
     <motion.div
@@ -28,6 +30,7 @@ export function GlassCard({
         damping: 20,
       }}
       onClick={onClick}
+      {...rest}
       className={`
         relative overflow-hidden
         bg-white/70 backdrop-blur-2xl 
