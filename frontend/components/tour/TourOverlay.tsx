@@ -94,13 +94,21 @@ export function TourOverlay() {
         // 未找到，繼續重試
         attempts++;
         if (import.meta.env.DEV) {
-          console.log(`[Tour] ⏳ Retry ${attempts}/${maxAttempts}: ${step.target}`);
+          // 只在最後一次重試時輸出警告，前幾次使用 debug 級別
+          if (attempts === maxAttempts) {
+            console.warn(`[Tour] ⏳ Retry ${attempts}/${maxAttempts}: ${step.target}`);
+          } else {
+            console.debug(`[Tour] ⏳ Retry ${attempts}/${maxAttempts}: ${step.target}`);
+          }
         }
         retryTimer = setTimeout(tryUpdateTarget, retryDelay);
       } else {
         // 達到最大重試次數，優雅降級
         if (import.meta.env.DEV) {
-          console.warn(`[Tour] ❌ Target not found after ${maxAttempts} attempts: ${step.target}`);
+          console.warn(
+            `[Tour] ❌ Target not found after ${maxAttempts} attempts: ${step.target}\n` +
+              `   Hint: Check if the tour is started on the correct page.`
+          );
         }
         setTargetRect(null);
       }

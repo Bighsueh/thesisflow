@@ -27,10 +27,11 @@ import {
   Target,
   Sparkles,
   LayoutTemplate,
+  LogOut,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getIncomers, getOutgoers } from 'reactflow';
 import { useAuthStore } from '../../authStore';
 import { useAutoSave } from '../../hooks/useAutoSave';
@@ -38,6 +39,7 @@ import { useStore } from '../../store';
 import { ChatMessage } from '../ChatMessage';
 import { EvidenceCreateDialog } from '../EvidenceCreateDialog';
 import { PDFSelector } from '../PDFSelector';
+import { HelpButton } from '../tour/HelpButton';
 import {
   AppNode,
   Document,
@@ -2947,20 +2949,49 @@ export default function StudentInterface() {
         .cursor-crosshair { cursor: crosshair; }
       `}</style>
 
-      {/* Header */}
-      <header className="h-14 bg-white/80 backdrop-blur-lg border-b border-slate-200 shrink-0 flex items-center justify-between px-6 z-50 relative">
-        <div className="flex items-center space-x-2">
-          <div className="h-8 w-8 bg-gradient-to-tr from-indigo-600 to-purple-500 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+      {/* Navigation Bar */}
+      <nav className="h-14 bg-white/80 backdrop-blur-lg border-b border-slate-200 shrink-0 flex items-center justify-between px-6 z-50 relative">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="h-8 w-8 bg-gradient-to-tr from-indigo-600 to-purple-500 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200 group-hover:shadow-indigo-300 transition-all">
             <LayoutTemplate size={18} />
           </div>
-          <span className="font-bold text-lg tracking-tight text-slate-800">ThesisFlow</span>
+          <span className="font-bold text-lg tracking-tight text-slate-800 group-hover:text-indigo-600 transition-colors">
+            ThesisFlow
+          </span>
+        </Link>
+
+        {/* Right Side Actions */}
+        <div className="flex items-center gap-3">
+          {/* Help Button */}
+          <HelpButton />
+
+          {/* User Menu */}
+          <Link to="/profile">
+            <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                <p className="text-xs text-gray-500">學生</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-xs hover:bg-indigo-200 transition-colors">
+                {getUserInitials()}
+              </div>
+            </div>
+          </Link>
+
+          {/* Logout Button */}
+          <button
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/50 rounded-xl transition-all"
+            title="登出"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="h-8 w-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-xs">
-            {getUserInitials()}
-          </div>
-        </div>
-      </header>
+      </nav>
 
       {/* Main Content */}
       <div className="flex-1 relative z-10 overflow-hidden">{renderContent()}</div>

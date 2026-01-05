@@ -31,5 +31,17 @@ export function getTourById(id: string): TourConfig | undefined {
   return allTours.find((tour) => tour.id === id);
 }
 
+// 根據導覽 ID 獲取對應的路徑
+export function getPathByTourId(tourId: string): string | null {
+  const reverseMap: Record<string, string> = {
+    'dashboard-intro': '/dashboard',
+    'literature-upload': '/literature',
+    'student-interface': '/student/project',
+    'projects-management': '/projects',
+    'groups-join': '/groups',
+  };
+  return reverseMap[tourId] || null;
+}
+
 // 導出各個導覽配置
 export { dashboardTour, groupsTour, literatureTour, projectsTour, studentInterfaceTour };
