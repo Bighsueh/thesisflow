@@ -18,6 +18,11 @@ frontend/dist
 backend/.env
 backend/env.local
 backend/.venv
+
+# ChromaDB 持久化資料
+chroma_data/
+backend/chroma_data/
+
 # Python cache files
 __pycache__/
 *.py[cod]

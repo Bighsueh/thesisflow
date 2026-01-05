@@ -13,6 +13,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../authStore';
+import { RagStatusBadge } from '../components/ui/RagStatusBadge';
 import { useStore } from '../store';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -428,15 +429,27 @@ export default function StudentHome() {
                 key={doc.id}
                 className="group flex items-center justify-between p-3 hover:bg-slate-50 rounded-lg transition-colors"
               >
-                <div className="flex items-center gap-4 overflow-hidden">
+                <div className="flex items-center gap-4 overflow-hidden flex-1 min-w-0">
                   <div className="w-10 h-10 bg-slate-100 rounded flex items-center justify-center text-slate-500 shrink-0 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
                     <FileText size={20} />
                   </div>
-                  <div className="min-w-0">
-                    <h4 className="text-slate-700 font-medium truncate">{doc.title}</h4>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-slate-700 font-medium truncate">{doc.title}</h4>
+                      {doc.type === 'pdf' && (
+                        <RagStatusBadge
+                          status={doc.rag_status}
+                          chunkCount={doc.chunk_count}
+                          compact
+                        />
+                      )}
+                    </div>
                     <p className="text-xs text-slate-400">
                       Added {new Date(doc.uploaded_at || Date.now()).toLocaleDateString()}
                     </p>
+                    {doc.rag_status === 'processing' && (
+                      <progress className="progress progress-primary w-full h-1 mt-1" />
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">

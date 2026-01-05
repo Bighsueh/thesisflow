@@ -79,6 +79,8 @@ export interface Highlight {
   created_at: number;
 }
 
+export type RagStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'not_applicable';
+
 export interface Document {
   id: string;
   project_id?: string | null;
@@ -96,6 +98,17 @@ export interface Document {
   uploaded_at: number;
   raw_preview?: string;
   highlights?: Highlight[];
+  /**
+   * RAG 處理狀態
+   * - pending: 等待處理
+   * - processing: 處理中
+   * - completed: 處理完成
+   * - failed: 處理失敗
+   * - not_applicable: 非 PDF 文件，不適用
+   */
+  rag_status?: RagStatus;
+  /** RAG 處理後的 chunk 數量 */
+  chunk_count?: number;
 }
 
 export interface Cohort {

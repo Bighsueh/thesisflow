@@ -1,9 +1,19 @@
 import os
 import uuid
+import logging
 import httpx
 import boto3
 from botocore.client import Config
 from dotenv import load_dotenv
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log,
+)
+
+logger = logging.getLogger(__name__)
 
 # 嘗試多個可能的路徑來載入環境變數
 # 從 backend 目錄運行時使用 env.local
@@ -88,6 +98,25 @@ class AzureOpenAIClient:
     def is_ready(self) -> bool:
         return all([self.endpoint, self.deployment, self.api_version, self.api_key])
 
+    @staticmethod
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=1, max=8),
+        retry=retry_if_exception_type((
+            httpx.ConnectError,
+            httpx.ConnectTimeout,
+            httpx.ReadTimeout,
+        )),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True,
+    )
+    async def _make_request(url: str, headers: dict, payload: dict) -> dict:
+        """內部方法：執行 HTTP 請求（帶重試機制）"""
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            resp.raise_for_status()
+            return resp.json()
+
     async def chat(self, system_prompt: str, user_prompt: str) -> str:
         if not self.is_ready():
             return "Azure OpenAI 尚未設定 API KEY/ENDPOINT。"
@@ -107,11 +136,8 @@ class AzureOpenAIClient:
             "max_completion_tokens": 800,
         }
         try:
-            async with httpx.AsyncClient(timeout=30) as client:
-                resp = await client.post(url, headers=headers, json=payload)
-                resp.raise_for_status()
-                data = resp.json()
-                return data["choices"][0]["message"]["content"]
+            data = await self._make_request(url, headers, payload)
+            return data["choices"][0]["message"]["content"]
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 return f"Azure OpenAI 部署 '{self.deployment}' 不存在或無法訪問。請檢查部署名稱是否正確。"

@@ -49,6 +49,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import { ChatMessage } from './ChatMessage';
 import { EvidenceCreateDialog } from './EvidenceCreateDialog';
 import { PDFSelector } from './PDFSelector';
+import { RagStatusBadge } from './ui/RagStatusBadge';
 import { ChecklistSubmit } from './widgets/ChecklistSubmit';
 import { InstructionCard } from './widgets/InstructionCard';
 import { MatrixCompare } from './widgets/MatrixCompare';
@@ -1150,9 +1151,17 @@ const DocCard = ({
       {doc.type === 'pdf' ? <FileText size={16} /> : <File size={16} />}
     </div>
     <div className="flex-1 min-w-0">
-      <h4 className="text-sm font-medium text-slate-700 truncate group-hover:text-indigo-700 transition-colors">
-        {doc.title}
-      </h4>
+      <div className="flex items-center gap-2">
+        <h4 className="text-sm font-medium text-slate-700 truncate group-hover:text-indigo-700 transition-colors">
+          {doc.title}
+        </h4>
+        {doc.type === 'pdf' && doc.rag_status !== 'not_applicable' && (
+          <RagStatusBadge status={doc.rag_status} chunkCount={doc.chunk_count} compact />
+        )}
+      </div>
+      {doc.rag_status === 'processing' && (
+        <progress className="progress progress-primary w-full h-1 mt-1" />
+      )}
     </div>
     {source === 'project' && onDelete && (
       <button

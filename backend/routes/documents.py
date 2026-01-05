@@ -1,14 +1,43 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, BackgroundTasks
 from sqlalchemy.orm import Session
-from db import get_db
+from db import get_db, SessionLocal
 import models
 import schemas
 from auth import get_current_user
 from services import presign_upload, presign_get, get_s3_client
+# 注意：log_rag_event 定義於 rag_services.py:25，用於記錄 RAG 處理事件到 RagProcessingLog 表
+from rag_services import process_document_rag, delete_document_vectors, log_rag_event
 import uuid
 from datetime import datetime
 from typing import Optional
 import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+# 檔案大小限制：100 MB
+MAX_FILE_SIZE = 100 * 1024 * 1024
+
+
+def process_rag_background(document_id: str, file_content: bytes):
+    """背景執行 RAG 處理"""
+    db = SessionLocal()
+    try:
+        # 狀態更新由 rag_services.process_document_rag 統一處理
+        # 執行 RAG 處理
+        success, error = process_document_rag(document_id, file_content, db)
+        if not success:
+            logger.warning(f"RAG processing failed for document {document_id}: {error}")
+    except Exception as e:
+        logger.error(f"RAG background processing error for document {document_id}: {e}")
+        # 更新為失敗狀態
+        doc = db.query(models.Document).filter(models.Document.id == document_id).first()
+        if doc:
+            doc.rag_status = "failed"
+            doc.rag_error = str(e)[:500]
+            db.commit()
+    finally:
+        db.close()
 
 # Ensure forward refs are resolved (for Pydantic v1 compatibility)
 try:
@@ -73,6 +102,8 @@ def list_documents(
                         uploaded_at=int(d.uploaded_at.timestamp() * 1000) if d.uploaded_at else 0,
                         raw_preview=d.raw_preview,
                         highlights=highlights,
+                        rag_status=d.rag_status or "pending",
+                        chunk_count=d.chunk_count or 0,
                     )
                 )
             except Exception as e:
@@ -89,6 +120,56 @@ def list_documents(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to list documents: {str(e)}")
 
+
+@router.get("/{doc_id}", response_model=schemas.DocumentOut)
+def get_document(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    取得單一文檔資訊（含 RAG 狀態）
+
+    此 API 用於輪詢 RAG 處理狀態，避免每次都載入所有文檔
+    """
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    highlights = []
+    for h in (doc.highlights or []):
+        highlights.append(
+            schemas.HighlightOut(
+                id=h.id,
+                document_id=h.document_id,
+                snippet=h.snippet or "",
+                name=h.name,
+                page=h.page,
+                x=h.x,
+                y=h.y,
+                width=h.width,
+                height=h.height,
+                evidence_type=h.evidence_type,
+                created_at=int(h.created_at.timestamp() * 1000) if h.created_at else 0,
+            )
+        )
+
+    return schemas.DocumentOut(
+        id=doc.id,
+        project_id=doc.project_id,
+        title=doc.title,
+        object_key=doc.object_key,
+        content_type=doc.content_type,
+        size=doc.size,
+        type=doc.type,
+        uploaded_at=int(doc.uploaded_at.timestamp() * 1000) if doc.uploaded_at else 0,
+        raw_preview=doc.raw_preview,
+        highlights=highlights,
+        rag_status=doc.rag_status or "pending",
+        chunk_count=doc.chunk_count or 0,
+    )
+
+
 @router.post("", response_model=schemas.DocumentOut)
 def create_document(
     payload: schemas.DocumentCreate,
@@ -103,6 +184,7 @@ def create_document(
         size=payload.size,
         type=payload.type,
         raw_preview=payload.raw_preview,
+        rag_status="pending" if payload.type == "pdf" else "not_applicable",
     )
     db.add(doc)
     db.commit()
@@ -118,23 +200,33 @@ def create_document(
         uploaded_at=int(doc.uploaded_at.timestamp() * 1000),
         raw_preview=doc.raw_preview,
         highlights=[],
+        rag_status=doc.rag_status or "pending",
+        chunk_count=doc.chunk_count or 0,
     )
 
 @router.post("/upload", response_model=schemas.DocumentOut)
 async def upload_document(
+    background_tasks: BackgroundTasks,
     title: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    # 檢查 Content-Length header（快速拒絕過大檔案）
+    if file.size and file.size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"檔案大小超過限制 ({MAX_FILE_SIZE // (1024 * 1024)} MB)"
+        )
+
     # 生成 object_key
     object_key = f"uploads/{uuid.uuid4()}_{file.filename}"
-    
+
     # 實際上傳文件到 MinIO
     try:
         bucket = os.getenv("MINIO_BUCKET")
         s3_client = get_s3_client()
-        
+
         # 確保 bucket 存在
         try:
             s3_client.head_bucket(Bucket=bucket)
@@ -144,9 +236,23 @@ async def upload_document(
                 s3_client.create_bucket(Bucket=bucket)
             except Exception as create_err:
                 print(f"Warning: Could not create bucket {bucket}: {create_err}")
-        
-        # 讀取文件內容
-        file_content = await file.read()
+
+        # 分塊讀取文件內容並檢查大小
+        chunks = []
+        total_size = 0
+        while True:
+            chunk = await file.read(1024 * 1024)  # 每次讀取 1 MB
+            if not chunk:
+                break
+            total_size += len(chunk)
+            if total_size > MAX_FILE_SIZE:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"檔案大小超過限制 ({MAX_FILE_SIZE // (1024 * 1024)} MB)"
+                )
+            chunks.append(chunk)
+
+        file_content = b''.join(chunks)
         
         # 上傳到 MinIO
         s3_client.put_object(
@@ -183,10 +289,17 @@ async def upload_document(
         size=file.size,
         type=doc_type,
         raw_preview=None,
+        rag_status="pending" if doc_type == "pdf" else "not_applicable",
     )
     db.add(doc)
     db.commit()
     db.refresh(doc)
+
+    # 若為 PDF，背景執行 RAG 處理（非同步）
+    if doc_type == "pdf":
+        log_rag_event(db, doc.id, "upload", "success", "檔案上傳完成，等待處理", {"size": file.size})
+        background_tasks.add_task(process_rag_background, doc.id, file_content)
+
     return schemas.DocumentOut(
         id=doc.id,
         project_id=doc.project_id,
@@ -198,6 +311,8 @@ async def upload_document(
         uploaded_at=int(doc.uploaded_at.timestamp() * 1000),
         raw_preview=doc.raw_preview,
         highlights=[],
+        rag_status=doc.rag_status or "pending",
+        chunk_count=doc.chunk_count or 0,
     )
 
 @router.post("/bind")
@@ -282,6 +397,8 @@ def update_document(
         uploaded_at=int(doc.uploaded_at.timestamp() * 1000),
         raw_preview=doc.raw_preview,
         highlights=highlights,
+        rag_status=doc.rag_status or "pending",
+        chunk_count=doc.chunk_count or 0,
     )
 
 @router.post("/{doc_id}/highlights", response_model=schemas.HighlightOut)
@@ -356,12 +473,40 @@ def delete_all_highlights_for_document(
     db.commit()
     return {"deleted": deleted_count}
 
+
+@router.get("/{doc_id}/rag-logs", response_model=list[schemas.RagProcessingLogOut])
+def get_document_rag_logs(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    logs = db.query(models.RagProcessingLog)\
+        .filter(models.RagProcessingLog.document_id == doc_id)\
+        .order_by(models.RagProcessingLog.created_at.asc())\
+        .all()
+    
+    return logs
+
+
 @router.delete("/{doc_id}")
 def delete_document(
     doc_id: str,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    # 先刪除 ChromaDB 中的向量資料
+    try:
+        deleted_vectors = delete_document_vectors(doc_id)
+        if deleted_vectors > 0:
+            logger.info(f"Deleted {deleted_vectors} vectors for document {doc_id}")
+    except Exception as e:
+        logger.warning(f"Failed to delete vectors for document {doc_id}: {e}")
+        # 向量刪除失敗不影響文檔刪除
+
     deleted = db.query(models.Document).filter(models.Document.id == doc_id).delete()
     db.commit()
     if deleted == 0:

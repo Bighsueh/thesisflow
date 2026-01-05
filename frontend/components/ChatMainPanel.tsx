@@ -1,4 +1,15 @@
-import { Send, Bot, Link as LinkIcon, ArrowRight, Menu, X, ChevronLeft } from 'lucide-react';
+import {
+  Send,
+  Bot,
+  Link as LinkIcon,
+  ArrowRight,
+  Menu,
+  X,
+  ChevronLeft,
+  FileText,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
 import React, { useRef, useEffect, useState } from 'react';
 import { getIncomers, getOutgoers } from 'reactflow';
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -48,7 +59,9 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
     chatTimeline,
     isAiThinking,
     sendCoachMessage,
+    addChatMessage,
     documents,
+    currentDocId,
     currentWidgetState,
     updateWidgetState,
     currentStepId,
@@ -68,16 +81,50 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
     navigatePrev,
   } = useStore();
 
+  // 取得當前文檔資訊
+  const currentDoc = documents.find((d) => d.id === currentDocId);
+
+  // 檢查 RAG 是否就緒，決定是否允許聊天
+  const isRagNotReady =
+    currentDoc?.type === 'pdf' &&
+    currentDoc.rag_status !== 'completed' &&
+    currentDoc.rag_status !== 'not_applicable';
+
   const [inputMessage, setInputMessage] = useState('');
   const [showEvidenceSelector, setShowEvidenceSelector] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const autoSave = useAutoSave(1000);
+  const prevDocIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatTimeline, isAiThinking]);
+
+  // 追蹤文檔切換事件
+  useEffect(() => {
+    // 初始化時記錄當前文檔 ID，不插入訊息
+    if (prevDocIdRef.current === null) {
+      prevDocIdRef.current = currentDocId;
+      return;
+    }
+
+    // 當文檔 ID 變化時，插入系統訊息
+    if (prevDocIdRef.current !== currentDocId && currentDocId !== null) {
+      const newDoc = documents.find((d) => d.id === currentDocId);
+      if (newDoc && chatTimeline.length > 0) {
+        // 只在有聊天歷史時才插入切換訊息
+        addChatMessage({
+          id: `doc-switch-${Date.now()}`,
+          role: 'status',
+          content: `📄 已切換至: ${newDoc.title}`,
+          timestamp: Date.now(),
+        });
+      }
+    }
+    prevDocIdRef.current = currentDocId;
+  }, [currentDocId, documents, addChatMessage, chatTimeline.length]);
 
   // 當切換到 Comparison Node 時，根據 dimensions 初始化 taskBData
   // 注意：只有在 taskBData 為空時才初始化，避免覆蓋已載入的保存數據
@@ -495,15 +542,27 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
       {currentNode && (
         <div className="px-4 py-3 border-b border-base-200 bg-slate-50">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Bot size={18} className="text-primary" />
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Bot size={18} className="text-primary flex-shrink-0" />
               <span className="font-bold text-sm">{currentNode.data.label}</span>
               {currentNode.data.config?.guidance && (
-                <span className="text-xs text-slate-500 ml-2">
+                <span className="text-xs text-slate-500 ml-2 truncate">
                   {currentNode.data.config.guidance}
                 </span>
               )}
             </div>
+            {/* 顯示當前討論的文檔 */}
+            {currentDoc && (
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-md flex-shrink-0">
+                <FileText size={14} className="text-primary" />
+                <span
+                  className="text-xs text-primary font-medium truncate max-w-[120px]"
+                  title={currentDoc.title}
+                >
+                  {currentDoc.title}
+                </span>
+              </div>
+            )}
             {/* 任務表單按鈕 - 只在有 Widget 的節點顯示 */}
             {(currentNode.data.type === 'task_summary' ||
               currentNode.data.type === 'task_comparison' ||
@@ -586,20 +645,40 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
           </div>
         )}
 
+        {/* RAG 處理中警告 */}
+        {isRagNotReady && (
+          <div className="flex items-center gap-2 p-2 bg-warning/10 rounded-lg text-warning text-sm mb-2">
+            {currentDoc?.rag_status === 'failed' ? (
+              <>
+                <AlertCircle size={16} className="shrink-0" />
+                <span>文件處理失敗，無法使用 AI 對話功能</span>
+              </>
+            ) : (
+              <>
+                <Loader2 size={16} className="animate-spin shrink-0" />
+                <span>文件正在處理中，完成後即可開始對話</span>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="flex gap-2">
           <textarea
             ref={inputRef}
-            className="textarea textarea-bordered textarea-sm flex-1 resize-none"
-            placeholder="輸入訊息給 AI 教練..."
+            className={`textarea textarea-bordered textarea-sm flex-1 resize-none ${
+              isRagNotReady ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            placeholder={isRagNotReady ? '文件處理中，請稍候...' : '輸入訊息給 AI 教練...'}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyPress}
             rows={2}
+            disabled={isRagNotReady}
           />
           <button
             className="btn btn-primary btn-sm gap-2"
             onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || isAiThinking}
+            disabled={!inputMessage.trim() || isAiThinking || isRagNotReady}
           >
             <Send size={14} />
             發送

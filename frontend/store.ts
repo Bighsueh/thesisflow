@@ -725,6 +725,54 @@ export const useStore = create<AppState>((set, get) => ({
   uploadFileDocument: async (title: string, file: File) => {
     const created = await documentService.uploadFileDocument(title, file);
     set((state) => ({ documents: [...state.documents, created], currentDocId: created.id }));
+
+    // 如果是 PDF 且 RAG 狀態為 pending 或 processing，啟動輪詢
+    if (
+      created.type === 'pdf' &&
+      (created.rag_status === 'pending' || created.rag_status === 'processing')
+    ) {
+      const pollRagStatus = async () => {
+        const maxAttempts = 60; // 最多輪詢 60 次（約 3 分鐘）
+        let attempts = 0;
+
+        const poll = async () => {
+          attempts++;
+          try {
+            // 優化：只獲取特定文檔，避免每次都載入所有文檔
+            const updatedDoc = await documentService.getDocument(created.id);
+
+            // 更新 store 中的特定文檔狀態
+            set((state) => ({
+              documents: state.documents.map((d) =>
+                d.id === created.id
+                  ? { ...d, rag_status: updatedDoc.rag_status, chunk_count: updatedDoc.chunk_count }
+                  : d
+              ),
+            }));
+
+            if (
+              updatedDoc.rag_status === 'completed' ||
+              updatedDoc.rag_status === 'failed' ||
+              attempts >= maxAttempts
+            ) {
+              // 停止輪詢
+              return;
+            }
+
+            // 繼續輪詢
+            setTimeout(poll, 3000);
+          } catch {
+            // 文檔可能已被刪除，停止輪詢
+            return;
+          }
+        };
+
+        // 延遲 3 秒後開始輪詢
+        setTimeout(poll, 3000);
+      };
+
+      pollRagStatus();
+    }
   },
   removeDocument: async (id: string) => {
     await documentService.removeDocument(id);
@@ -1075,6 +1123,19 @@ export const useStore = create<AppState>((set, get) => ({
       throw new Error('找不到當前節點');
     }
 
+    // 檢查當前文檔的 RAG 狀態
+    if (state.currentDocId) {
+      const currentDoc = state.documents.find((d) => d.id === state.currentDocId);
+      if (currentDoc?.type === 'pdf') {
+        if (currentDoc.rag_status === 'failed') {
+          throw new Error('文件處理失敗，無法使用 AI 對話功能');
+        }
+        if (currentDoc.rag_status !== 'completed' && currentDoc.rag_status !== 'not_applicable') {
+          throw new Error('文件正在處理中，請等待處理完成後再開始對話');
+        }
+      }
+    }
+
     // 從消息中提取標記片段ID（匹配格式：[E8個字符]）
     const evidenceTokenRegex = /\[E([a-f0-9]{8})\]/g;
     const extractedEvidenceIds: string[] = [];
@@ -1119,6 +1180,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({ isAiThinking: true });
     try {
       const chatContext = {
+        current_document_id: state.currentDocId, // RAG: 當前正在查看的文檔
         evidence_ids: state.activeEvidenceIds,
         evidence_info: evidenceInfoMap, // 新增：傳遞標記片段的完整信息
         widget_states: state.currentWidgetState,
