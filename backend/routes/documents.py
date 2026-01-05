@@ -342,7 +342,7 @@ def delete_all_highlights_for_document(
     doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    
+
     # 驗證權限
     if current_user.role == "student":
         if doc.project_id:
@@ -351,10 +351,44 @@ def delete_all_highlights_for_document(
             project_ids = {c.project_id for c in cohorts if c.project_id}
             if doc.project_id not in project_ids:
                 raise HTTPException(status_code=403, detail="Forbidden")
-    
+
     deleted_count = db.query(models.Highlight).filter(models.Highlight.document_id == doc_id).delete()
     db.commit()
     return {"deleted": deleted_count}
+
+
+@router.get("/{doc_id}/rag-logs", response_model=list[schemas.RagProcessingLogOut])
+def get_document_rag_logs(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    logs = db.query(models.RagProcessingLog)\
+        .filter(models.RagProcessingLog.document_id == doc_id)\
+        .order_by(models.RagProcessingLog.created_at.asc())\
+        .all()
+
+    # NOTE:
+    # - 不能直接回傳 ORM 物件給 response_model，因為 SQLAlchemy Base 有內建的 `.metadata`
+    #   屬性（MetaData），會讓 Pydantic 誤把它當成我們要的 metadata 欄位，導致驗證失敗。
+    # - 同時 created_at 是 datetime，需要轉成前端一致使用的 epoch ms。
+    return [
+        {
+            "id": log.id,
+            "document_id": log.document_id,
+            "stage": log.stage,
+            "status": log.status,
+            "message": log.message,
+            "metadata": log.metadata_ or {},
+            "created_at": int(log.created_at.timestamp() * 1000) if log.created_at else 0,
+        }
+        for log in logs
+    ]
+
 
 @router.delete("/{doc_id}")
 def delete_document(
