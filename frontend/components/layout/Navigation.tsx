@@ -3,6 +3,7 @@ import { LayoutGrid, Users, FileText, User, LogOut, Sparkles, Home } from 'lucid
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../authStore';
+import { HelpButton } from '../tour/HelpButton';
 import { Button } from '../ui/Button';
 
 export function Navigation() {
@@ -130,6 +131,9 @@ export function Navigation() {
               </>
             ) : (
               <>
+                {/* 幫助按鈕 */}
+                <HelpButton />
+
                 <Link to="/profile">
                   <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
                     <div className="text-right hidden sm:block">

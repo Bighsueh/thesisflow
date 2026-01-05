@@ -8,11 +8,7 @@ interface ProtectedRouteProps {
   redirectTo?: string;
 }
 
-export function ProtectedRoute({
-  children,
-  requiredRole,
-  redirectTo = '/login',
-}: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requiredRole, redirectTo = '/' }: ProtectedRouteProps) {
   const { user } = useAuthStore();
 
   // 未登入，重定向到登入頁

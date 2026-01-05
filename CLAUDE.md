@@ -222,26 +222,26 @@ When updating documentation (from `docs/AI_DOCUMENTATION_GUIDE.md`):
 
 ## Git Operations Guidelines
 
-### 分支合併限制 (Branch Merge Restrictions)
+### Branch Merge Restrictions
 
-**重要**: 任何與分支合併相關的操作（包括但不限於 `git merge`, `git rebase`, PR 合併等）**必須在獲得用戶明確同意後**才能進行。
+**IMPORTANT**: Any operations related to branch merging (including but not limited to `git merge`, `git rebase`, PR merges, etc.) **MUST be performed only after obtaining explicit user consent**.
 
-- 不可在未經用戶確認的情況下執行任何合併操作
-- 執行合併前必須詢問用戶並獲得明確授權
+- Do not execute any merge operations without user confirmation
+- Must ask the user and obtain explicit authorization before performing any merge
 
-### Force Push 禁止令 (Force Push Prohibition)
+### Force Push Prohibition
 
-**嚴令禁止**: 任何 force push 操作（`git push --force`, `git push -f` 等）在未獲得用戶**明確、書面同意**前是完全禁止的。
+**STRICTLY PROHIBITED**: Any force push operations (`git push --force`, `git push -f`, etc.) are completely prohibited without the user's **explicit, written consent**.
 
-- Force push 對 `main` 分支、`master` 分支或任何受保護分支的操作絕對禁止，除非用戶明確要求
-- 即使用戶授權也應謹慎進行，並清楚說明可能的後果
-- 優先使用常規 push 而非 force push
+- Force push to `main` branch, `master` branch, or any protected branches is absolutely forbidden unless explicitly requested by the user
+- Even with user authorization, proceed with caution and clearly explain the potential consequences
+- Prefer regular push over force push
 
-### Remote 推送限制 (Remote Push Restrictions)
+### Remote Push Restrictions
 
-**禁止令**: 所有推送到 remote 的操作（`git push` 等任何 push 命令）在未獲得用戶**明確同意**前是禁止的。
+**PROHIBITION**: All push operations to remote (`git push` and any push commands) are prohibited without obtaining **explicit user consent**.
 
-- 不可在未經用戶確認的情況下執行任何推送操作
-- 執行任何 push 前必須詢問用戶並獲得明確授權
-- 包括常規 push、pull request push 等所有類型的 remote 操作
-- 作為替代，可以創建本地分支並提醒用戶何時準備推送
+- Do not execute any push operations without user confirmation
+- Must ask the user and obtain explicit authorization before performing any push
+- Includes all types of remote operations such as regular push, pull request push, etc.
+- As an alternative, you can create local branches and remind the user when ready to push

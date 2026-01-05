@@ -51,7 +51,7 @@ export function GroupsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Join Group Section */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1" data-tour="join-group-form">
           <GlassCard className="p-6 space-y-6 sticky top-24">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-violet-100 rounded-lg text-violet-600">
@@ -90,7 +90,7 @@ export function GroupsPage() {
         </div>
 
         {/* Groups List */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6" data-tour="groups-list">
           <h2 className="text-xl font-bold text-gray-900 px-1">您的群組</h2>
 
           {cohorts.length === 0 ? (
@@ -102,8 +102,13 @@ export function GroupsPage() {
               </p>
             </GlassCard>
           ) : (
-            cohorts.map((group) => (
-              <GlassCard key={group.id} className="p-6" hoverEffect>
+            cohorts.map((group, index) => (
+              <GlassCard
+                key={group.id}
+                className="p-6"
+                hoverEffect
+                data-tour={index === 0 ? 'group-card' : undefined}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg">
