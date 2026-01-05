@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { modalContentVariants, modalOverlayVariants } from '../../config/animations';
 import { allTours } from '../../config/tours';
 import { useTourStore, type TourConfig } from '../../tourStore';
@@ -38,15 +39,50 @@ const tourIconBgs: Record<string, string> = {
   'groups-join': 'bg-pink-100 text-pink-600',
 };
 
+// 導覽 ID 到路由的映射
+const TOUR_ROUTE_MAP: Record<string, string> = {
+  'dashboard-intro': '/dashboard',
+  'literature-upload': '/literature',
+  'student-interface': '/student/project',
+  'projects-management': '/projects',
+  'groups-join': '/groups',
+};
+
 export function HelpCenter({ onClose }: HelpCenterProps) {
   const { completedTours, startTour, resetProgress } = useTourStore();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleStartTour = (tour: TourConfig) => {
     onClose();
-    // 延遲啟動導覽，讓 modal 關閉動畫完成
-    setTimeout(() => {
-      startTour(tour.id);
-    }, 300);
+
+    // 取得導覽對應的路由
+    const targetRoute = TOUR_ROUTE_MAP[tour.id];
+
+    if (!targetRoute) {
+      // 找不到對應路由，直接啟動（可能是全局導覽）
+      setTimeout(() => {
+        startTour(tour.id);
+      }, 300);
+      return;
+    }
+
+    // 檢查當前路由是否匹配
+    if (location.pathname !== targetRoute) {
+      // 需要導航到目標頁面
+      setTimeout(() => {
+        navigate(targetRoute);
+        // 導航後延遲啟動導覽，等待頁面渲染完成
+        setTimeout(() => {
+          startTour(tour.id);
+        }, 500); // 導航後額外 500ms 延遲
+      }, 300);
+    } else {
+      // 已在正確頁面，直接啟動
+      setTimeout(() => {
+        startTour(tour.id);
+      }, 300);
+    }
   };
 
   const handleReset = () => {

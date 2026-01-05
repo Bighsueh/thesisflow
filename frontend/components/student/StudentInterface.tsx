@@ -1362,16 +1362,24 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     }
   };
 
-  if (!isOpen) return null;
   return (
     <>
-      <div
-        className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity"
-        onClick={onClose}
-      ></div>
+      {isOpen && (
+        <div
+          className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity"
+          onClick={onClose}
+        />
+      )}
       <div
         data-tour="library-panel"
-        className={`absolute inset-y-0 left-0 z-50 w-[800px] bg-white shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`absolute inset-y-0 left-0 z-50 w-[800px] bg-white shadow-2xl flex flex-col transition-all duration-300 ease-out ${
+          isOpen
+            ? 'translate-x-0 opacity-100 visible'
+            : '-translate-x-full opacity-0 invisible pointer-events-none'
+        }`}
+        style={{
+          willChange: isOpen ? 'transform, opacity' : 'auto',
+        }}
       >
         <div className="h-14 border-b border-slate-100 flex items-center justify-between px-6 bg-white shrink-0">
           <div className="flex items-center space-x-2">
@@ -2877,19 +2885,26 @@ export default function StudentInterface() {
               {isCollapsed ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
             </button>
           </div>
-          {!isCollapsed && (
-            <div className="flex-1 overflow-hidden relative animate-fadeIn">
-              {activeTab === 'chat' ? (
-                <div data-tour="chat-panel" className="h-full">
-                  <ChatPanelWrapper currentNode={currentNode} />
-                </div>
-              ) : (
-                <div data-tour="task-panel" className="h-full">
-                  <TaskPanelWrapper currentNode={currentNode} />
-                </div>
-              )}
+          <div
+            className={`flex-1 overflow-hidden relative transition-all duration-300 ${
+              isCollapsed
+                ? 'opacity-0 invisible pointer-events-none h-0'
+                : 'opacity-100 visible animate-fadeIn'
+            }`}
+          >
+            <div
+              data-tour="chat-panel"
+              className={`h-full ${activeTab === 'chat' ? 'block' : 'hidden'}`}
+            >
+              <ChatPanelWrapper currentNode={currentNode} />
             </div>
-          )}
+            <div
+              data-tour="task-panel"
+              className={`h-full ${activeTab === 'task' ? 'block' : 'hidden'}`}
+            >
+              <TaskPanelWrapper currentNode={currentNode} />
+            </div>
+          </div>
         </div>
       </div>
     );
