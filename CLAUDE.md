@@ -219,3 +219,20 @@ When updating documentation (from `docs/AI_DOCUMENTATION_GUIDE.md`):
 - Keep port numbers consistent (frontend: 3000, backend: 8000, postgres: 5432)
 - Files over 300 lines should be considered for refactoring
 - Service names are lowercase: `frontend`, `backend`, `postgres`
+
+## Git Operations Guidelines
+
+### 分支合併限制 (Branch Merge Restrictions)
+
+**重要**: 任何與分支合併相關的操作（包括但不限於 `git merge`, `git rebase`, PR 合併等）**必須在獲得用戶明確同意後**才能進行。
+
+- 不可在未經用戶確認的情況下執行任何合併操作
+- 執行合併前必須詢問用戶並獲得明確授權
+
+### Force Push 禁止令 (Force Push Prohibition)
+
+**嚴令禁止**: 任何 force push 操作（`git push --force`, `git push -f` 等）在未獲得用戶**明確、書面同意**前是完全禁止的。
+
+- Force push 對 `main` 分支、`master` 分支或任何受保護分支的操作絕對禁止，除非用戶明確要求
+- 即使用戶授權也應謹慎進行，並清楚說明可能的後果
+- 優先使用常規 push 而非 force push
