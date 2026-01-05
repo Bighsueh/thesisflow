@@ -236,3 +236,11 @@ When updating documentation (from `docs/AI_DOCUMENTATION_GUIDE.md`):
 - Force push 對 `main` 分支、`master` 分支或任何受保護分支的操作絕對禁止，除非用戶明確要求
 - 即使用戶授權也應謹慎進行，並清楚說明可能的後果
 - 優先使用常規 push 而非 force push
+
+### Push to Remote 限制 (Push to Remote Restrictions)
+
+**重要**: 任何將變更推上 remote 的操作（`git push` 等）**必須在獲得用戶明確同意後**才能進行。
+
+- 不可在未經用戶確認的情況下執行任何 push 操作
+- Push 前必須詢問用戶並獲得明確授權
+- 在執行 push 前應向用戶確認要推送的變更內容和目標分支
