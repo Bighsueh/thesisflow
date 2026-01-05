@@ -105,6 +105,27 @@ docker compose down -v      # Stop and reset database
 | `backend/models.py`                                | SQLAlchemy database models                                |
 | `backend/routes/`                                  | FastAPI route handlers                                    |
 
+### Frontend Routes (Student)
+
+| Route                    | Page Component                    | Description                    |
+| ------------------------ | --------------------------------- | ------------------------------ |
+| `/dashboard`             | `pages/Dashboard.tsx`             | 學生儀表板（專案列表、最近文獻） |
+| `/projects`              | `pages/ProjectsPage.tsx`          | 專案列表頁面                    |
+| `/literature`            | `pages/LiteraturePage.tsx`        | 文獻庫管理（上傳、列表、預覽）   |
+| `/groups`                | `pages/GroupsPage.tsx`            | 群組管理                        |
+| `/profile`               | `pages/ProfilePage.tsx`           | 個人資料                        |
+| `/student/project`       | `components/StudentInterface.tsx` | 專案工作區（多面板介面）         |
+
+**注意**: `pages/StudentHome.tsx` 目前未被路由使用，`/student` 會重導向至 `/dashboard`。
+
+### Frontend Routes (Teacher)
+
+| Route                    | Page Component                    | Description                    |
+| ------------------------ | --------------------------------- | ------------------------------ |
+| `/teacher`               | `pages/TeacherHome.tsx`           | 教師首頁                        |
+| `/teacher/cohort/:id`    | `pages/TeacherCohort.tsx`         | 班級管理                        |
+| `/teacher/project/:id`   | `components/TeacherInterface.tsx` | 流程設計器（React Flow）        |
+
 ### State Management Pattern
 
 All state flows through Zustand stores. API calls go through service layer → store → component re-renders.
