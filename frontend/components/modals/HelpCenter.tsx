@@ -40,19 +40,21 @@ const tourIconBgs: Record<string, string> = {
 };
 
 // 導覽 ID 到路由的映射
+// 注意：student-interface 不在此映射中，因為無法從其他頁面跨頁面導航
 const TOUR_ROUTE_MAP: Record<string, string> = {
   'dashboard-intro': '/dashboard',
   'literature-upload': '/literature',
-  'student-interface': '/student/project',
+  // 'student-interface': '/student/project', // 需要在 /student/project 頁面內啟動
   'projects-management': '/projects',
   'groups-join': '/groups',
 };
 
 // 路由到導覽 ID 的反向映射
+// 用於過濾：只在對應頁面顯示該頁面的導覽
 const ROUTE_TO_TOUR_ID: Record<string, string> = {
   '/dashboard': 'dashboard-intro',
   '/literature': 'literature-upload',
-  '/student/project': 'student-interface',
+  '/student/project': 'student-interface', // 只在此頁面顯示，但無法從外部導航進入
   '/projects': 'projects-management',
   '/groups': 'groups-join',
 };
