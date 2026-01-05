@@ -5,7 +5,7 @@ import models
 import schemas
 from auth import get_current_user
 from services import presign_upload, presign_get, get_s3_client
-from rag_services import process_document_rag, delete_document_vectors
+from rag_services import process_document_rag, delete_document_vectors, log_rag_event
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -14,16 +14,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# 檔案大小限制：100 MB
+MAX_FILE_SIZE = 100 * 1024 * 1024
+
+
 def process_rag_background(document_id: str, file_content: bytes):
     """背景執行 RAG 處理"""
     db = SessionLocal()
     try:
-        # 更新狀態為 processing
-        doc = db.query(models.Document).filter(models.Document.id == document_id).first()
-        if doc:
-            doc.rag_status = "processing"
-            db.commit()
-
+        # 狀態更新由 rag_services.process_document_rag 統一處理
         # 執行 RAG 處理
         success, error = process_document_rag(document_id, file_content, db)
         if not success:
@@ -162,14 +161,21 @@ async def upload_document(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    # 檢查 Content-Length header（快速拒絕過大檔案）
+    if file.size and file.size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"檔案大小超過限制 ({MAX_FILE_SIZE // (1024 * 1024)} MB)"
+        )
+
     # 生成 object_key
     object_key = f"uploads/{uuid.uuid4()}_{file.filename}"
-    
+
     # 實際上傳文件到 MinIO
     try:
         bucket = os.getenv("MINIO_BUCKET")
         s3_client = get_s3_client()
-        
+
         # 確保 bucket 存在
         try:
             s3_client.head_bucket(Bucket=bucket)
@@ -179,9 +185,23 @@ async def upload_document(
                 s3_client.create_bucket(Bucket=bucket)
             except Exception as create_err:
                 print(f"Warning: Could not create bucket {bucket}: {create_err}")
-        
-        # 讀取文件內容
-        file_content = await file.read()
+
+        # 分塊讀取文件內容並檢查大小
+        chunks = []
+        total_size = 0
+        while True:
+            chunk = await file.read(1024 * 1024)  # 每次讀取 1 MB
+            if not chunk:
+                break
+            total_size += len(chunk)
+            if total_size > MAX_FILE_SIZE:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"檔案大小超過限制 ({MAX_FILE_SIZE // (1024 * 1024)} MB)"
+                )
+            chunks.append(chunk)
+
+        file_content = b''.join(chunks)
         
         # 上傳到 MinIO
         s3_client.put_object(
@@ -226,6 +246,7 @@ async def upload_document(
 
     # 若為 PDF，背景執行 RAG 處理（非同步）
     if doc_type == "pdf":
+        log_rag_event(db, doc.id, "upload", "success", "檔案上傳完成，等待處理", {"size": file.size})
         background_tasks.add_task(process_rag_background, doc.id, file_content)
 
     return schemas.DocumentOut(
@@ -400,6 +421,25 @@ def delete_all_highlights_for_document(
     deleted_count = db.query(models.Highlight).filter(models.Highlight.document_id == doc_id).delete()
     db.commit()
     return {"deleted": deleted_count}
+
+
+@router.get("/{doc_id}/rag-logs", response_model=list[schemas.RagProcessingLogOut])
+def get_document_rag_logs(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+        
+    logs = db.query(models.RagProcessingLog)\
+        .filter(models.RagProcessingLog.document_id == doc_id)\
+        .order_by(models.RagProcessingLog.created_at.asc())\
+        .all()
+    
+    return logs
+
 
 @router.delete("/{doc_id}")
 def delete_document(

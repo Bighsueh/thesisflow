@@ -5,9 +5,33 @@ Azure OpenAI Embedding 模組
 """
 
 import os
+import logging
 from typing import List, Optional
 
 from openai import AzureOpenAI
+from openai import (
+    RateLimitError,
+    APIConnectionError,
+    APITimeoutError,
+    InternalServerError,
+)
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log,
+)
+
+logger = logging.getLogger(__name__)
+
+# 可重試的異常類型
+RETRYABLE_EXCEPTIONS = (
+    RateLimitError,       # 429: 速率限制
+    APIConnectionError,   # 連線錯誤
+    APITimeoutError,      # 超時
+    InternalServerError,  # 500: 伺服器內部錯誤
+)
 
 
 class AzureEmbeddingClient:
@@ -59,9 +83,16 @@ class AzureEmbeddingClient:
         # 批次處理設定
         self.batch_size = 16  # Azure OpenAI 建議的批次大小
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True,
+    )
     def embed_text(self, text: str) -> List[float]:
         """
-        生成單一文本的向量
+        生成單一文本的向量（帶重試機制）
 
         Args:
             text: 要向量化的文本
@@ -78,6 +109,29 @@ class AzureEmbeddingClient:
         )
 
         return response.data[0].embedding
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(RETRYABLE_EXCEPTIONS),
+        before_sleep=before_sleep_log(logger, logging.WARNING),
+        reraise=True,
+    )
+    def _embed_batch(self, batch: List[str]) -> List[List[float]]:
+        """
+        內部方法：處理單一批次（帶重試機制）
+
+        Args:
+            batch: 要向量化的文本批次
+
+        Returns:
+            List[List[float]]: 該批次的向量列表
+        """
+        response = self.client.embeddings.create(
+            input=batch,
+            model=self.deployment
+        )
+        return [item.embedding for item in response.data]
 
     def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """
@@ -99,17 +153,10 @@ class AzureEmbeddingClient:
 
         embeddings: List[List[float]] = []
 
-        # 批次處理
+        # 批次處理（使用帶重試的 _embed_batch 方法）
         for i in range(0, len(valid_texts), self.batch_size):
             batch = valid_texts[i:i + self.batch_size]
-
-            response = self.client.embeddings.create(
-                input=batch,
-                model=self.deployment
-            )
-
-            # 按順序收集結果
-            batch_embeddings = [item.embedding for item in response.data]
+            batch_embeddings = self._embed_batch(batch)
             embeddings.extend(batch_embeddings)
 
         return embeddings

@@ -60,7 +60,7 @@ def chunk_text(
 
 def _build_page_positions(content: str) -> List[tuple]:
     """
-    從文本中提取頁碼標記位置
+    從文本中提取頁碼標記位置（基於原始文本）
 
     Returns:
         List[tuple]: [(page_number, start_pos, end_pos), ...]
@@ -84,6 +84,62 @@ def _build_page_positions(content: str) -> List[tuple]:
         result.append((page_num, start_pos, end_pos))
 
     return result
+
+
+def _build_clean_page_positions(content: str) -> List[tuple]:
+    """
+    建立清理後文本的頁碼位置索引
+
+    將原始文本中的 [Page N] 標記位置映射到清理後（無標記）文本的位置，
+    使得可以直接使用 clean_content 的 char_start/char_end 來查找頁碼。
+
+    Args:
+        content: 原始文本（含 [Page N] 標記）
+
+    Returns:
+        List[tuple]: [(page_number, clean_start, clean_end), ...]
+        其中 clean_start/clean_end 是移除標記後的字元位置
+    """
+    pattern = r'\[Page (\d+)\]\n?'
+    result: List[List] = []
+    cumulative_removed = 0  # 累計移除的字元數
+    last_match_end = 0
+
+    for match in re.finditer(pattern, content):
+        page_num = int(match.group(1))
+        marker_start = match.start()
+        marker_end = match.end()
+
+        # 此標記前的文字長度（在原始文本中）
+        text_before_len = marker_start - last_match_end
+        # 此頁在清理後文本的起始位置
+        clean_start = marker_start - cumulative_removed - (marker_end - marker_start) + text_before_len
+        # 更簡化：clean_start = last_match_end - cumulative_removed
+        clean_start = last_match_end - cumulative_removed
+
+        result.append([page_num, clean_start, -1])  # end 稍後更新
+
+        # 更新累計移除字元數
+        cumulative_removed += marker_end - marker_start
+        last_match_end = marker_end
+
+    # 更新每頁的 end 位置
+    for i in range(len(result) - 1):
+        result[i][2] = result[i + 1][1]
+
+    # 處理最後一頁的 end
+    if result:
+        # 清理後文本的總長度
+        clean_content_len = len(content) - cumulative_removed
+        result[-1][2] = clean_content_len
+
+    # 轉換為 tuple 並返回
+    if result:
+        return [(p, s, e) for p, s, e in result]
+
+    # 如果沒有任何頁碼標記，返回單一頁面覆蓋全部
+    clean_content = re.sub(r'\[Page \d+\]\n?', '', content)
+    return [(1, 0, len(clean_content))]
 
 
 def _get_page_numbers_for_range(
@@ -123,7 +179,7 @@ def _split_with_overlap(
     Args:
         content: 完整文本
         config: 切分配置
-        page_positions: 頁碼位置索引
+        page_positions: 頁碼位置索引（基於原始文本，此參數已不再使用）
 
     Returns:
         List[Chunk]: 切分結果
@@ -133,6 +189,9 @@ def _split_with_overlap(
 
     if not clean_content.strip():
         return []
+
+    # 建立清理後文本的頁碼位置索引
+    clean_page_positions = _build_clean_page_positions(content)
 
     chunks = []
     current_pos = 0
@@ -160,11 +219,11 @@ def _split_with_overlap(
             continue
 
         if chunk_content:
-            # 計算對應的頁碼（基於原始帶標記的文本）
-            page_numbers = _get_page_numbers_for_chunk(
-                chunk_content,
-                content,
-                page_positions
+            # 直接使用位置計算頁碼（不再需要文本搜尋）
+            page_numbers = _get_page_numbers_for_range(
+                current_pos,
+                end_pos,
+                clean_page_positions
             )
 
             chunk = Chunk(
@@ -226,42 +285,3 @@ def _find_sentence_boundary(
 
     # 都找不到，使用原始結束位置
     return end
-
-
-def _get_page_numbers_for_chunk(
-    chunk_content: str,
-    original_content: str,
-    page_positions: List[tuple]
-) -> List[int]:
-    """
-    根據 chunk 內容在原文中的位置確定頁碼
-
-    Args:
-        chunk_content: chunk 內容
-        original_content: 原始帶頁碼標記的文本
-        page_positions: 頁碼位置索引
-
-    Returns:
-        List[int]: 頁碼列表
-    """
-    if not page_positions:
-        return [1]
-
-    # 在原文中搜尋 chunk 內容的位置
-    # 使用 chunk 的前 50 個字元進行搜尋（避免完全匹配失敗）
-    search_text = chunk_content[:50] if len(chunk_content) > 50 else chunk_content
-
-    # 移除原文中的頁碼標記進行搜尋
-    clean_original = re.sub(r'\[Page \d+\]\n?', '', original_content)
-    pos = clean_original.find(search_text)
-
-    if pos == -1:
-        # 找不到，返回第一頁
-        return [1]
-
-    # 根據位置計算頁碼
-    return _get_page_numbers_for_range(
-        pos,
-        pos + len(chunk_content),
-        page_positions
-    )
