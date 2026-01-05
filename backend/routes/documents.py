@@ -488,8 +488,23 @@ def get_document_rag_logs(
         .filter(models.RagProcessingLog.document_id == doc_id)\
         .order_by(models.RagProcessingLog.created_at.asc())\
         .all()
-    
-    return logs
+
+    # NOTE:
+    # - 不能直接回傳 ORM 物件給 response_model，因為 SQLAlchemy Base 有內建的 `.metadata`
+    #   屬性（MetaData），會讓 Pydantic 誤把它當成我們要的 metadata 欄位，導致驗證失敗。
+    # - 同時 created_at 是 datetime，需要轉成前端一致使用的 epoch ms。
+    return [
+        {
+            "id": log.id,
+            "document_id": log.document_id,
+            "stage": log.stage,
+            "status": log.status,
+            "message": log.message,
+            "metadata": log.metadata_ or {},
+            "created_at": int(log.created_at.timestamp() * 1000) if log.created_at else 0,
+        }
+        for log in logs
+    ]
 
 
 @router.delete("/{doc_id}")
