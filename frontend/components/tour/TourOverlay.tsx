@@ -164,7 +164,16 @@ export function TourOverlay() {
 
   const step = currentTour.steps[currentStep];
   const isLastStep = currentStep === currentTour.steps.length - 1;
-  const isCenterPlacement = step.placement === 'center' || !targetRect;
+  const isCenterPlacement = step.placement === 'center';
+
+  // 如果找不到 target 且不是刻意設置為 center placement，就不顯示導覽
+  // （target not found 顯示空卡片反而更糟糕）
+  if (!targetRect && !isCenterPlacement) {
+    if (import.meta.env.DEV) {
+      console.log(`[Tour] 跳過此步驟：無效 target (${step.target}) 且 placement 非 center`);
+    }
+    return null;
+  }
 
   return createPortal(
     <AnimatePresence mode="wait">
