@@ -1,7 +1,13 @@
 """
 Parser 工廠模組 - 提供統一的解析器選擇介面
 
-階段一只支援 PyMuPDF，但保留擴展空間供階段三新增其他解析器
+功能說明：
+    - 提供工廠函數 get_parser() 選擇適當的 PDF 解析器
+    - 定義標準化的解析結果格式 ParseResult
+
+擴展計劃：
+    - Phase 1 (目前): 僅支援 PyMuPDF（純文字擷取）
+    - Phase 3 (未來): 新增 Azure Document Intelligence、Marker 等進階解析器
 """
 
 from typing import Callable, TypedDict, List, Optional
@@ -9,20 +15,38 @@ from .pymupdf_parser import parse_pdf as pymupdf_parse
 
 
 class PageContent(TypedDict):
-    """單頁內容"""
+    """
+    單頁內容結構
+
+    Attributes:
+        page_number: 頁碼（從 1 開始）
+        content: 該頁擷取的文字內容
+    """
     page_number: int
     content: str
 
 
 class ParseResult(TypedDict):
-    """解析結果標準格式"""
-    content: str                    # 完整文本（包含頁碼標記）
-    pages: List[PageContent]        # 按頁分割的內容
-    metadata: dict                  # 解析元數據
+    """
+    PDF 解析結果的標準格式
+
+    所有解析器都必須返回此格式，確保下游處理邏輯的一致性。
+
+    Attributes:
+        content: 完整文本，包含 [Page N] 頁碼標記，供 chunking 模組使用
+        pages: 按頁分割的內容列表，保留原始頁面結構
+        metadata: 解析元數據（如頁數、解析器名稱、處理時間等）
+        success: 解析是否成功
+        error: 失敗時的錯誤訊息，成功時為 None
+    """
+    content: str
+    pages: List[PageContent]
+    metadata: dict
     success: bool
     error: Optional[str]
 
 
+# 解析器函數的類型別名：接受檔案路徑，返回 ParseResult
 ParserFunction = Callable[[str], ParseResult]
 
 

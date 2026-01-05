@@ -57,7 +57,9 @@ class AzureEmbeddingClient:
             deployment: 部署名稱（預設從環境變數讀取）
             api_version: API 版本（預設從環境變數讀取）
         """
-        self.endpoint = endpoint or os.getenv("AZURE_EMBEDDING_ENDPOINT")
+        # 正規化 endpoint URL，移除尾部斜線以避免 URL 拼接問題
+        raw_endpoint = endpoint or os.getenv("AZURE_EMBEDDING_ENDPOINT")
+        self.endpoint = raw_endpoint.rstrip("/") if raw_endpoint else None
         self.api_key = api_key or os.getenv("AZURE_EMBEDDING_API_KEY")
         self.deployment = deployment or os.getenv(
             "AZURE_EMBEDDING_DEPLOYMENT",

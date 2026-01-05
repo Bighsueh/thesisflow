@@ -737,23 +737,34 @@ export const useStore = create<AppState>((set, get) => ({
 
         const poll = async () => {
           attempts++;
-          const state = get();
-          // 重新載入文檔以獲取最新狀態
-          await get().loadDocuments(state.activeProjectId);
+          try {
+            // 優化：只獲取特定文檔，避免每次都載入所有文檔
+            const updatedDoc = await documentService.getDocument(created.id);
 
-          const updatedDoc = get().documents.find((d) => d.id === created.id);
-          if (
-            !updatedDoc ||
-            updatedDoc.rag_status === 'completed' ||
-            updatedDoc.rag_status === 'failed' ||
-            attempts >= maxAttempts
-          ) {
-            // 停止輪詢
+            // 更新 store 中的特定文檔狀態
+            set((state) => ({
+              documents: state.documents.map((d) =>
+                d.id === created.id
+                  ? { ...d, rag_status: updatedDoc.rag_status, chunk_count: updatedDoc.chunk_count }
+                  : d
+              ),
+            }));
+
+            if (
+              updatedDoc.rag_status === 'completed' ||
+              updatedDoc.rag_status === 'failed' ||
+              attempts >= maxAttempts
+            ) {
+              // 停止輪詢
+              return;
+            }
+
+            // 繼續輪詢
+            setTimeout(poll, 3000);
+          } catch {
+            // 文檔可能已被刪除，停止輪詢
             return;
           }
-
-          // 繼續輪詢
-          setTimeout(poll, 3000);
         };
 
         // 延遲 3 秒後開始輪詢

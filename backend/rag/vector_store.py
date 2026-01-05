@@ -47,12 +47,16 @@ class VectorStore:
         # 確保目錄存在
         os.makedirs(self.persist_directory, exist_ok=True)
 
+        # 從環境變數讀取是否允許重置資料庫
+        # 注意：生產環境應設為 false 以避免意外資料遺失
+        allow_reset = os.getenv("CHROMA_ALLOW_RESET", "false").lower() == "true"
+
         # 初始化 ChromaDB 客戶端（持久化模式）
         self.client = chromadb.PersistentClient(
             path=self.persist_directory,
             settings=Settings(
                 anonymized_telemetry=False,
-                allow_reset=True
+                allow_reset=allow_reset
             )
         )
 

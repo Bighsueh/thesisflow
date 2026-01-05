@@ -7,7 +7,7 @@ from auth import get_current_user
 from services import AzureOpenAIClient, presign_get
 import json
 import logging
-from typing import Optional, List
+from typing import Optional
 
 # RAG 相關導入
 try:

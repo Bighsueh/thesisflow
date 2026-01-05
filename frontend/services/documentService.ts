@@ -1,10 +1,14 @@
-import { Document, Highlight } from '../types';
+import { Document, Highlight, RagProcessingLog } from '../types';
 import { api } from './api';
 
 export const documentService = {
   loadDocuments: async (projectId?: string | null): Promise<Document[]> => {
     const endpoint = projectId ? `/api/documents?project_id=${projectId}` : '/api/documents';
     return api.get(endpoint);
+  },
+  // 取得單一文檔（用於輪詢 RAG 狀態，避免載入所有文檔）
+  getDocument: async (docId: string): Promise<Document> => {
+    return api.get(`/api/documents/${docId}`);
   },
   bindDocumentsToProject: async (documentIds: string[], projectId: string): Promise<void> => {
     return api.post(`/api/documents/bind`, { document_ids: documentIds, project_id: projectId });
@@ -32,6 +36,9 @@ export const documentService = {
       throw new Error(`API Error: ${res.statusText}`);
     }
     return res.json();
+  },
+  getRagLogs: async (docId: string): Promise<RagProcessingLog[]> => {
+    return api.get(`/api/documents/${docId}/rag-logs`);
   },
   removeDocument: async (id: string): Promise<void> => {
     return api.delete(`/api/documents/${id}`);

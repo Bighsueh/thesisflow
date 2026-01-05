@@ -5,6 +5,7 @@ import models
 import schemas
 from auth import get_current_user
 from services import presign_upload, presign_get, get_s3_client
+# 注意：log_rag_event 定義於 rag_services.py:25，用於記錄 RAG 處理事件到 RagProcessingLog 表
 from rag_services import process_document_rag, delete_document_vectors, log_rag_event
 import uuid
 from datetime import datetime
@@ -118,6 +119,56 @@ def list_documents(
         print(f"Error in list_documents: {e}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Failed to list documents: {str(e)}")
+
+
+@router.get("/{doc_id}", response_model=schemas.DocumentOut)
+def get_document(
+    doc_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    取得單一文檔資訊（含 RAG 狀態）
+
+    此 API 用於輪詢 RAG 處理狀態，避免每次都載入所有文檔
+    """
+    doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    highlights = []
+    for h in (doc.highlights or []):
+        highlights.append(
+            schemas.HighlightOut(
+                id=h.id,
+                document_id=h.document_id,
+                snippet=h.snippet or "",
+                name=h.name,
+                page=h.page,
+                x=h.x,
+                y=h.y,
+                width=h.width,
+                height=h.height,
+                evidence_type=h.evidence_type,
+                created_at=int(h.created_at.timestamp() * 1000) if h.created_at else 0,
+            )
+        )
+
+    return schemas.DocumentOut(
+        id=doc.id,
+        project_id=doc.project_id,
+        title=doc.title,
+        object_key=doc.object_key,
+        content_type=doc.content_type,
+        size=doc.size,
+        type=doc.type,
+        uploaded_at=int(doc.uploaded_at.timestamp() * 1000) if doc.uploaded_at else 0,
+        raw_preview=doc.raw_preview,
+        highlights=highlights,
+        rag_status=doc.rag_status or "pending",
+        chunk_count=doc.chunk_count or 0,
+    )
+
 
 @router.post("", response_model=schemas.DocumentOut)
 def create_document(

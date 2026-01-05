@@ -107,20 +107,16 @@ def _build_clean_page_positions(content: str) -> List[tuple]:
 
     for match in re.finditer(pattern, content):
         page_num = int(match.group(1))
-        marker_start = match.start()
         marker_end = match.end()
 
-        # 此標記前的文字長度（在原始文本中）
-        text_before_len = marker_start - last_match_end
         # 此頁在清理後文本的起始位置
-        clean_start = marker_start - cumulative_removed - (marker_end - marker_start) + text_before_len
-        # 更簡化：clean_start = last_match_end - cumulative_removed
+        # 等於「上一個標記結束位置」減去「累計移除的標記字元數」
         clean_start = last_match_end - cumulative_removed
 
         result.append([page_num, clean_start, -1])  # end 稍後更新
 
-        # 更新累計移除字元數
-        cumulative_removed += marker_end - marker_start
+        # 更新累計移除字元數（標記本身的長度）
+        cumulative_removed += marker_end - match.start()
         last_match_end = marker_end
 
     # 更新每頁的 end 位置
@@ -171,7 +167,7 @@ def _get_page_numbers_for_range(
 def _split_with_overlap(
     content: str,
     config: ChunkingConfig,
-    page_positions: List[tuple]
+    _page_positions: List[tuple]  # 保留參數以維持向後相容，實際使用 _build_clean_page_positions
 ) -> List[Chunk]:
     """
     使用重疊方式切分文本，在句子邊界切分
@@ -179,7 +175,7 @@ def _split_with_overlap(
     Args:
         content: 完整文本
         config: 切分配置
-        page_positions: 頁碼位置索引（基於原始文本，此參數已不再使用）
+        _page_positions: [已棄用] 此參數不再使用，頁碼改由內部重新計算
 
     Returns:
         List[Chunk]: 切分結果
@@ -241,8 +237,11 @@ def _split_with_overlap(
             break
 
         current_pos = end_pos - config.chunk_overlap
-        if current_pos <= chunks[-1].char_start if chunks else 0:
-            current_pos = end_pos  # 避免無限循環
+
+        # 避免無限循環：確保 current_pos 有向前推進
+        last_chunk_start = chunks[-1].char_start if chunks else 0
+        if current_pos <= last_chunk_start:
+            current_pos = end_pos
 
     return chunks
 
