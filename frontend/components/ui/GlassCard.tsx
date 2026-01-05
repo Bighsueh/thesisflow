@@ -1,11 +1,13 @@
 import { motion } from 'framer-motion';
 import React from 'react';
-interface GlassCardProps {
+
+export interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   hoverEffect?: boolean;
   onClick?: () => void;
 }
+
 export function GlassCard({
   children,
   className = '',

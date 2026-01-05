@@ -111,6 +111,16 @@ export interface Document {
   chunk_count?: number;
 }
 
+export interface RagProcessingLog {
+  id: string;
+  document_id: string;
+  stage: string;
+  status: string;
+  message?: string;
+  metadata: Record<string, any>;
+  created_at: number;
+}
+
 export interface Cohort {
   id: string;
   name: string;

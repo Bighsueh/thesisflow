@@ -181,6 +181,7 @@ export function Dashboard() {
                         status={doc.rag_status}
                         chunkCount={doc.chunk_count}
                         compact
+                        docId={doc.id}
                       />
                     )}
                   </div>

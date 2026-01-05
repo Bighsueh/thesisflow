@@ -329,6 +329,20 @@ class WorkflowStateOut(BaseModel):
         from_attributes = True
 
 
+class RagProcessingLogOut(BaseModel):
+    id: str
+    document_id: str
+    stage: str
+    status: str
+    message: Optional[str] = None
+    metadata_: dict = Field(default_factory=dict, alias="metadata")
+    created_at: int
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+
 # Rebuild forward refs (required for ForwardRef)
 # This must be called after all models are defined
 # Try Pydantic v2 method first, then fall back to v1
@@ -338,6 +352,7 @@ try:
     HighlightOut.model_rebuild()
     ProjectOut.model_rebuild()
     TaskResponse.model_rebuild()
+    RagProcessingLogOut.model_rebuild()
 except (AttributeError, TypeError):
     # Pydantic v1: use update_forward_refs()
     try:
@@ -345,8 +360,8 @@ except (AttributeError, TypeError):
         HighlightOut.update_forward_refs()
         ProjectOut.update_forward_refs()
         TaskResponse.update_forward_refs()
+        RagProcessingLogOut.update_forward_refs()
     except (AttributeError, TypeError) as e:
         # If both fail, log but don't crash
         import warnings
         warnings.warn(f"Failed to rebuild forward refs: {e}")
-

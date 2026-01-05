@@ -70,6 +70,7 @@ class Document(Base):
     project = relationship("Project", back_populates="documents")
     highlights = relationship("Highlight", cascade="all, delete-orphan", back_populates="document")
     chunks = relationship("DocumentChunk", cascade="all, delete-orphan", back_populates="document")
+    rag_logs = relationship("RagProcessingLog", cascade="all, delete-orphan", back_populates="document")
 
 
 class Highlight(Base):
@@ -182,4 +183,17 @@ class DocumentChunk(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     document = relationship("Document", back_populates="chunks")
+
+
+class RagProcessingLog(Base):
+    __tablename__ = "rag_processing_logs"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    document_id = Column(String, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    stage = Column(String, nullable=False)  # upload, parsing, chunking, embedding, indexing, complete, failed
+    status = Column(String, nullable=False)  # pending, success, error
+    message = Column(Text, nullable=True)
+    metadata_ = Column("metadata", JSONB, default=dict)  # 'metadata' is reserved in SQLAlchemy Base
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    document = relationship("Document", back_populates="rag_logs")
 

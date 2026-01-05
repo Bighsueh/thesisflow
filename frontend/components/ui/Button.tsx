@@ -1,12 +1,15 @@
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children?: React.ReactNode;
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
 }
+
 export function Button({
   children,
   variant = 'primary',

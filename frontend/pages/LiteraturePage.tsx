@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'framer-motion';
 import { Upload, FileText, Trash2, Eye, Search, Filter, X } from 'lucide-react';
 import React, { useEffect, useState, useRef } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
@@ -11,19 +12,12 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import '../utils/pdfConfig';
 
 export function LiteraturePage() {
-  const {
-    documents,
-    loadDocuments,
-    uploadDocument,
-    uploadFileDocument,
-    removeDocument,
-    getCachedFileUrl,
-  } = useStore();
-  const [activeTab, setActiveTab] = useState<'list' | 'upload'>('list');
+  const { documents, loadDocuments, uploadFileDocument, removeDocument, getCachedFileUrl } =
+    useStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [_isUploadModalOpen, setUploadModalOpen] = useState(false);
+  const [isUploadModalOpen, setUploadModalOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newContent, setNewContent] = useState('');
+  const [_newContent, _setNewContent] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -67,23 +61,17 @@ export function LiteraturePage() {
   });
 
   const handleUpload = async () => {
-    if (!newTitle && !selectedFile && !newContent) return;
+    if (!selectedFile) {
+      alert('請先選擇檔案');
+      return;
+    }
     setUploading(true);
     try {
-      if (selectedFile && selectedFile.type === 'application/pdf') {
-        const title = newTitle || selectedFile.name.replace(/\.[^/.]+$/, '');
-        await uploadFileDocument(title, selectedFile);
-      } else if (newTitle && newContent) {
-        await uploadDocument(newTitle, newContent);
-      } else if (selectedFile) {
-        const title = newTitle || selectedFile.name.replace(/\.[^/.]+$/, '');
-        await uploadFileDocument(title, selectedFile);
-      } else {
-        throw new Error('請先選擇檔案或貼上文字內容');
-      }
+      const title = newTitle || selectedFile.name.replace(/\.[^/.]+$/, '');
+      await uploadFileDocument(title, selectedFile);
       setUploadModalOpen(false);
       setNewTitle('');
-      setNewContent('');
+      _setNewContent('');
       setSelectedFile(null);
       await loadDocuments();
     } catch (e: any) {
@@ -102,12 +90,12 @@ export function LiteraturePage() {
     if (file.type !== 'application/pdf') {
       try {
         const text = await file.text();
-        setNewContent(text);
+        _setNewContent(text);
       } catch {
         // ignore read error
       }
     } else {
-      setNewContent('');
+      _setNewContent('');
     }
   };
 
@@ -157,181 +145,195 @@ export function LiteraturePage() {
           <h1 className="text-3xl font-bold text-gray-900">文獻庫</h1>
           <p className="text-gray-500 mt-1">管理您的論文、筆記和文件</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant={activeTab === 'list' ? 'secondary' : 'ghost'}
-            onClick={() => setActiveTab('list')}
-          >
-            文獻庫
-          </Button>
-          <Button
-            variant={activeTab === 'upload' ? 'primary' : 'secondary'}
-            onClick={() => {
-              setActiveTab('upload');
-              setUploadModalOpen(true);
-            }}
-            leftIcon={<Upload size={18} />}
-          >
-            上傳新文獻
-          </Button>
-        </div>
+        <Button
+          variant="primary"
+          onClick={() => setUploadModalOpen(true)}
+          leftIcon={<Upload size={18} />}
+        >
+          上傳新文獻
+        </Button>
       </div>
 
-      {activeTab === 'list' ? (
-        <div className="space-y-6">
-          {/* Search Bar */}
-          <GlassCard className="p-4 flex gap-4">
-            <div className="flex-1">
-              <Input
-                icon={<Search size={18} />}
-                placeholder="搜尋標題、作者或關鍵字..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="border-none shadow-none bg-transparent"
-              />
-            </div>
-            <div className="w-px bg-gray-200 my-1"></div>
-            <Button variant="ghost" leftIcon={<Filter size={18} />}>
-              篩選
-            </Button>
-          </GlassCard>
+      <div className="space-y-6">
+        {/* Search Bar */}
+        <GlassCard className="p-4 flex gap-4">
+          <div className="flex-1">
+            <Input
+              icon={<Search size={18} />}
+              placeholder="搜尋標題、作者或關鍵字..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border-none shadow-none bg-transparent"
+            />
+          </div>
+          <div className="w-px bg-gray-200 my-1"></div>
+          <Button variant="ghost" leftIcon={<Filter size={18} />}>
+            篩選
+          </Button>
+        </GlassCard>
 
-          {/* List */}
-          {filteredDocuments.length === 0 ? (
-            <GlassCard className="p-12 text-center">
-              <FileText size={48} className="mx-auto mb-4 text-gray-400 opacity-50" />
-              <p className="text-gray-600 font-medium mb-2">
-                {searchQuery ? '找不到文件' : '文獻庫目前是空的'}
-              </p>
-              <p className="text-sm text-gray-500">
-                {searchQuery
-                  ? '請嘗試其他搜尋關鍵字'
-                  : '請上傳文獻或等待教師在系統中加入共用文獻。'}
-              </p>
-            </GlassCard>
-          ) : (
-            <div className="space-y-4">
-              {filteredDocuments.map((item) => (
-                <GlassCard
-                  key={item.id}
-                  className="p-4 flex items-center justify-between group"
-                  hoverEffect
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold ${
-                        item.type === 'pdf' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
-                      }`}
-                    >
-                      {item.type === 'pdf' ? 'PDF' : 'TXT'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-gray-900 group-hover:text-violet-700 transition-colors">
-                          {item.title}
-                        </h3>
-                        {item.type === 'pdf' && (
-                          <RagStatusBadge
-                            status={item.rag_status}
-                            chunkCount={item.chunk_count}
-                            compact
-                          />
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        {new Date(item.uploaded_at || Date.now()).toLocaleDateString()}
-                        {item.size && ` • ${(item.size / 1024 / 1024).toFixed(2)} MB`}
-                      </p>
-                      {item.rag_status === 'processing' && (
-                        <progress className="progress progress-primary w-full h-1 mt-1" />
+        {/* List */}
+        {filteredDocuments.length === 0 ? (
+          <GlassCard className="p-12 text-center">
+            <FileText size={48} className="mx-auto mb-4 text-gray-400 opacity-50" />
+            <p className="text-gray-600 font-medium mb-2">
+              {searchQuery ? '找不到文件' : '文獻庫目前是空的'}
+            </p>
+            <p className="text-sm text-gray-500">
+              {searchQuery ? '請嘗試其他搜尋關鍵字' : '請上傳文獻或等待教師在系統中加入共用文獻。'}
+            </p>
+          </GlassCard>
+        ) : (
+          <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
+            {filteredDocuments.map((item) => (
+              <GlassCard
+                key={item.id}
+                className="p-4 flex items-center justify-between group"
+                hoverEffect
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold ${
+                      item.type === 'pdf' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+                    }`}
+                  >
+                    {item.type === 'pdf' ? 'PDF' : 'TXT'}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-gray-900 group-hover:text-violet-700 transition-colors">
+                        {item.title}
+                      </h3>
+                      {item.type === 'pdf' && (
+                        <RagStatusBadge
+                          status={item.rag_status}
+                          chunkCount={item.chunk_count}
+                          compact
+                          docId={item.id}
+                        />
                       )}
                     </div>
+                    <p className="text-sm text-gray-500">
+                      {new Date(item.uploaded_at || Date.now()).toLocaleDateString()}
+                      {item.size && ` • ${(item.size / 1024 / 1024).toFixed(2)} MB`}
+                    </p>
+                    {item.rag_status === 'processing' && (
+                      <progress className="progress progress-primary w-full h-1 mt-1" />
+                    )}
                   </div>
+                </div>
 
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      leftIcon={<Eye size={16} />}
-                      onClick={() => setPreviewId(item.id)}
-                    >
-                      預覽
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      className="px-3"
-                      onClick={() => setDeleteConfirmId(item.id)}
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-                </GlassCard>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="max-w-2xl mx-auto">
-          <GlassCard className="p-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">上傳文獻</h2>
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leftIcon={<Eye size={16} />}
+                    onClick={() => setPreviewId(item.id)}
+                  >
+                    預覽
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    className="px-3"
+                    onClick={() => setDeleteConfirmId(item.id)}
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
+              </GlassCard>
+            ))}
+          </div>
+        )}
+      </div>
 
-            <div
-              className={`border-2 border-dashed rounded-2xl p-12 text-center bg-violet-50/50 hover:bg-violet-50 transition-colors cursor-pointer mb-8 ${
-                isDragging ? 'border-violet-500 bg-violet-100' : 'border-violet-200'
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
+      {/* Upload Modal */}
+      <AnimatePresence>
+        {isUploadModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] bg-black/20 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setUploadModalOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{
+                type: 'spring',
+                stiffness: 300,
+                damping: 25,
+                duration: 0.3,
+              }}
+              className="relative overflow-hidden bg-white/90 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] shadow-violet-500/10 w-full max-w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
             >
-              <div className="w-16 h-16 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center mx-auto mb-4">
-                <Upload size={32} />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">點擊或拖曳檔案到此處上傳</h3>
-              <p className="text-gray-500 text-sm max-w-xs mx-auto">
-                支援 PDF 和 TXT 檔案。最大檔案大小 25MB。
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".txt,text/plain,.pdf,application/pdf"
-                className="hidden"
-                onChange={handleFileInputChange}
-              />
-            </div>
+              {/* Subtle shine effect overlay - matching GlassCard style */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-white/20 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-violet-50/20 via-transparent to-transparent pointer-events-none" />
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="h-px flex-1 bg-gray-200"></div>
-                <span className="text-sm text-gray-400 font-medium">或手動新增</span>
-                <div className="h-px flex-1 bg-gray-200"></div>
-              </div>
+              <div className="relative z-10 p-6 sm:p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">上傳文獻</h2>
+                  <button
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    onClick={() => setUploadModalOpen(false)}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
 
-              <Input
-                label="標題"
-                placeholder="輸入文件標題"
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-              />
-              <textarea
-                className="w-full bg-white/70 backdrop-blur-xl border border-white/80 rounded-xl px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all duration-200 shadow-lg shadow-violet-500/5 min-h-[120px]"
-                placeholder="貼上文字內容..."
-                value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
-              />
-              <div className="flex justify-end gap-3 pt-4">
-                <Button variant="ghost" onClick={() => setActiveTab('list')}>
-                  取消
-                </Button>
-                <Button onClick={handleUpload} isLoading={uploading}>
-                  新增至文獻庫
-                </Button>
+                <div
+                  className={`border-2 border-dashed rounded-2xl p-8 sm:p-12 text-center bg-violet-50/50 hover:bg-violet-50 transition-colors cursor-pointer mb-6 ${
+                    isDragging ? 'border-violet-500 bg-violet-100' : 'border-violet-200'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="w-16 h-16 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center mx-auto mb-4">
+                    <Upload size={32} />
+                  </div>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                    點擊或拖曳檔案到此處上傳
+                  </h3>
+                  <p className="text-gray-500 text-sm max-w-xs mx-auto">
+                    支援 PDF 和 TXT 檔案。最大檔案大小 25MB。
+                  </p>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".txt,text/plain,.pdf,application/pdf"
+                    className="hidden"
+                    onChange={handleFileInputChange}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <Input
+                    label="標題"
+                    placeholder="輸入文件標題"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                  />
+                  <div className="flex justify-end gap-3 pt-4">
+                    <Button variant="ghost" onClick={() => setUploadModalOpen(false)}>
+                      取消
+                    </Button>
+                    <Button onClick={handleUpload} isLoading={uploading}>
+                      新增至文獻庫
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </GlassCard>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Preview Modal */}
       {previewId && (
