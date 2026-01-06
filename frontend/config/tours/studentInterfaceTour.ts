@@ -74,6 +74,7 @@ export const studentInterfaceTour: TourConfig = {
       description: '點擊工具列的文獻庫按鈕，可展開左側的文獻庫面板（寬度 800px）。',
       placement: 'bottom',
       spotlightShape: 'circle',
+      action: 'click', // 自動點擊文獻庫按鈕
     },
     {
       target: '[data-tour="library-panel"]',
@@ -96,12 +97,13 @@ export const studentInterfaceTour: TourConfig = {
 
     // 第 11 步：TaskPanelWrapper
     {
-      target: '[data-tour="task-panel"]',
+      target: '[data-tour="task-toggle"]', // 改為指向 toggle 按鈕
       title: '任務表單',
       description:
         '右側的 Task 面板顯示當前任務。有 3 種類型：Summary（單篇摘要）、Comparison（兩篇比較）、Synthesis（綜合分析）。寫作時需綁定 Evidence。',
       placement: 'left',
       spotlightShape: 'rect',
+      action: 'click', // 自動點擊展開任務面板
     },
 
     // 第 12 步：面板收合

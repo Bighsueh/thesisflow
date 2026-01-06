@@ -14,7 +14,7 @@ export function TourProgress({ current, total }: TourProgressProps) {
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="fixed top-24 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none"
+      className="fixed bottom-24 right-6 z-[9999] pointer-events-none"
     >
       <div className="bg-white/90 backdrop-blur-2xl border border-white/80 rounded-full px-6 py-3 shadow-xl shadow-violet-500/10">
         <div className="flex items-center gap-4">
