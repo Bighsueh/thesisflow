@@ -10,6 +10,9 @@ from routes import auth, students, projects, documents, highlights, cohorts, cha
 
 # 載入環境變數
 _env_paths = [
+    ".env",
+    "backend/.env",
+    os.path.join(os.path.dirname(__file__), ".env"),
     "env.local",
     "backend/env.local",
     os.path.join(os.path.dirname(__file__), "env.local"),

@@ -10,3 +10,8 @@ boto3==1.35.57
 passlib[bcrypt]==1.7.4
 python-jose==3.3.0
 
+# RAG 模組依賴
+pymupdf==1.25.3
+chromadb==0.5.23
+openai==1.58.1
+

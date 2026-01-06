@@ -62,8 +62,15 @@ class Document(Base):
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     raw_preview = Column(Text, nullable=True)
 
+    # RAG 相關欄位
+    rag_status = Column(String, default="pending")  # pending|processing|completed|failed
+    rag_error = Column(Text, nullable=True)  # RAG 處理錯誤訊息
+    chunk_count = Column(Integer, default=0)  # 切分後的 chunk 數量
+
     project = relationship("Project", back_populates="documents")
     highlights = relationship("Highlight", cascade="all, delete-orphan", back_populates="document")
+    chunks = relationship("DocumentChunk", cascade="all, delete-orphan", back_populates="document")
+    rag_logs = relationship("RagProcessingLog", cascade="all, delete-orphan", back_populates="document")
 
 
 class Highlight(Base):
@@ -158,4 +165,35 @@ class WorkflowState(Base):
     user = relationship("User")
 
     __table_args__ = (UniqueConstraint("project_id", "user_id", name="uq_workflow_state"),)
+
+
+class DocumentChunk(Base):
+    """
+    文檔切片記錄
+
+    儲存 RAG 處理後的文檔切片資訊（向量儲存在 ChromaDB 中）
+    """
+    __tablename__ = "document_chunks"
+    id = Column(String, primary_key=True)  # 格式: {document_id}_{chunk_index}
+    document_id = Column(String, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    chunk_index = Column(Integer, nullable=False)  # 切片索引（0-indexed）
+    content_preview = Column(String(200), nullable=True)  # 內容預覽（前 200 字元）
+    page_numbers = Column(JSONB, default=list)  # 涵蓋的頁碼列表
+    char_count = Column(Integer, default=0)  # 字元數
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    document = relationship("Document", back_populates="chunks")
+
+
+class RagProcessingLog(Base):
+    __tablename__ = "rag_processing_logs"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    document_id = Column(String, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
+    stage = Column(String, nullable=False)  # upload, parsing, chunking, embedding, indexing, complete, failed
+    status = Column(String, nullable=False)  # pending, success, error
+    message = Column(Text, nullable=True)
+    metadata_ = Column("metadata", JSONB, default=dict)  # 'metadata' is reserved in SQLAlchemy Base
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    document = relationship("Document", back_populates="rag_logs")
 

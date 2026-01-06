@@ -5,6 +5,7 @@
 ## 系統架構
 
 系統包含三個 Docker 服務：
+
 - **前端** (React + Vite + nginx)：port 3000
 - **後端** (FastAPI + Python)：port 8000
 - **資料庫** (PostgreSQL 16)：port 5432
@@ -95,6 +96,7 @@ JWT_SECRET=your-secret-key-change-this
 ```
 
 **開發環境特點：**
+
 - 前端：`http://localhost:3000`
 - 後端：`http://localhost:8000`
 - CORS 自動允許 localhost 來源
@@ -133,6 +135,7 @@ JWT_SECRET=your-strong-secret-key-change-this-in-production
 ```
 
 **生產環境特點：**
+
 - 前端：使用設定的 `FRONTEND_DOMAIN`（例如：`https://yourdomain.com`）
 - 後端：使用設定的 `BACKEND_DOMAIN`（例如：`https://api.yourdomain.com`）
 - CORS 自動允許設定的 domain
@@ -154,6 +157,7 @@ BACKEND_PORT=8000
 ```
 
 在 Cloudflare Tunnel 配置中：
+
 - 前端：`https://yourdomain.com` → `localhost:3000`
 - 後端：`https://api.yourdomain.com` → `localhost:8000`
 
@@ -204,6 +208,7 @@ docker compose up -d
 **問題：** 前端顯示 CORS 錯誤或無法連接到 API。
 
 **解決方案：**
+
 - 檢查 `.env` 檔案中的 `VITE_API_BASE` 是否正確
 - 檢查 `FRONTEND_DOMAIN` 是否正確設定（生產環境）
 - 確認後端服務正在運行：`docker compose ps`
@@ -214,6 +219,7 @@ docker compose up -d
 **問題：** 後端無法連接到資料庫。
 
 **解決方案：**
+
 - 確認資料庫服務正在運行：`docker compose ps`
 - 檢查資料庫健康狀態：`docker compose logs postgres`
 - 確認 `DATABASE_URL` 環境變數正確（Docker 環境應使用 `postgres` 作為主機名稱）
@@ -223,6 +229,7 @@ docker compose up -d
 **問題：** 啟動時提示端口已被占用。
 
 **解決方案：**
+
 - 修改 `.env` 檔案中的端口配置：
   ```env
   FRONTEND_PORT=3001  # 改用其他端口
@@ -235,6 +242,7 @@ docker compose up -d
 **問題：** Docker 建置過程中出現錯誤。
 
 **解決方案：**
+
 - 清理 Docker 快取並重新建置：
   ```bash
   docker compose build --no-cache
@@ -247,6 +255,7 @@ docker compose up -d
 **問題：** 修改 `.env` 檔案後，變數未生效。
 
 **解決方案：**
+
 - 重新啟動服務：
   ```bash
   docker compose down
@@ -260,6 +269,7 @@ docker compose up -d
 **問題：** 出現錯誤訊息「Azure OpenAI 部署 'gpt-4.1-mini' 不存在或無法訪問」。
 
 **可能原因：**
+
 1. **部署名稱不正確**：`gpt-4.1-mini` 只是範例名稱，您需要替換為您在 Azure OpenAI 中實際建立的部署名稱
 2. **環境變數未正確設置**：Docker 容器中沒有正確讀取到環境變數
 3. **部署名稱拼寫錯誤**：常見的 Azure OpenAI 部署名稱可能是 `gpt-4o-mini`、`gpt-4-turbo`、`gpt-35-turbo` 等
@@ -273,11 +283,14 @@ docker compose up -d
    - 查看您實際建立的部署名稱（注意：部署名稱是您自己設定的，不一定與模型名稱相同）
 
 2. **檢查環境變數是否正確傳入容器：**
+
    ```bash
    # 檢查後端容器的環境變數
    docker compose exec backend env | grep AZURE_OPENAI
    ```
+
    應該會顯示：
+
    ```
    AZURE_OPENAI_ENDPOINT=https://your-endpoint.cognitiveservices.azure.com
    AZURE_OPENAI_API_KEY=your_api_key
@@ -286,12 +299,14 @@ docker compose up -d
    ```
 
 3. **更新 `.env` 檔案：**
+
    ```env
    # 將部署名稱改為您在 Azure 中實際建立的部署名稱
    AZURE_OPENAI_DEPLOYMENT=your-actual-deployment-name
    ```
 
 4. **重新啟動服務：**
+
    ```bash
    docker compose down
    docker compose up -d
@@ -302,6 +317,7 @@ docker compose up -d
    - 嘗試使用 AI 功能，確認錯誤訊息是否消失
 
 **注意事項：**
+
 - 部署名稱區分大小寫
 - 部署名稱可能與模型名稱不同（例如：模型可能是 `gpt-4o-mini`，但部署名稱可能是 `my-gpt4-deployment`）
 - 確保您的 Azure OpenAI 資源已啟用該模型，並且部署已成功建立
@@ -313,6 +329,12 @@ docker compose up -d
 1. **前端開發模式：**
    - 不使用 Docker，直接在本地運行：
      ```bash
+     # 從根目錄
+     npm run install:frontend
+     npm run dev
+
+     # 或進入 frontend 目錄
+     cd frontend
      npm install
      npm run dev
      ```
@@ -375,8 +397,12 @@ docker compose logs -f
 ## 支援
 
 如有問題，請檢查：
+
 1. Docker 和 Docker Compose 版本
 2. 系統資源（記憶體、磁碟空間）
 3. 日誌輸出：`docker compose logs`
 4. 服務狀態：`docker compose ps`
 
+---
+
+**最後更新**：2026-01-05
