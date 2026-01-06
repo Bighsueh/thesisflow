@@ -31,5 +31,18 @@ export function getTourById(id: string): TourConfig | undefined {
   return allTours.find((tour) => tour.id === id);
 }
 
+// 根據導覽 ID 獲取對應的路徑
+// 注意：student-interface 無法從其他頁面導航，必須從 Dashboard 進入項目後才能訪問
+export function getPathByTourId(tourId: string): string | null {
+  const reverseMap: Record<string, string> = {
+    'dashboard-intro': '/dashboard',
+    'literature-upload': '/literature',
+    // 'student-interface': '/student/project', // 不支援跨頁面導航（需要先進入項目）
+    'projects-management': '/projects',
+    'groups-join': '/groups',
+  };
+  return reverseMap[tourId] || null;
+}
+
 // 導出各個導覽配置
 export { dashboardTour, groupsTour, literatureTour, projectsTour, studentInterfaceTour };

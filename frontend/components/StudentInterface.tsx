@@ -2630,11 +2630,11 @@ export default function StudentInterface() {
         (msg) => msg.nodeId === currentStepId && msg.role === 'system'
       );
 
-      if (!hasSystemMessage) {
+      if (!hasSystemMessage && currentNode.data.config?.guidance) {
         const systemMessage: Message = {
           id: `system-${currentStepId}-${Date.now()}`,
           role: 'system',
-          content: currentNode.data.config?.guidance || `開始任務：${currentNode.data.label}`,
+          content: currentNode.data.config.guidance,
           timestamp: Date.now(),
           nodeId: currentStepId,
         };

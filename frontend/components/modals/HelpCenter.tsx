@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { modalContentVariants, modalOverlayVariants } from '../../config/animations';
 import { allTours } from '../../config/tours';
 import { useTourStore, type TourConfig } from '../../tourStore';
@@ -38,15 +39,69 @@ const tourIconBgs: Record<string, string> = {
   'groups-join': 'bg-pink-100 text-pink-600',
 };
 
+// 導覽 ID 到路由的映射
+// 注意：student-interface 不在此映射中，因為無法從其他頁面跨頁面導航
+const TOUR_ROUTE_MAP: Record<string, string> = {
+  'dashboard-intro': '/dashboard',
+  'literature-upload': '/literature',
+  // 'student-interface': '/student/project', // 需要在 /student/project 頁面內啟動
+  'projects-management': '/projects',
+  'groups-join': '/groups',
+};
+
+// 路由到導覽 ID 的反向映射
+// 用於過濾：只在對應頁面顯示該頁面的導覽
+const ROUTE_TO_TOUR_ID: Record<string, string> = {
+  '/dashboard': 'dashboard-intro',
+  '/literature': 'literature-upload',
+  '/student/project': 'student-interface', // 只在此頁面顯示，但無法從外部導航進入
+  '/projects': 'projects-management',
+  '/groups': 'groups-join',
+};
+
 export function HelpCenter({ onClose }: HelpCenterProps) {
   const { completedTours, startTour, resetProgress } = useTourStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // 獲取當前頁面對應的導覽 ID
+  const currentTourId = ROUTE_TO_TOUR_ID[location.pathname];
+
+  // 過濾只顯示當前頁面的導覽
+  const visibleTours = currentTourId
+    ? allTours.filter((tour) => tour.id === currentTourId)
+    : allTours; // 如果路由未映射，顯示所有導覽
 
   const handleStartTour = (tour: TourConfig) => {
     onClose();
-    // 延遲啟動導覽，讓 modal 關閉動畫完成
-    setTimeout(() => {
-      startTour(tour.id);
-    }, 300);
+
+    // 取得導覽對應的路由
+    const targetRoute = TOUR_ROUTE_MAP[tour.id];
+
+    if (!targetRoute) {
+      // 找不到對應路由，直接啟動（可能是全局導覽）
+      setTimeout(() => {
+        startTour(tour.id);
+      }, 300);
+      return;
+    }
+
+    // 檢查當前路由是否匹配
+    if (location.pathname !== targetRoute) {
+      // 需要導航到目標頁面
+      setTimeout(() => {
+        navigate(targetRoute);
+        // 導航後延遲啟動導覽，等待頁面渲染完成
+        setTimeout(() => {
+          startTour(tour.id);
+        }, 500); // 導航後額外 500ms 延遲
+      }, 300);
+    } else {
+      // 已在正確頁面，直接啟動
+      setTimeout(() => {
+        startTour(tour.id);
+      }, 300);
+    }
   };
 
   const handleReset = () => {
@@ -97,7 +152,7 @@ export function HelpCenter({ onClose }: HelpCenterProps) {
 
         {/* Tour List */}
         <div className="p-6 space-y-3 overflow-y-auto max-h-[calc(80vh-200px)]">
-          {allTours.map((tour) => {
+          {visibleTours.map((tour) => {
             const isCompleted = completedTours.has(tour.id);
             const icon = tourIcons[tour.id] || <HelpCircle size={20} />;
             const iconBg = tourIconBgs[tour.id] || 'bg-gray-100 text-gray-600';

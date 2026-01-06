@@ -508,13 +508,12 @@ export const useStore = create<AppState>((set, get) => ({
       const newNodeData: any = { label: '', type: nodeType, config: {} };
       if (nodeType === 'resource') {
         newNodeData.label = '閱讀引導';
-        newNodeData.config = { guidance: '請閱讀相關文獻...', minEvidence: 0 };
+        newNodeData.config = { minEvidence: 0 };
       }
       if (nodeType === 'task_summary') {
         newNodeData.label = '任務：摘要';
         newNodeData.config = {
           minWords: 150,
-          guidance: '請撰寫摘要...',
           sections: [
             {
               key: 'a1_purpose',
@@ -632,13 +631,15 @@ export const useStore = create<AppState>((set, get) => ({
 
     const nodes: AppNode[] = project.nodes.map((n) => {
       const defaultLabel = getDefaultLabel(n.type, n.label);
-      // 如果 config 中的 guidance 是英文預設值，也替換成繁體中文
+      // 如果 config 中的 guidance 是英文預設值，移除它
       let config = n.config || {};
-      if (n.type === 'resource' && (!config.guidance || config.guidance.match(/^Please read/i))) {
-        config = { ...config, guidance: '請閱讀相關文獻...' };
+      if (n.type === 'resource' && config.guidance && config.guidance.match(/^Please read/i)) {
+        const { guidance, ...rest } = config;
+        config = rest;
       }
-      if (n.type === 'task_summary' && (!config.guidance || config.guidance.match(/^Summarize/i))) {
-        config = { ...config, guidance: '請撰寫摘要...' };
+      if (n.type === 'task_summary' && config.guidance && config.guidance.match(/^Summarize/i)) {
+        const { guidance, ...rest } = config;
+        config = rest;
       }
       // 如果 dimensions 是英文，替換成繁體中文
       if (n.type === 'task_comparison' && config.dimensions) {

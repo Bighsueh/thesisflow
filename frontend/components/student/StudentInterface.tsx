@@ -27,10 +27,11 @@ import {
   Target,
   Sparkles,
   LayoutTemplate,
+  LogOut,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getIncomers, getOutgoers } from 'reactflow';
 import { useAuthStore } from '../../authStore';
 import { useAutoSave } from '../../hooks/useAutoSave';
@@ -38,6 +39,7 @@ import { useStore } from '../../store';
 import { ChatMessage } from '../ChatMessage';
 import { EvidenceCreateDialog } from '../EvidenceCreateDialog';
 import { PDFSelector } from '../PDFSelector';
+import { HelpButton } from '../tour/HelpButton';
 import {
   AppNode,
   Document,
@@ -1362,16 +1364,24 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     }
   };
 
-  if (!isOpen) return null;
   return (
     <>
-      <div
-        className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity"
-        onClick={onClose}
-      ></div>
+      {isOpen && (
+        <div
+          className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity"
+          onClick={onClose}
+        />
+      )}
       <div
         data-tour="library-panel"
-        className={`absolute inset-y-0 left-0 z-50 w-[800px] bg-white shadow-2xl transform transition-transform duration-300 ease-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`absolute inset-y-0 left-0 z-50 w-[800px] bg-white shadow-2xl flex flex-col transition-all duration-300 ease-out ${
+          isOpen
+            ? 'translate-x-0 opacity-100 visible'
+            : '-translate-x-full opacity-0 invisible pointer-events-none'
+        }`}
+        style={{
+          willChange: isOpen ? 'transform, opacity' : 'auto',
+        }}
       >
         <div className="h-14 border-b border-slate-100 flex items-center justify-between px-6 bg-white shrink-0">
           <div className="flex items-center space-x-2">
@@ -2760,11 +2770,11 @@ export default function StudentInterface() {
         (msg) => msg.nodeId === currentStepId && msg.role === 'system'
       );
 
-      if (!hasSystemMessage) {
+      if (!hasSystemMessage && currentNode.data.config?.guidance) {
         const systemMessage: Message = {
           id: `system-${currentStepId}-${Date.now()}`,
           role: 'system',
-          content: currentNode.data.config?.guidance || `開始任務：${currentNode.data.label}`,
+          content: currentNode.data.config.guidance,
           timestamp: Date.now(),
           nodeId: currentStepId,
         };
@@ -2877,19 +2887,26 @@ export default function StudentInterface() {
               {isCollapsed ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
             </button>
           </div>
-          {!isCollapsed && (
-            <div className="flex-1 overflow-hidden relative animate-fadeIn">
-              {activeTab === 'chat' ? (
-                <div data-tour="chat-panel" className="h-full">
-                  <ChatPanelWrapper currentNode={currentNode} />
-                </div>
-              ) : (
-                <div data-tour="task-panel" className="h-full">
-                  <TaskPanelWrapper currentNode={currentNode} />
-                </div>
-              )}
+          <div
+            className={`flex-1 overflow-hidden relative transition-all duration-300 ${
+              isCollapsed
+                ? 'opacity-0 invisible pointer-events-none h-0'
+                : 'opacity-100 visible animate-fadeIn'
+            }`}
+          >
+            <div
+              data-tour="chat-panel"
+              className={`h-full ${activeTab === 'chat' ? 'block' : 'hidden'}`}
+            >
+              <ChatPanelWrapper currentNode={currentNode} />
             </div>
-          )}
+            <div
+              data-tour="task-panel"
+              className={`h-full ${activeTab === 'task' ? 'block' : 'hidden'}`}
+            >
+              <TaskPanelWrapper currentNode={currentNode} />
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -2932,20 +2949,49 @@ export default function StudentInterface() {
         .cursor-crosshair { cursor: crosshair; }
       `}</style>
 
-      {/* Header */}
-      <header className="h-14 bg-white/80 backdrop-blur-lg border-b border-slate-200 shrink-0 flex items-center justify-between px-6 z-50 relative">
-        <div className="flex items-center space-x-2">
-          <div className="h-8 w-8 bg-gradient-to-tr from-indigo-600 to-purple-500 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200">
+      {/* Navigation Bar */}
+      <nav className="h-14 bg-white/80 backdrop-blur-lg border-b border-slate-200 shrink-0 flex items-center justify-between px-6 z-50 relative">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="h-8 w-8 bg-gradient-to-tr from-indigo-600 to-purple-500 rounded-lg flex items-center justify-center text-white shadow-lg shadow-indigo-200 group-hover:shadow-indigo-300 transition-all">
             <LayoutTemplate size={18} />
           </div>
-          <span className="font-bold text-lg tracking-tight text-slate-800">ThesisFlow</span>
+          <span className="font-bold text-lg tracking-tight text-slate-800 group-hover:text-indigo-600 transition-colors">
+            ThesisFlow
+          </span>
+        </Link>
+
+        {/* Right Side Actions */}
+        <div className="flex items-center gap-3">
+          {/* Help Button */}
+          <HelpButton />
+
+          {/* User Menu */}
+          <Link to="/profile">
+            <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                <p className="text-xs text-gray-500">學生</p>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-xs hover:bg-indigo-200 transition-colors">
+                {getUserInitials()}
+              </div>
+            </div>
+          </Link>
+
+          {/* Logout Button */}
+          <button
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white/50 rounded-xl transition-all"
+            title="登出"
+          >
+            <LogOut size={18} />
+          </button>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="h-8 w-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-xs">
-            {getUserInitials()}
-          </div>
-        </div>
-      </header>
+      </nav>
 
       {/* Main Content */}
       <div className="flex-1 relative z-10 overflow-hidden">{renderContent()}</div>
