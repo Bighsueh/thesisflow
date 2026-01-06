@@ -67,9 +67,10 @@ export function TourOverlay() {
     if (!isActive) return;
 
     // 重試機制：嘗試多次尋找目標元素（動態組件可能需要時間渲染）
+    // 優化：減少重試次數和增加間隔，以降低效能消耗
     let attempts = 0;
-    const maxAttempts = 5;
-    const retryDelay = 200; // ms
+    const maxAttempts = 3; // 從 5 減少到 3
+    const retryDelay = 400; // 從 200ms 增加到 400ms
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
     const tryUpdateTarget = () => {
@@ -118,16 +119,18 @@ export function TourOverlay() {
     tryUpdateTarget();
 
     // Debounced resize handler
-    const debouncedUpdate = debounce(updateTargetRect, 100);
+    // 優化：增加 debounce 延遲從 100ms 到 300ms，減少頻繁更新
+    const debouncedUpdate = debounce(updateTargetRect, 300);
     window.addEventListener('resize', debouncedUpdate);
-    window.addEventListener('scroll', debouncedUpdate, true);
+    // 優化：scroll 事件改為非 capture 模式，減少事件觸發
+    window.addEventListener('scroll', debouncedUpdate);
 
     return () => {
       if (retryTimer) {
         clearTimeout(retryTimer);
       }
       window.removeEventListener('resize', debouncedUpdate);
-      window.removeEventListener('scroll', debouncedUpdate, true);
+      window.removeEventListener('scroll', debouncedUpdate);
     };
   }, [isActive, currentStep, currentTour]);
 
