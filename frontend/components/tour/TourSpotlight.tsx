@@ -19,7 +19,7 @@ export function TourSpotlight({
   targetRect,
   shape = 'rect',
   pulse = true,
-  padding = 8,
+  padding = 16, // 增加從 8 到 16，避免覆蓋文字
 }: TourSpotlightProps) {
   // 獲取設備效能配置（用於響應式視覺效果）
   const { visualConfig } = useMemo(() => getDeviceConfig(), []);

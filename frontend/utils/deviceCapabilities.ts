@@ -79,25 +79,25 @@ export function getVisualConfig(performance: PerformanceLevel): VisualConfig {
   const configs: Record<PerformanceLevel, VisualConfig> = {
     high: {
       spotlightBlur: 25, // SVG mask 高斯模糊，營造柔和光暈
-      backdropBlur: 12, // 背景毛玻璃效果
-      backdropSaturate: 1.2, // 增加背景飽和度，提升層次感
-      maskOpacity: 0.75, // 70% 半透明黑色遮罩
+      backdropBlur: 6, // 背景毛玻璃效果（降低，使外部更清晰）
+      backdropSaturate: 1.1, // 飽和度適度
+      maskOpacity: 0.45, // 45% 半透明黑色遮罩（更透亮）
       pulseEnabled: true, // 啟用脈動效果，吸引眼球
       pulseDuration: 1.8, // 1.8 秒呼吸節奏
     },
     medium: {
       spotlightBlur: 22, // 稍微降低模糊強度
-      backdropBlur: 10, // 適度毛玻璃效果
-      backdropSaturate: 1.1, // 降低飽和度增幅
-      maskOpacity: 0.7, // 70% 不透明度
+      backdropBlur: 5, // 適度毛玻璃效果（降低）
+      backdropSaturate: 1.05, // 飽和度適度
+      maskOpacity: 0.42, // 42% 不透明度（更透亮）
       pulseEnabled: true, // 仍然啟用脈動
       pulseDuration: 1.5, // 稍微加快節奏
     },
     low: {
       spotlightBlur: 18, // 輕微模糊
-      backdropBlur: 8, // 最小毛玻璃效果
+      backdropBlur: 4, // 最小毛玻璃效果（降低）
       backdropSaturate: 1.0, // 無飽和度增幅
-      maskOpacity: 0.65, // 降低遮罩不透明度
+      maskOpacity: 0.4, // 40% 遮罩（更透亮）
       pulseEnabled: false, // 禁用脈動以減少 GPU 負擔
       pulseDuration: 1.5, // (未使用)
     },

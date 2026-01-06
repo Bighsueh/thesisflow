@@ -10,7 +10,7 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
-  const _isLanding = location.pathname === '/';
+  const isLanding = location.pathname === '/';
   const isLogin = location.pathname === '/login';
 
   // 登入頁面不顯示導航
@@ -131,8 +131,8 @@ export function Navigation() {
               </>
             ) : (
               <>
-                {/* 幫助按鈕 */}
-                <HelpButton />
+                {/* 幫助按鈕 - Landing Page 不顯示 */}
+                {!isLanding && <HelpButton />}
 
                 <Link to="/profile">
                   <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
