@@ -1,14 +1,3 @@
-import {
-  Edge,
-  addEdge,
-  OnNodesChange,
-  OnEdgesChange,
-  OnConnect,
-  applyNodeChanges,
-  applyEdgeChanges,
-  getOutgoers,
-  getIncomers,
-} from 'reactflow';
 import { create } from 'zustand';
 import { chatService } from './services/chatService';
 import { cohortService } from './services/cohortService';
@@ -19,7 +8,6 @@ import { studentService } from './services/studentService';
 import { taskService } from './services/taskService';
 import { usageService } from './services/usageService';
 import {
-  AppNode,
   Message,
   Document,
   LogEntry,
@@ -37,19 +25,8 @@ import {
 } from './types';
 
 interface AppState {
-  nodes: AppNode[];
-  edges: Edge[];
-  onNodesChange: OnNodesChange;
-  onEdgesChange: OnEdgesChange;
-  onConnect: OnConnect;
-  setNodes: (nodes: AppNode[]) => void;
-  addNode: (node: AppNode) => void;
-  updateNodeData: (id: string, data: any) => void;
-  selectedNodeId: string | null;
-  setSelectedNodeId: (id: string | null) => void;
-
   projects: Project[];
-  loadProjects: () => Promise<void>;
+  loadProjects: (cohortId?: string) => Promise<void>;
   activeProjectId: string | null;
   enterProject: (projectId: string) => Promise<void>;
   exitProject: () => void;
@@ -58,14 +35,10 @@ interface AppState {
     title: string;
     semester?: string;
     tags?: string[];
+    task_config?: any;
+    cohort_id?: string;
   }) => Promise<Project>;
   deleteProject: (projectId: string) => Promise<void>;
-  ensureSingleStartNode: () => void;
-  appendStageNode: (
-    nodeType: 'resource' | 'task_summary' | 'task_comparison' | 'task_synthesis',
-    position?: { x: number; y: number }
-  ) => void;
-  deleteNodeById: (id: string) => void;
   cohorts: Cohort[];
   loadCohorts: () => Promise<void>;
   createCohort: (payload: {
@@ -112,7 +85,7 @@ interface AppState {
     userId?: string;
   }) => Promise<UsageRecord[]>;
 
-  currentStepId: string | null;
+  // currentStepId: 已移除，改用固定的兩個任務
 
   documents: Document[];
   pdfCache: Record<string, { url: string; createdAt: number }>;
@@ -167,8 +140,6 @@ interface AppState {
 
   addLog: (eventType: string, details: any) => void;
   startFlow: () => void;
-  navigateNext: () => void;
-  navigatePrev: () => void;
 
   submitTaskA: (docId: string, content: TaskAContent) => Promise<void>;
   updateTaskBRow: (
@@ -184,9 +155,8 @@ interface AppState {
   exportData: () => void;
   getFileUrl: (objectKey: string) => Promise<string>;
   getCachedFileUrl: (objectKey: string) => Promise<string>;
-  initializeTaskBDataForNode: (nodeId: string, dimensions: string[]) => void;
-  saveWorkflowState: () => Promise<void>;
-  loadWorkflowState: (projectId: string) => Promise<void>;
+  saveTaskState: () => Promise<void>;
+  loadTaskState: (projectId: string) => Promise<void>;
 
   // Chat 相關方法
   addChatMessage: (message: Message) => void;
@@ -214,25 +184,9 @@ const debouncedSave = (saveFn: () => Promise<void>, delay: number = 1000) => {
 };
 
 export const useStore = create<AppState>((set, get) => ({
-  nodes: [],
-  edges: [],
-  selectedNodeId: null,
-  onNodesChange: (changes) => set({ nodes: applyNodeChanges(changes, get().nodes) as AppNode[] }),
-  onEdgesChange: (changes) => set({ edges: applyEdgeChanges(changes, get().edges) }),
-  onConnect: (connection) => set({ edges: addEdge(connection, get().edges) }),
-  setNodes: (nodes) => set({ nodes }),
-  addNode: (node) => set((state) => ({ nodes: [...state.nodes, node] })),
-  updateNodeData: (id, data) =>
-    set((state) => ({
-      nodes: state.nodes.map((node) =>
-        node.id === id ? { ...node, data: { ...node.data, ...data } } : node
-      ),
-    })),
-  setSelectedNodeId: (id) => set({ selectedNodeId: id }),
-
   projects: [],
-  loadProjects: async () => {
-    const projects = await projectService.loadProjects();
+  loadProjects: async (cohortId?: string) => {
+    const projects = await projectService.loadProjects(cohortId);
     set({ projects });
   },
   cohorts: [],
@@ -319,47 +273,19 @@ export const useStore = create<AppState>((set, get) => ({
     return usage;
   },
   saveProject: async (meta) => {
-    const state = get();
-    // 去除重複 id 的節點並且確保僅有一個 start 節點，避免 DB 主鍵衝突
-    const seenIds = new Set<string>();
-    let startKept = false;
-    const uniqueNodes: AppNode[] = [];
-    for (const n of state.nodes) {
-      if (seenIds.has(n.id)) continue;
-      if (n.type === 'startNode' || n.data?.type === 'start') {
-        if (startKept) continue;
-        startKept = true;
-      }
-      seenIds.add(n.id);
-      uniqueNodes.push(n);
-    }
-
-    const nodesPayload = uniqueNodes.map((n) => ({
-      id: n.id,
-      type: (n.data.type || 'resource') as any,
-      label: n.data.label,
-      config: n.data.config,
-      position: n.position,
-    }));
-    const edgesPayload = state.edges.map((e) => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-      data: e.data,
-    }));
-    const body = JSON.stringify({
+    const body = {
       title: meta.title,
       semester: meta.semester,
       tags: meta.tags || [],
-      nodes: nodesPayload,
-      edges: edgesPayload,
-    });
+      task_config: meta.task_config || { summary: { enabled: true, sections: [], guidance: '' }, comparison: { enabled: true, dimensions: [], guidance: '' } },
+      cohort_id: meta.cohort_id, // 新架構：專案屬於群組
+    };
 
     let saved: Project;
     if (meta.id) {
-      saved = await projectService.updateProject(meta.id, JSON.parse(body));
+      saved = await projectService.updateProject(meta.id, body);
     } else {
-      saved = await projectService.saveProject(JSON.parse(body));
+      saved = await projectService.saveProject(body);
     }
     set((s) => {
       const other = s.projects.filter((p) => p.id !== saved.id);
@@ -375,334 +301,24 @@ export const useStore = create<AppState>((set, get) => ({
       get().exitProject();
     }
   },
-  ensureSingleStartNode: () => {
-    set((state) => {
-      const nodeIdsToKeep = new Set<string>();
-      const filteredNodes: AppNode[] = [];
-      let startNode: AppNode | null = null;
-      let endNode: AppNode | null = null;
-      for (const n of state.nodes) {
-        if (nodeIdsToKeep.has(n.id)) continue;
-        const isStart = n.type === 'startNode' || (n as any).data?.type === 'start';
-        const isEnd = (n as any).data?.type === 'end' || n.type === 'endNode';
-        if (isStart) {
-          if (startNode) continue;
-          startNode = n;
-        }
-        if (isEnd) {
-          if (endNode) continue;
-          endNode = n;
-        }
-        nodeIdsToKeep.add(n.id);
-        filteredNodes.push(n);
-      }
-
-      // 若缺少 start / end，自動補上
-      if (!startNode) {
-        startNode = {
-          id: genId(),
-          type: 'startNode',
-          position: { x: 240, y: 80 },
-          data: { label: '開始', type: 'start' as any, config: {} },
-        } as AppNode;
-        filteredNodes.unshift(startNode);
-      }
-      if (!endNode) {
-        endNode = {
-          id: genId(),
-          type: 'endNode' as any,
-          position: { x: 240, y: 200 },
-          data: { label: '結束流程', type: 'end' as any, config: {} },
-        } as AppNode;
-        filteredNodes.push(endNode);
-      }
-
-      nodeIdsToKeep.add(startNode.id);
-      nodeIdsToKeep.add(endNode.id);
-
-      // 僅保留有效節點的 edges，並去除重複 source-target
-      const edgeSeen = new Set<string>();
-      const filteredEdges = state.edges.filter((e) => {
-        if (!nodeIdsToKeep.has(e.source) || !nodeIdsToKeep.has(e.target)) return false;
-        const key = `${e.source}->${e.target}`;
-        if (edgeSeen.has(key)) return false;
-        edgeSeen.add(key);
-        return true;
-      });
-
-      // 僅在「只有 start 與 end 兩個節點」時才強制建立 start -> end 連線
-      const middleCount = filteredNodes.filter(
-        (n) =>
-          n.id !== startNode!.id &&
-          n.id !== endNode!.id &&
-          (n as any).data?.type !== 'start' &&
-          (n as any).data?.type !== 'end'
-      ).length;
-      if (middleCount === 0) {
-        const hasStartEnd = filteredEdges.some(
-          (e) => e.source === startNode!.id && e.target === endNode!.id
-        );
-        if (!hasStartEnd) {
-          filteredEdges.push({ id: genId(), source: startNode.id, target: endNode.id, data: {} });
-        }
-      }
-
-      return {
-        nodes: filteredNodes,
-        edges: filteredEdges,
-        currentStepId:
-          state.currentStepId && nodeIdsToKeep.has(state.currentStepId)
-            ? state.currentStepId
-            : filteredNodes.find((n) => n.type === 'startNode')?.id || filteredNodes[0]?.id || null,
-      };
-    });
-  },
-  appendStageNode: (nodeType, position) =>
-    set((state) => {
-      // 僅允許一般階段型節點
-      if (!['resource', 'task_summary', 'task_comparison', 'task_synthesis'].includes(nodeType)) {
-        return state;
-      }
-
-      const nodes = [...state.nodes];
-      let edges = [...state.edges];
-
-      let startNode =
-        nodes.find((n) => n.type === 'startNode' || (n as any).data?.type === 'start') || null;
-      let endNode =
-        nodes.find((n) => n.type === 'endNode' || (n as any).data?.type === 'end') || null;
-
-      // 若尚未有 start/end，先建立基本骨架
-      if (!startNode) {
-        startNode = {
-          id: genId(),
-          type: 'startNode',
-          position: { x: 120, y: 80 },
-          data: { label: '開始', type: 'start' as any, config: {} },
-        } as AppNode;
-        nodes.push(startNode);
-      }
-      if (!endNode) {
-        endNode = {
-          id: genId(),
-          type: 'endNode' as any,
-          position: { x: 520, y: 80 },
-          data: { label: '結束', type: 'end' as any, config: {} },
-        } as AppNode;
-        nodes.push(endNode);
-        edges.push({ id: genId(), source: startNode.id, target: endNode.id, data: {} });
-      }
-
-      // 找到目前接到 end 的節點，作為插入點；若沒有，使用 start
-      const edgeToEnd = edges.find((e) => e.target === endNode!.id);
-      const tailNode = (edgeToEnd && nodes.find((n) => n.id === edgeToEnd.source)) || startNode!;
-
-      // 移除 tail -> end 的連線
-      edges = edges.filter((e) => !(e.source === tailNode.id && e.target === endNode!.id));
-
-      const basePos = position || {
-        x: (tailNode.position.x + endNode!.position.x) / 2,
-        y: tailNode.position.y + 140,
-      };
-
-      const newNodeData: any = { label: '', type: nodeType, config: {} };
-      if (nodeType === 'resource') {
-        newNodeData.label = '閱讀引導';
-        newNodeData.config = { minEvidence: 0 };
-      }
-      if (nodeType === 'task_summary') {
-        newNodeData.label = '任務：摘要';
-        newNodeData.config = {
-          minWords: 150,
-          sections: [
-            {
-              key: 'a1_purpose',
-              label: 'A1 研究目的 (Purpose)',
-              placeholder: '研究問題為何？',
-              minEvidence: 1,
-            },
-            {
-              key: 'a2_method',
-              label: 'A2 研究方法 (Method)',
-              placeholder: '採用了什麼方法？',
-              minEvidence: 1,
-            },
-            {
-              key: 'a3_findings',
-              label: 'A3 主要發現 (Findings)',
-              placeholder: '核心結論為何？',
-              minEvidence: 1,
-            },
-            {
-              key: 'a4_limitations',
-              label: 'A4 研究限制 (Limitations)',
-              placeholder: '作者自述或觀察到的限制...',
-              minEvidence: 1,
-            },
-          ],
-        };
-      }
-      if (nodeType === 'task_comparison') {
-        newNodeData.label = '任務：比較';
-        newNodeData.config = { dimensions: ['研究目的', '研究方法', '主要發現'], minEvidence: 1 };
-      }
-      if (nodeType === 'task_synthesis') {
-        newNodeData.label = '任務：綜合';
-        newNodeData.config = { minEvidence: 1 };
-      }
-
-      const newNode: AppNode = {
-        id: genId(),
-        type:
-          nodeType === 'resource'
-            ? 'resourceNode'
-            : nodeType === 'task_summary'
-              ? 'summaryNode'
-              : nodeType === 'task_comparison'
-                ? 'comparisonNode'
-                : 'synthesisNode',
-        position: basePos,
-        data: newNodeData,
-      };
-
-      nodes.push(newNode);
-      edges.push({ id: genId(), source: tailNode.id, target: newNode.id, data: {} });
-      edges.push({ id: genId(), source: newNode.id, target: endNode!.id, data: {} });
-
-      return { ...state, nodes, edges };
-    }),
-  deleteNodeById: (id: string) =>
-    set((state) => {
-      const node = state.nodes.find((n) => n.id === id);
-      if (!node) return state;
-      const t = (node as any).data?.type;
-      // start / end 不允許刪除
-      if (t === 'start' || t === 'end') return state;
-
-      const incoming = state.edges.filter((e) => e.target === id);
-      const outgoing = state.edges.filter((e) => e.source === id);
-      const edges = state.edges.filter((e) => e.source !== id && e.target !== id);
-
-      if (incoming.length > 0 && outgoing.length > 0) {
-        const src = incoming[0].source;
-        const tgt = outgoing[0].target;
-        if (src !== tgt && !edges.some((e) => e.source === src && e.target === tgt)) {
-          edges.push({ id: genId(), source: src, target: tgt, data: {} });
-        }
-      }
-
-      const nodes = state.nodes.filter((n) => n.id !== id);
-      const currentStepId =
-        state.currentStepId === id
-          ? nodes.find((n) => n.type === 'startNode')?.id || nodes[0]?.id || null
-          : state.currentStepId;
-
-      return { ...state, nodes, edges, currentStepId };
-    }),
   activeProjectId: null,
   enterProject: async (projectId: string) => {
     const project = get().projects.find((p) => p.id === projectId);
     if (!project) return;
 
-    // 根據節點類型提供繁體中文預設 label
-    const getDefaultLabel = (nodeType: string, currentLabel?: string): string => {
-      // 如果已有 label 且不是英文預設值，則使用現有 label
-      if (currentLabel && !currentLabel.match(/^New (resource|task_)/i)) {
-        return currentLabel;
-      }
-      // 否則根據類型返回繁體中文預設值
-      switch (nodeType) {
-        case 'start':
-          return '開始';
-        case 'end':
-          return '結束流程';
-        case 'resource':
-          return '閱讀引導';
-        case 'task_summary':
-          return '任務：摘要';
-        case 'task_comparison':
-          return '任務：比較';
-        case 'task_synthesis':
-          return '任務：綜合';
-        default:
-          return currentLabel || '未命名節點';
-      }
-    };
-
-    const nodes: AppNode[] = project.nodes.map((n) => {
-      const defaultLabel = getDefaultLabel(n.type, n.label);
-      // 如果 config 中的 guidance 是英文預設值，移除它
-      let config = n.config || {};
-      if (n.type === 'resource' && config.guidance && config.guidance.match(/^Please read/i)) {
-        const { guidance, ...rest } = config;
-        config = rest;
-      }
-      if (n.type === 'task_summary' && config.guidance && config.guidance.match(/^Summarize/i)) {
-        const { guidance, ...rest } = config;
-        config = rest;
-      }
-      // 如果 dimensions 是英文，替換成繁體中文
-      if (n.type === 'task_comparison' && config.dimensions) {
-        const dimensionMap: Record<string, string> = {
-          Purpose: '研究目的',
-          Method: '研究方法',
-          Result: '主要發現',
-          Findings: '主要發現',
-        };
-        config = {
-          ...config,
-          dimensions: config.dimensions.map((d: string) => dimensionMap[d] || d),
-        };
-      }
-
-      return {
-        id: n.id,
-        type:
-          n.type === 'start'
-            ? 'startNode'
-            : n.type === 'end'
-              ? 'endNode'
-              : n.type === 'resource'
-                ? 'resourceNode'
-                : n.type === 'task_summary'
-                  ? 'summaryNode'
-                  : n.type === 'task_comparison'
-                    ? 'comparisonNode'
-                    : n.type === 'task_synthesis'
-                      ? 'synthesisNode'
-                      : 'default',
-        position: {
-          x: (n.position as any)?.x ?? 0,
-          y: (n.position as any)?.y ?? 0,
-        },
-        data: { label: defaultLabel, type: n.type as any, config },
-      };
-    });
-    const edges: Edge[] = project.edges.map((e) => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-      data: e.data,
-    }));
     set({
       activeProjectId: projectId,
-      nodes,
-      edges,
       chatTimeline: [], // 重置對話時間線
       currentWidgetState: {}, // 重置 Widget 狀態
       activeEvidenceIds: [], // 重置選中的證據
       taskBData: [], // 重置 taskBData
     });
-    get().ensureSingleStartNode();
-    const startNode = get().nodes.find((n) => n.type === 'startNode') || get().nodes[0];
-    set({ currentStepId: startNode ? startNode.id : null });
-    await get().loadDocuments(projectId);
-    // 載入保存的 workflow 狀態
-    await get().loadWorkflowState(projectId);
-  },
-  exitProject: () => set({ activeProjectId: null, currentStepId: null, nodes: [], edges: [] }),
 
-  currentStepId: null,
+    await get().loadDocuments(projectId);
+    // 載入保存的任務狀態
+    await get().loadTaskState(projectId);
+  },
+  exitProject: () => set({ activeProjectId: null }),
 
   documents: [],
   pdfCache: {},
@@ -870,50 +486,10 @@ export const useStore = create<AppState>((set, get) => ({
     })),
 
   startFlow: () => {
-    const { nodes } = get();
-    const startNode = nodes.find((n) => n.type === 'startNode') || nodes[0];
-    if (startNode) set({ currentStepId: startNode.id });
+    // Flow navigation removed - fixed tasks used instead
   },
 
-  navigateNext: () => {
-    const { nodes, edges, currentStepId } = get();
-    if (!currentStepId) {
-      const startNode = nodes.find((n) => n.type === 'startNode');
-      if (startNode) set({ currentStepId: startNode.id });
-      return;
-    }
-    const currentNode = nodes.find((n) => n.id === currentStepId);
-    if (!currentNode) return;
-    const outgoers = getOutgoers(currentNode, nodes, edges);
-    if (outgoers.length > 0) {
-      set({ currentStepId: outgoers[0].id });
-      return;
-    }
-    // 若沒有連出去的邊，嘗試選擇下一個非 start 節點，避免流程卡住
-    const fallback =
-      nodes.find((n) => n.id !== currentStepId && n.type !== 'startNode') ||
-      nodes.find((n) => n.id !== currentStepId);
-    if (fallback) set({ currentStepId: fallback.id });
-  },
-
-  navigatePrev: () => {
-    const { nodes, edges, currentStepId } = get();
-    if (!currentStepId) return;
-    const currentNode = nodes.find((n) => n.id === currentStepId);
-    if (!currentNode) return;
-    // 如果是 start 節點，不允許後退
-    if (currentNode.type === 'startNode' || currentNode.data?.type === 'start') return;
-    const incomers = getIncomers(currentNode, nodes, edges);
-    if (incomers.length > 0) {
-      set({ currentStepId: incomers[0].id });
-      return;
-    }
-    // 若沒有連進來的邊，嘗試選擇 start 節點
-    const startNode = nodes.find(
-      (n) => n.type === 'startNode' || (n as any).data?.type === 'start'
-    );
-    if (startNode) set({ currentStepId: startNode.id });
-  },
+  // navigateNext 和 navigatePrev 已移除 - 使用固定的兩個任務代替
 
   submitTaskA: async (docId: string, content: TaskAContent) => {
     const state = get();
@@ -958,7 +534,7 @@ export const useStore = create<AppState>((set, get) => ({
       return { taskBData: newData };
     });
     // 使用 debounce 自動保存
-    debouncedSave(() => get().saveWorkflowState());
+    debouncedSave(() => get().saveTaskState());
   },
   addTaskBRow: () =>
     set((state) => ({
@@ -1014,7 +590,7 @@ export const useStore = create<AppState>((set, get) => ({
   updateTaskC: (field, value) => {
     set((state) => ({ taskCData: { ...state.taskCData, [field]: value } }));
     // 使用 debounce 自動保存
-    debouncedSave(() => get().saveWorkflowState());
+    debouncedSave(() => get().saveTaskState());
   },
   submitTaskCCheck: async () => {
     const state = get();
@@ -1110,18 +686,13 @@ export const useStore = create<AppState>((set, get) => ({
       currentWidgetState: { ...state.currentWidgetState, [nodeId]: widgetData },
     }));
     // 使用 debounce 自動保存
-    debouncedSave(() => get().saveWorkflowState());
+    debouncedSave(() => get().saveTaskState());
   },
 
   sendCoachMessage: async (message: string, context?: any) => {
     const state = get();
-    if (!state.activeProjectId || !state.currentStepId) {
-      throw new Error('尚未選擇專案或節點');
-    }
-
-    const currentNode = state.nodes.find((n) => n.id === state.currentStepId);
-    if (!currentNode) {
-      throw new Error('找不到當前節點');
+    if (!state.activeProjectId) {
+      throw new Error('尚未選擇專案');
     }
 
     // 檢查當前文檔的 RAG 狀態
@@ -1191,7 +762,7 @@ export const useStore = create<AppState>((set, get) => ({
 
       const res = await chatService.sendMessage(
         state.activeProjectId,
-        state.currentStepId!,
+        'general', // 不再使用節點ID，使用通用標識符
         message,
         chatContext
       );
@@ -1201,7 +772,6 @@ export const useStore = create<AppState>((set, get) => ({
         role: 'coach',
         content: res.message,
         timestamp: Date.now(),
-        nodeId: state.currentStepId,
       };
 
       get().addChatMessage(aiMessage);
@@ -1219,16 +789,15 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  completeNode: (nodeId: string) => {
+  completeNode: (_nodeId: string) => {
     const completeMessage: Message = {
       id: genId(),
       role: 'status',
       content: '節點已完成',
       timestamp: Date.now(),
-      nodeId,
     };
     get().addChatMessage(completeMessage);
-    get().navigateNext();
+    // Flow navigation removed - tasks are always available
   },
 
   setActiveEvidenceIds: (ids: string[]) => set({ activeEvidenceIds: ids }),
@@ -1278,47 +847,38 @@ export const useStore = create<AppState>((set, get) => ({
     set({ taskBData: newTaskBData });
   },
 
-  saveWorkflowState: async () => {
+  saveTaskState: async () => {
     const state = get();
-    if (!state.activeProjectId || !state.currentStepId) return;
+    if (!state.activeProjectId) return;
 
     try {
       const payload = {
         project_id: state.activeProjectId,
-        node_id: state.currentStepId,
-        widget_state: state.currentWidgetState,
-        task_b_data: state.taskBData,
-        task_c_data: state.taskCData,
+        summary_state: state.currentWidgetState['summary'] || {},
+        comparison_state: state.taskBData || [],
       };
-      await projectService.saveWorkflowState(state.activeProjectId, payload);
+      await projectService.saveTaskState(state.activeProjectId, payload);
     } catch (error) {
-      console.error('保存 workflow 狀態失敗:', error);
+      console.error('保存任務狀態失敗:', error);
       // 不拋出錯誤，避免影響用戶體驗
     }
   },
 
-  loadWorkflowState: async (projectId: string) => {
+  loadTaskState: async (projectId: string) => {
     try {
-      if (!projectService || typeof projectService.loadWorkflowState !== 'function') {
-        console.error('projectService.loadWorkflowState is not available');
+      if (!projectService || typeof projectService.loadTaskState !== 'function') {
+        console.error('projectService.loadTaskState is not available');
         return;
       }
-      const state = await projectService.loadWorkflowState(projectId);
-      if (state) {
+      const taskState = await projectService.loadTaskState(projectId);
+      if (taskState) {
         set({
-          currentStepId: state.node_id || null,
-          currentWidgetState: state.widget_state || {},
-          taskBData: state.task_b_data || [],
-          taskCData: state.task_c_data || {
-            c1_theme: { text: '', snippetIds: [] },
-            c2_evidence: { text: '', snippetIds: [] },
-            c3_boundary: { text: '', snippetIds: [] },
-            c4_gap: { text: '', snippetIds: [] },
-          },
+          currentWidgetState: taskState.summary_state ? { summary: taskState.summary_state, comparison: {} } : {},
+          taskBData: taskState.comparison_state || [],
         });
       }
     } catch (error) {
-      console.error('載入 workflow 狀態失敗:', error);
+      console.error('載入任務狀態失敗:', error);
       // 不拋出錯誤，如果沒有保存的狀態就使用預設值
     }
   },

@@ -6,19 +6,14 @@ import { useAuthStore } from '../../authStore';
 import { Button } from '../ui/Button';
 
 interface TeacherSidebarProps {
-  activeSection: 'flows' | 'accounts' | 'groups';
-  onSectionChange: (section: 'flows' | 'accounts' | 'groups') => void;
+  activeSection: 'accounts' | 'groups';
+  onSectionChange: (section: 'accounts' | 'groups') => void;
 }
 
 export function TeacherSidebar({ activeSection, onSectionChange }: TeacherSidebarProps) {
   const { user, logout } = useAuthStore();
 
   const navItems = [
-    {
-      id: 'flows' as const,
-      label: '教學流程管理',
-      icon: <Workflow size={20} />,
-    },
     {
       id: 'accounts' as const,
       label: '學生帳號管理',

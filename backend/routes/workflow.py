@@ -117,10 +117,10 @@ def update_workflow_state(
         models.WorkflowState.project_id == project_id,
         models.WorkflowState.user_id == current_user.id
     ).first()
-    
+
     if not state:
         raise HTTPException(status_code=404, detail="Workflow state not found")
-    
+
     if payload.node_id is not None:
         state.node_id = payload.node_id
     if payload.widget_state is not None:
@@ -129,11 +129,11 @@ def update_workflow_state(
         state.task_b_data = payload.task_b_data
     if payload.task_c_data is not None:
         state.task_c_data = {**(state.task_c_data or {}), **payload.task_c_data}
-    
+
     state.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(state)
-    
+
     return schemas.WorkflowStateOut(
         id=state.id,
         project_id=state.project_id,
@@ -145,3 +145,83 @@ def update_workflow_state(
         created_at=int(state.created_at.timestamp() * 1000),
         updated_at=int(state.updated_at.timestamp() * 1000),
     )
+
+
+# ============ 新的簡化任務狀態端點 ============
+
+@router.get("/{project_id}/task-state", response_model=dict | None)
+def get_task_state(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """獲取當前用戶在指定專案中的簡化任務狀態"""
+    state = db.query(models.TaskState).filter(
+        models.TaskState.project_id == project_id,
+        models.TaskState.user_id == current_user.id
+    ).first()
+
+    if not state:
+        return None
+
+    return {
+        "id": state.id,
+        "project_id": state.project_id,
+        "user_id": state.user_id,
+        "summary_state": state.summary_state or {},
+        "comparison_state": state.comparison_state or [],
+        "created_at": int(state.created_at.timestamp() * 1000),
+        "updated_at": int(state.updated_at.timestamp() * 1000),
+    }
+
+
+@router.post("/{project_id}/task-state", response_model=dict)
+def save_task_state(
+    project_id: str,
+    payload: dict,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """創建或更新簡化的任務狀態"""
+    # 檢查專案是否存在
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # 查找是否已存在狀態
+    existing_state = db.query(models.TaskState).filter(
+        models.TaskState.project_id == project_id,
+        models.TaskState.user_id == current_user.id
+    ).first()
+
+    if existing_state:
+        # 更新現有狀態
+        if "summary_state" in payload:
+            existing_state.summary_state = payload["summary_state"]
+        if "comparison_state" in payload:
+            existing_state.comparison_state = payload["comparison_state"]
+        existing_state.updated_at = datetime.utcnow()
+        db.commit()
+        db.refresh(existing_state)
+    else:
+        # 創建新狀態
+        new_state = models.TaskState(
+            project_id=project_id,
+            user_id=current_user.id,
+            summary_state=payload.get("summary_state", {}),
+            comparison_state=payload.get("comparison_state", []),
+        )
+        db.add(new_state)
+        db.commit()
+        db.refresh(new_state)
+        existing_state = new_state
+
+    return {
+        "id": existing_state.id,
+        "project_id": existing_state.project_id,
+        "user_id": existing_state.user_id,
+        "summary_state": existing_state.summary_state or {},
+        "comparison_state": existing_state.comparison_state or [],
+        "created_at": int(existing_state.created_at.timestamp() * 1000),
+        "updated_at": int(existing_state.updated_at.timestamp() * 1000),
+    }

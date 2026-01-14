@@ -1,5 +1,6 @@
-import { X, Copy, Plus, RefreshCw } from 'lucide-react';
+import { X, Copy, Plus, RefreshCw, FileText, Clock, Trash2 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../authStore';
 import { useStore } from '../store';
 import { Button } from './ui/Button';
@@ -24,6 +25,7 @@ interface _CohortMember {
 }
 
 export default function CohortDetail({ cohortId }: CohortDetailProps) {
+  const navigate = useNavigate();
   const { hydrate } = useAuthStore();
   const {
     cohorts,
@@ -40,6 +42,7 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
     updateCohort,
     loadUsageRecords,
     usageRecords,
+    deleteProject,
   } = useStore();
 
   const [loading, setLoading] = useState(true);
@@ -65,7 +68,7 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
         setError(null);
         await Promise.all([
           loadCohorts(),
-          loadProjects(),
+          loadProjects(cohortId), // 載入該群組的專案
           loadStudents(),
           loadCohortMembers(cohortId),
           loadUsageRecords({ cohortId }),
@@ -135,19 +138,28 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
     return currentCohort.code.replace(/(\d{3})(?=\d)/g, '$1 ');
   }, [currentCohort]);
 
-  const handleSaveProject = async () => {
-    if (!cohortId) return;
-    setSavingProject(true);
+  const handleDeleteProject = async (projectId: string) => {
+    if (!window.confirm('確定要刪除這個專案嗎？')) return;
     try {
-      await updateCohort(cohortId, { project_id: selectedProject || null });
-      alert('群組設定已更新');
-      await loadCohorts();
+      await deleteProject(projectId);
+      await loadProjects(cohortId); // 重新載入該群組的專案
     } catch (e: any) {
-      alert(e?.message || '更新失敗');
-    } finally {
-      setSavingProject(false);
+      alert(e?.message || '刪除失敗');
     }
   };
+
+  const handleCreateProject = () => {
+    navigate(`/teacher/config?cohortId=${cohortId}`);
+  };
+
+  const handleEditProject = (projectId: string) => {
+    navigate(`/teacher/config/${projectId}`);
+  };
+
+  const cohortProjects = useMemo(
+    () => projects.filter((p) => p.cohort_id === cohortId),
+    [projects, cohortId]
+  );
 
   const handleToggleStudent = (id: string) => {
     setSelectedStudentIds((prev) =>
@@ -257,29 +269,55 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
             </span>
           </div>
         )}
-        <div className="flex gap-3 items-center flex-wrap">
-          <label className="text-sm font-medium text-gray-700">綁定教學流程：</label>
-          <select
-            className="bg-white/70 backdrop-blur-xl border border-white/80 rounded-xl px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all duration-200 shadow-lg shadow-violet-500/5"
-            value={selectedProject || ''}
-            onChange={(e) => setSelectedProject(e.target.value || null)}
-          >
-            <option value="">未綁定</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.title}
-              </option>
-            ))}
-          </select>
-          <Button
-            size="sm"
-            onClick={handleSaveProject}
-            isLoading={savingProject}
-            disabled={savingProject}
-          >
-            儲存設定
+      </GlassCard>
+
+      <GlassCard className="p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900">群組專案</h2>
+          <Button size="sm" leftIcon={<Plus size={16} />} onClick={handleCreateProject}>
+            建立新專案
           </Button>
         </div>
+        {cohortProjects.length === 0 ? (
+          <div className="text-gray-500 text-sm py-8 text-center">
+            此群組尚未有專案。點擊上方按鈕建立新專案。
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {cohortProjects.map((p) => (
+              <GlassCard key={p.id} className="p-4" hoverEffect>
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">{p.title}</h3>
+                    <p className="text-gray-500 text-sm">{p.semester || '未指定學期'}</p>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-500 text-sm">
+                    <FileText size={16} />
+                    <span>任務配置已設定</span>
+                  </div>
+                  {p.updatedAt && (
+                    <div className="text-xs text-gray-400">
+                      最後編輯：{new Date(p.updatedAt).toLocaleDateString('zh-TW')}
+                    </div>
+                  )}
+                  <div className="flex gap-2 pt-3 border-t border-gray-100">
+                    <Button variant="ghost" size="sm" onClick={() => handleEditProject(p.id)}>
+                      編輯
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      leftIcon={<Trash2 size={14} />}
+                      onClick={() => handleDeleteProject(p.id)}
+                    >
+                      刪除
+                    </Button>
+                  </div>
+                </div>
+              </GlassCard>
+            ))}
+          </div>
+        )}
       </GlassCard>
 
       <GlassCard className="p-6">

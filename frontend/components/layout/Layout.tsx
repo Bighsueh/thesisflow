@@ -14,11 +14,11 @@ export function Layout({ children }: LayoutProps) {
   const isTeacher = user?.role === 'teacher';
 
   return (
-    <div className="min-h-screen font-sans text-gray-900 relative">
+    <div className="h-screen font-sans text-gray-900 relative overflow-y-auto">
       <GradientBackground />
       {isTeacher ? <TeacherNavigation /> : <Navigation />}
 
-      <main className="relative z-10 pt-28 pb-16 px-4 min-h-screen">
+      <main className="relative z-10 pt-28 pb-16 px-4 min-h-full">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{

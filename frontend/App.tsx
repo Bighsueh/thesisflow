@@ -4,7 +4,7 @@ import { useAuthStore } from './authStore';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 import StudentInterface from './components/student/StudentInterface';
-import TeacherInterface from './components/TeacherInterface';
+import ProjectConfigEditor from './components/teacher/ProjectConfigEditor';
 import { TourProvider } from './components/tour/TourProvider';
 import { allTours } from './config/tours';
 import { Dashboard } from './pages/Dashboard';
@@ -111,12 +111,25 @@ export function App() {
             }
           />
 
-          {/* Teacher Routes (without Layout) */}
+          {/* Teacher Routes */}
+          {/* 專案配置編輯器 */}
           <Route
-            path="/teacher/designer"
+            path="/teacher/config"
             element={
               <ProtectedRoute requiredRole="teacher">
-                <TeacherInterface />
+                <Layout>
+                  <ProjectConfigEditor />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/config/:projectId"
+            element={
+              <ProtectedRoute requiredRole="teacher">
+                <Layout>
+                  <ProjectConfigEditor />
+                </Layout>
               </ProtectedRoute>
             }
           />

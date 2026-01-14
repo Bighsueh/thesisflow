@@ -12,13 +12,9 @@ export default function TeacherCohort() {
     return null;
   }
 
-  const handleSectionChange = (section: 'flows' | 'accounts' | 'groups') => {
-    if (section === 'groups') {
-      // 如果點擊群組管理，導向教師首頁並切換到群組區塊
-      navigate('/teacher');
-    } else {
-      navigate('/teacher');
-    }
+  const handleSectionChange = (section: 'accounts' | 'groups') => {
+    // 導向教師首頁
+    navigate('/teacher');
   };
 
   return (

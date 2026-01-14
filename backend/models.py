@@ -17,14 +17,26 @@ class Project(Base):
     title = Column(String, nullable=False)
     semester = Column(String, nullable=True)
     tags = Column(JSONB, default=list)
+
+    # 新的簡化配置結構，用以取代 flow_nodes/flow_edges
+    task_config = Column(JSONB, default=dict)
+
+    # 新架構：專案屬於群組（一個群組可以有多個專案）
+    cohort_id = Column(String, ForeignKey("cohorts.id", ondelete="CASCADE"), nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # 保留以支援資料遷移
     flow_nodes = relationship("FlowNode", cascade="all, delete-orphan", back_populates="project")
     flow_edges = relationship("FlowEdge", cascade="all, delete-orphan", back_populates="project")
     documents = relationship("Document", cascade="all, delete-orphan", back_populates="project")
     task_versions = relationship("TaskVersion", cascade="all, delete-orphan", back_populates="project")
-    cohorts = relationship("Cohort", cascade="all, delete-orphan", back_populates="project")
+    cohort = relationship(
+        "Cohort",
+        back_populates="projects",
+        foreign_keys=[cohort_id],
+    )
 
 
 class FlowNode(Base):
@@ -126,11 +138,17 @@ class Cohort(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     name = Column(String, nullable=False)
     code = Column(String, nullable=True)
+    # 保留以向後兼容（deprecated，新架構使用 Project.cohort_id）
     project_id = Column(String, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True)
     teacher_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    project = relationship("Project", back_populates="cohorts")
+    # 新架構：一個群組可以有多個專案
+    projects = relationship(
+        "Project",
+        back_populates="cohort",
+        foreign_keys="Project.cohort_id",
+    )
     teacher = relationship("User", back_populates="cohorts")
     members = relationship("CohortMember", cascade="all, delete-orphan", back_populates="cohort")
 
@@ -165,6 +183,26 @@ class WorkflowState(Base):
     user = relationship("User")
 
     __table_args__ = (UniqueConstraint("project_id", "user_id", name="uq_workflow_state"),)
+
+
+class TaskState(Base):
+    """簡化的任務狀態，取代 WorkflowState（不需要 node_id）"""
+    __tablename__ = "task_states"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    # 固定的兩個任務狀態
+    summary_state = Column(JSONB, default=dict)      # 摘要任務的所有段落資料
+    comparison_state = Column(JSONB, default=list)   # 比較任務的行資料
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    project = relationship("Project")
+    user = relationship("User")
+
+    __table_args__ = (UniqueConstraint("project_id", "user_id", name="uq_task_state"),)
 
 
 class DocumentChunk(Base):

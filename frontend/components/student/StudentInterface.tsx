@@ -56,6 +56,8 @@ import { InstructionCard } from '../widgets/InstructionCard';
 import { MatrixCompare } from '../widgets/MatrixCompare';
 import { SectionWriter } from '../widgets/SectionWriter';
 import { SynthesisWriter } from '../widgets/SynthesisWriter';
+import { TasksPanel } from './TasksPanel';
+import { TaskConfig } from '../../types';
 import '../../utils/pdfConfig';
 
 // --- Shared Components ---
@@ -1137,14 +1139,22 @@ const TaskWidget = ({ currentNode }: { currentNode: AppNode | null }) => {
   return null;
 };
 
-const TaskPanelWrapper = ({ currentNode }: { currentNode: AppNode | null }) => {
+const TaskPanelWrapper = ({
+  projectId,
+  config,
+  documents,
+}: {
+  projectId: string;
+  config: TaskConfig;
+  documents: Document[];
+}) => {
   return (
     <div className="flex flex-col h-full bg-slate-50/30">
       <div className="p-4 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
         <h3 className="text-sm font-bold text-slate-800">任務表單</h3>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
-        <TaskWidget currentNode={currentNode} />
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <TasksPanel projectId={projectId} config={config} documents={documents} />
       </div>
     </div>
   );
@@ -2661,11 +2671,15 @@ export default function StudentInterface() {
     loadDocuments,
     bindDocumentsToProject,
     updateHighlight,
+    documents,
   } = useStore();
   const _navigate = useNavigate();
   const currentNode = nodes.find((n) => n.id === currentStepId);
   const _currentProject = projects.find((p) => p.id === activeProjectId);
-  const _projectCohorts = cohorts.filter((c) => c.project_id === activeProjectId);
+  // 新架構：透過 project.cohort_id 找到所屬群組
+  const _projectCohort = _currentProject?.cohort_id 
+    ? cohorts.find((c) => c.id === _currentProject.cohort_id)
+    : null;
   const [joinCode, setJoinCode] = useState('');
   const [joining, setJoining] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
@@ -2904,7 +2918,13 @@ export default function StudentInterface() {
               data-tour="task-panel"
               className={`h-full ${activeTab === 'task' ? 'block' : 'hidden'}`}
             >
-              <TaskPanelWrapper currentNode={currentNode} />
+              {_currentProject && activeProjectId && (
+                <TaskPanelWrapper
+                  projectId={activeProjectId}
+                  config={_currentProject.task_config}
+                  documents={documents}
+                />
+              )}
             </div>
           </div>
         </div>

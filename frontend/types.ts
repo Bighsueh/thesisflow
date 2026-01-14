@@ -53,13 +53,44 @@ export interface FlowEdgePayload {
   data?: Record<string, any>;
 }
 
+// 新的簡化任務配置結構
+export interface TaskSectionConfig {
+  key: string;
+  label: string;
+  placeholder?: string;
+  minEvidence?: number;
+}
+
+export interface TaskConfigSummary {
+  enabled: boolean;
+  sections: TaskSectionConfig[];
+  guidance?: string;
+  minEvidence?: number;
+}
+
+export interface TaskConfigComparison {
+  enabled: boolean;
+  dimensions: string[];
+  guidance?: string;
+  minEvidence?: number;
+}
+
+export interface NewTaskConfig {
+  summary: TaskConfigSummary;
+  comparison: TaskConfigComparison;
+}
+
 export interface Project {
   id: string;
   title: string;
   semester?: string;
   tags: string[];
-  nodes: FlowNodePayload[];
-  edges: FlowEdgePayload[];
+  // 新的任務配置結構
+  task_config?: NewTaskConfig | Record<string, any>;
+  cohort_id?: string; // 新架構：專案屬於群組
+  // 保留以向後相容
+  nodes?: FlowNodePayload[];
+  edges?: FlowEdgePayload[];
   currentStage?: string;
   progress?: number;
   updatedAt?: number;

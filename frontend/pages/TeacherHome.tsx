@@ -5,12 +5,11 @@ import { StudentAccountSection } from '../components/teacher/StudentAccountSecti
 import { StudentGroupSection } from '../components/teacher/StudentGroupSection';
 import { TeacherLayout } from '../components/teacher/TeacherLayout';
 import { TeacherSidebar } from '../components/teacher/TeacherSidebar';
-import { TeachingFlowSection } from '../components/teacher/TeachingFlowSection';
 
 export default function TeacherHome() {
   const navigate = useNavigate();
   const { user, hydrate } = useAuthStore();
-  const [activeSection, setActiveSection] = useState<'flows' | 'accounts' | 'groups'>('flows');
+  const [activeSection, setActiveSection] = useState<'accounts' | 'groups'>('groups');
 
   useEffect(() => {
     hydrate();
@@ -26,7 +25,6 @@ export default function TeacherHome() {
     <TeacherLayout
       sidebar={<TeacherSidebar activeSection={activeSection} onSectionChange={setActiveSection} />}
     >
-      {activeSection === 'flows' && <TeachingFlowSection />}
       {activeSection === 'accounts' && <StudentAccountSection />}
       {activeSection === 'groups' && <StudentGroupSection />}
     </TeacherLayout>

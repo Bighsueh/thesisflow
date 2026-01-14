@@ -24,6 +24,28 @@ for _env_path in _env_paths:
 
 # 執行資料庫遷移
 auto_migrate_highlights_table()
+
+# Fix missing columns
+from sqlalchemy import text
+from db import SessionLocal
+try:
+    db = SessionLocal()
+    # Check if task_config column exists in projects table
+    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='projects' AND column_name='task_config'"))
+    if not result.fetchone():
+        print("Adding missing task_config column to projects table...")
+        db.execute(text("ALTER TABLE projects ADD COLUMN task_config JSONB DEFAULT '{}'"))
+        db.commit()
+    # Check if cohort_id column exists in projects table
+    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='projects' AND column_name='cohort_id'"))
+    if not result.fetchone():
+        print("Adding missing cohort_id column to projects table...")
+        db.execute(text("ALTER TABLE projects ADD COLUMN cohort_id VARCHAR REFERENCES cohorts(id) ON DELETE CASCADE"))
+        db.commit()
+    db.close()
+except Exception as e:
+    print(f"Migration error: {e}")
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="ThesisFlow API")

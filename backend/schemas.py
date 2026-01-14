@@ -21,16 +21,53 @@ class FlowEdgePayload(BaseModel):
     data: dict | None = None
 
 
+# 新的簡化 TaskConfig schemas
+class TaskSectionConfig(BaseModel):
+    key: str
+    label: str
+    placeholder: Optional[str] = None
+    minEvidence: Optional[int] = 1
+
+
+class TaskConfigSummary(BaseModel):
+    enabled: bool = False
+    sections: List[TaskSectionConfig] = Field(default_factory=list)
+    guidance: str = ""
+    minEvidence: Optional[int] = 1
+
+
+class TaskConfigComparison(BaseModel):
+    enabled: bool = False
+    dimensions: List[str] = Field(default_factory=list)
+    guidance: str = ""
+    minEvidence: Optional[int] = 1
+
+
+class TaskConfig(BaseModel):
+    summary: TaskConfigSummary = Field(default_factory=TaskConfigSummary)
+    comparison: TaskConfigComparison = Field(default_factory=TaskConfigComparison)
+
+
 class ProjectCreate(BaseModel):
     title: str
     semester: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
+    task_config: Optional[TaskConfig] = Field(default_factory=TaskConfig)
+    cohort_id: Optional[str] = None  # 新架構：專案屬於群組
+    # 保留以向後相容
     nodes: List[FlowNodePayload] = Field(default_factory=list)
     edges: List[FlowEdgePayload] = Field(default_factory=list)
 
 
-class ProjectUpdate(ProjectCreate):
-    pass
+class ProjectUpdate(BaseModel):
+    title: Optional[str] = None
+    semester: Optional[str] = None
+    tags: List[str] = Field(default_factory=list)
+    task_config: Optional[TaskConfig] = None
+    cohort_id: Optional[str] = None  # 新架構：專案屬於群組
+    # 保留以向後相容
+    nodes: Optional[List[FlowNodePayload]] = None
+    edges: Optional[List[FlowEdgePayload]] = None
 
 
 class ProjectOut(BaseModel):
@@ -38,8 +75,11 @@ class ProjectOut(BaseModel):
     title: str
     semester: Optional[str]
     tags: List[str]
-    nodes: List[FlowNodePayload]
-    edges: List[FlowEdgePayload]
+    task_config: Optional[dict] = None
+    cohort_id: Optional[str] = None  # 新架構：專案屬於群組
+    # 保留以向後相容
+    nodes: Optional[List[FlowNodePayload]] = None
+    edges: Optional[List[FlowEdgePayload]] = None
 
     class Config:
         from_attributes = True
