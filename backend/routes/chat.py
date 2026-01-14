@@ -100,12 +100,20 @@ async def chat(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    node = db.query(models.FlowNode).filter(
-        models.FlowNode.id == payload.node_id,
-        models.FlowNode.project_id == project_id
-    ).first()
-    if not node:
-        raise HTTPException(status_code=404, detail="Node not found")
+    # 新架構：支援 "general" 作為通用節點 ID（不需要查找實際的 FlowNode）
+    node = None
+    node_label = "學習任務"
+    node_guidance = "請按照指示完成任務"
+    
+    if payload.node_id != "general":
+        node = db.query(models.FlowNode).filter(
+            models.FlowNode.id == payload.node_id,
+            models.FlowNode.project_id == project_id
+        ).first()
+        if not node:
+            raise HTTPException(status_code=404, detail="Node not found")
+        node_label = node.label
+        node_guidance = node.config.get('guidance', '請按照指示完成任務') if node.config else '請按照指示完成任務'
     
     # 構建上下文提示
     context = payload.context
@@ -134,9 +142,9 @@ async def chat(
             )
 
     # 構建系統提示
-    system_prompt_parts = [f"""你是論文寫作教練，正在指導學生完成「{node.label}」任務。
+    system_prompt_parts = [f"""你是論文寫作教練，正在指導學生完成「{node_label}」任務。
 
-當前任務說明：{node.config.get('guidance', '請按照指示完成任務')}"""]
+當前任務說明：{node_guidance}"""]
 
     # 加入當前文檔資訊
     if current_doc_title:

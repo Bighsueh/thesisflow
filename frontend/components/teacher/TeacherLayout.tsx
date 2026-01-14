@@ -9,7 +9,7 @@ interface TeacherLayoutProps {
 
 export function TeacherLayout({ children, sidebar }: TeacherLayoutProps) {
   return (
-    <div className="min-h-screen font-sans text-gray-900 bg-gray-50/30 relative">
+    <div className="h-screen font-sans text-gray-900 bg-gray-50/30 relative overflow-y-auto">
       <GradientBackground />
 
       {sidebar}

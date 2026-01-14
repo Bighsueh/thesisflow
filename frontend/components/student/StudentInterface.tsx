@@ -5,7 +5,6 @@ import {
   File,
   Highlighter,
   ChevronRight,
-  ArrowRight,
   X,
   MessageCircle,
   ClipboardList,
@@ -14,7 +13,6 @@ import {
   ChevronLeft,
   Link as LinkIcon,
   Users,
-  CheckCircle2,
   Upload,
   GripVertical,
   ZoomIn,
@@ -32,32 +30,17 @@ import {
 import React, { useEffect, useRef, useState } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
 import { Link, useNavigate } from 'react-router-dom';
-import { getIncomers, getOutgoers } from 'reactflow';
 import { useAuthStore } from '../../authStore';
-import { useAutoSave } from '../../hooks/useAutoSave';
 import { useStore } from '../../store';
+import { TaskConfig } from '../../types';
 import { ChatMessage } from '../ChatMessage';
 import { EvidenceCreateDialog } from '../EvidenceCreateDialog';
 import { PDFSelector } from '../PDFSelector';
 import { HelpButton } from '../tour/HelpButton';
-import {
-  AppNode,
-  Document,
-  FieldWithEvidence,
-  Message,
-  TaskAContent,
-  ComparisonRow,
-  TaskCContent,
-} from '../types';
+import { AppNode, Document, FieldWithEvidence } from '../types';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-import { ChecklistSubmit } from '../widgets/ChecklistSubmit';
-import { InstructionCard } from '../widgets/InstructionCard';
-import { MatrixCompare } from '../widgets/MatrixCompare';
-import { SectionWriter } from '../widgets/SectionWriter';
-import { SynthesisWriter } from '../widgets/SynthesisWriter';
 import { TasksPanel } from './TasksPanel';
-import { TaskConfig } from '../../types';
 import '../../utils/pdfConfig';
 
 // --- Shared Components ---
@@ -785,358 +768,6 @@ const ChatPanelWrapper = ({ currentNode: _currentNode }: { currentNode: AppNode 
       </div>
     </div>
   );
-};
-
-// Default sections for task_summary (backward compatible)
-const DEFAULT_SECTIONS = [
-  {
-    key: 'a1_purpose',
-    label: 'A1 研究目的 (Purpose)',
-    placeholder: '研究問題為何？',
-    minEvidence: 1,
-  },
-  {
-    key: 'a2_method',
-    label: 'A2 研究方法 (Method)',
-    placeholder: '採用了什麼方法？',
-    minEvidence: 1,
-  },
-  {
-    key: 'a3_findings',
-    label: 'A3 主要發現 (Findings)',
-    placeholder: '核心結論為何？',
-    minEvidence: 1,
-  },
-  {
-    key: 'a4_limitations',
-    label: 'A4 研究限制 (Limitations)',
-    placeholder: '作者自述或觀察到的限制...',
-    minEvidence: 1,
-  },
-];
-
-// TaskWidget component - extracts widget rendering logic from ChatMainPanel
-const TaskWidget = ({ currentNode }: { currentNode: AppNode | null }) => {
-  const {
-    documents,
-    currentWidgetState,
-    updateWidgetState,
-    currentStepId,
-    submitTaskA,
-    taskBData,
-    updateTaskBRow,
-    addTaskBRow,
-    removeTaskBRow,
-    submitTaskBCheck,
-    taskCData,
-    updateTaskC,
-    submitTaskCCheck,
-    initializeTaskBDataForNode,
-    completeNode,
-    nodes,
-    edges,
-    navigateNext,
-    navigatePrev,
-  } = useStore();
-  const autoSave = useAutoSave(1000);
-
-  useEffect(() => {
-    if (currentNode?.data.type === 'task_comparison' && currentNode.data.config?.dimensions) {
-      const dimensions = currentNode.data.config.dimensions;
-      if (dimensions.length > 0 && taskBData.length === 0) {
-        initializeTaskBDataForNode(currentNode.id, dimensions);
-      }
-    }
-  }, [
-    currentStepId,
-    currentNode?.data.config?.dimensions,
-    initializeTaskBDataForNode,
-    taskBData.length,
-  ]);
-
-  const renderNavigationButtons = () => {
-    if (!currentNode) return null;
-    const incomers = getIncomers(currentNode, nodes, edges);
-    const outgoers = getOutgoers(currentNode, nodes, edges);
-    const hasPrevious = incomers.length > 0 && currentNode.data.type !== 'start';
-    const hasNext = outgoers.length > 0 && currentNode.data.type !== 'end';
-    return (
-      <div className="card bg-base-100 border border-base-300 shadow-sm mt-4">
-        <div className="card-body p-4">
-          <div className="flex gap-2">
-            {hasPrevious && (
-              <button className="btn btn-sm btn-outline flex-1" onClick={navigatePrev}>
-                <ChevronLeft size={14} /> 上一步
-              </button>
-            )}
-            {hasNext && (
-              <button className="btn btn-sm btn-primary flex-1" onClick={navigateNext}>
-                下一步 <ArrowRight size={14} />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const getSectionStatus = (value: any, minEvidence: number = 1) => {
-    if (!value) return false;
-    return value.text?.trim().length > 0 && (value.snippetIds?.length || 0) >= minEvidence;
-  };
-
-  if (!currentNode) return null;
-
-  const nodeType = currentNode.data.type;
-
-  if (nodeType === 'task_summary') {
-    const sections = currentNode.data.config?.sections || DEFAULT_SECTIONS;
-    const widgetState = currentWidgetState[currentNode.id] || {};
-    const values: Record<string, FieldWithEvidence> = {};
-    sections.forEach((section) => {
-      values[section.key] = widgetState[section.key] || { text: '', snippetIds: [] };
-    });
-
-    const handleUpdate = (key: string, value: FieldWithEvidence) => {
-      updateWidgetState(currentNode.id, { ...widgetState, [key]: value });
-      autoSave();
-    };
-
-    const handleSubmit = async () => {
-      const selectedDoc = documents.find((d) => d.id === widgetState.selectedDocId);
-      if (!selectedDoc) {
-        alert('請先選擇目標文獻');
-        return;
-      }
-      const content: TaskAContent = {};
-      sections.forEach((section) => {
-        content[section.key] = values[section.key];
-      });
-      try {
-        await submitTaskA(selectedDoc.id, content);
-        completeNode(currentNode.id);
-      } catch (error) {
-        console.error('提交失敗:', error);
-      }
-    };
-
-    const checks = [
-      { id: 'doc', label: '已選擇目標文獻', checked: !!widgetState.selectedDocId, required: true },
-      ...sections.map((section) => ({
-        id: section.key,
-        label: `${section.label}已完成`,
-        checked: getSectionStatus(
-          values[section.key],
-          section.minEvidence || currentNode.data.config?.minEvidence || 1
-        ),
-        required: true,
-      })),
-    ];
-
-    return (
-      <div className="space-y-4">
-        <div className="form-control">
-          <label className="label">
-            <span className="label-text font-bold text-sm">選擇目標文獻</span>
-          </label>
-          <select
-            className="select select-bordered select-sm"
-            value={widgetState.selectedDocId || ''}
-            onChange={(e) => {
-              updateWidgetState(currentNode.id, {
-                ...widgetState,
-                selectedDocId: e.target.value,
-              });
-              autoSave();
-            }}
-          >
-            <option value="" disabled>
-              請選擇目標文獻...
-            </option>
-            {documents.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.title}
-              </option>
-            ))}
-          </select>
-        </div>
-        <SectionWriter
-          nodeId={currentNode.id}
-          sections={sections}
-          selectedDocId={widgetState.selectedDocId}
-          onUpdate={handleUpdate}
-          values={values}
-        />
-        <ChecklistSubmit
-          nodeId={currentNode.id}
-          checks={checks}
-          onSubmit={handleSubmit}
-          onSubmitLabel="提交檢核"
-        />
-        {renderNavigationButtons()}
-      </div>
-    );
-  }
-
-  if (nodeType === 'task_comparison') {
-    const minEvidence = currentNode.data.config?.minEvidence || 1;
-
-    const handleUpdateRow = (
-      index: number,
-      field: keyof ComparisonRow | 'doc1Claim' | 'doc2Claim',
-      value: any
-    ) => {
-      if (field === 'doc1Claim' || field === 'doc2Claim') {
-        updateTaskBRow(index, field, value);
-      } else {
-        updateTaskBRow(index, field, value);
-      }
-    };
-
-    const checks = taskBData.map((row, idx) => ({
-      id: `row-${idx}`,
-      label: `維度 ${idx + 1}: ${row.dimension || '未命名'}`,
-      checked: !!(
-        row.dimension &&
-        row.doc1Id &&
-        row.doc2Id &&
-        row.doc1Claim.text &&
-        row.doc2Claim.text &&
-        row.doc1Claim.snippetIds.length >= minEvidence &&
-        row.doc2Claim.snippetIds.length >= minEvidence
-      ),
-      required: true,
-    }));
-
-    const handleSubmitB = async () => {
-      try {
-        await submitTaskBCheck();
-        completeNode(currentNode.id);
-      } catch (error) {
-        console.error('提交失敗:', error);
-      }
-    };
-
-    return (
-      <div className="space-y-4">
-        <MatrixCompare
-          nodeId={currentNode.id}
-          rows={taskBData}
-          onUpdateRow={handleUpdateRow}
-          onAddRow={addTaskBRow}
-          onRemoveRow={removeTaskBRow}
-          documents={documents.map((d) => ({ id: d.id, title: d.title }))}
-        />
-        <ChecklistSubmit
-          nodeId={currentNode.id}
-          checks={checks}
-          onSubmit={handleSubmitB}
-          onSubmitLabel="提交比較表"
-        />
-        {renderNavigationButtons()}
-      </div>
-    );
-  }
-
-  if (nodeType === 'task_synthesis') {
-    const slots = [
-      {
-        key: 'c1_theme' as keyof TaskCContent,
-        label: 'C1 主題句 (Theme)',
-        placeholder: '本段落要探討的核心主題...',
-        minEvidence: 1,
-      },
-      {
-        key: 'c2_evidence' as keyof TaskCContent,
-        label: 'C2 跨篇標記片段 (Evidence)',
-        placeholder: '綜合多篇文獻的觀察...',
-        minEvidence: 2,
-      },
-      {
-        key: 'c3_boundary' as keyof TaskCContent,
-        label: 'C3 差異界線 (Boundary)',
-        placeholder: '雖然...但是... (指出適用範圍或對立點)',
-        minEvidence: 1,
-      },
-      {
-        key: 'c4_gap' as keyof TaskCContent,
-        label: 'C4 意義與缺口 (Gap)',
-        placeholder: '因此... 目前尚未... (指出研究機會)',
-        minEvidence: 1,
-      },
-    ];
-
-    const checks = [
-      {
-        id: 'c1',
-        label: 'C1 主題句已完成',
-        checked: getSectionStatus(taskCData.c1_theme),
-        required: true,
-      },
-      {
-        id: 'c2',
-        label: 'C2 跨篇標記片段已完成（需至少 2 則）',
-        checked:
-          taskCData.c2_evidence.snippetIds.length >= 2 &&
-          taskCData.c2_evidence.text.trim().length > 0,
-        required: true,
-      },
-      {
-        id: 'c3',
-        label: 'C3 差異界線已完成',
-        checked: getSectionStatus(taskCData.c3_boundary),
-        required: true,
-      },
-      {
-        id: 'c4',
-        label: 'C4 意義與缺口已完成',
-        checked: getSectionStatus(taskCData.c4_gap),
-        required: true,
-      },
-    ];
-
-    const handleSubmitC = async () => {
-      try {
-        await submitTaskCCheck();
-        completeNode(currentNode.id);
-      } catch (error) {
-        console.error('提交失敗:', error);
-      }
-    };
-
-    return (
-      <div className="space-y-4">
-        <SynthesisWriter
-          nodeId={currentNode.id}
-          slots={slots}
-          values={taskCData}
-          onUpdate={updateTaskC}
-        />
-        <ChecklistSubmit
-          nodeId={currentNode.id}
-          checks={checks}
-          onSubmit={handleSubmitC}
-          onSubmitLabel="提交綜合分析"
-        />
-        {renderNavigationButtons()}
-      </div>
-    );
-  }
-
-  if (nodeType === 'resource') {
-    return (
-      <div className="space-y-4">
-        <InstructionCard
-          node={currentNode}
-          minEvidence={currentNode.data.config?.minEvidence || 0}
-          currentEvidenceCount={documents.flatMap((d) => d.highlights || []).length}
-        />
-        {renderNavigationButtons()}
-      </div>
-    );
-  }
-
-  return null;
 };
 
 const TaskPanelWrapper = ({
@@ -2659,27 +2290,26 @@ const FloatingChat = () => {
 
 export default function StudentInterface() {
   const {
-    currentStepId,
-    nodes,
-    navigateNext,
     projects,
     activeProjectId,
     cohorts,
     joinCohortByCode,
-    chatTimeline,
-    addChatMessage,
     loadDocuments,
     bindDocumentsToProject,
     updateHighlight,
     documents,
   } = useStore();
   const _navigate = useNavigate();
-  const currentNode = nodes.find((n) => n.id === currentStepId);
   const _currentProject = projects.find((p) => p.id === activeProjectId);
   // 新架構：透過 project.cohort_id 找到所屬群組
-  const _projectCohort = _currentProject?.cohort_id 
+  const _projectCohort = _currentProject?.cohort_id
     ? cohorts.find((c) => c.id === _currentProject.cohort_id)
     : null;
+  const fallbackTaskConfig: TaskConfig = {
+    summary: { enabled: true, sections: [], guidance: '' },
+    comparison: { enabled: true, dimensions: [], guidance: '' },
+  };
+  const effectiveTaskConfig = _currentProject?.task_config ?? fallbackTaskConfig;
   const [joinCode, setJoinCode] = useState('');
   const [joining, setJoining] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
@@ -2690,7 +2320,6 @@ export default function StudentInterface() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'task'>('chat');
   const [editingHighlight, setEditingHighlight] = useState<ExtendedHighlight | null>(null);
-  const prevStepIdRef = useRef<string | null>(null);
 
   const handleJoinCohort = async () => {
     const code = joinCode.trim();
@@ -2774,68 +2403,10 @@ export default function StudentInterface() {
     }
   };
 
-  // 節點切換時自動插入 Instruction + Widget
-  useEffect(() => {
-    if (currentNode && currentStepId !== prevStepIdRef.current) {
-      prevStepIdRef.current = currentStepId;
-
-      // 檢查是否已經有該節點的系統訊息
-      const hasSystemMessage = chatTimeline.some(
-        (msg) => msg.nodeId === currentStepId && msg.role === 'system'
-      );
-
-      if (!hasSystemMessage && currentNode.data.config?.guidance) {
-        const systemMessage: Message = {
-          id: `system-${currentStepId}-${Date.now()}`,
-          role: 'system',
-          content: currentNode.data.config.guidance,
-          timestamp: Date.now(),
-          nodeId: currentStepId,
-        };
-        addChatMessage(systemMessage);
-      }
-    }
-  }, [currentStepId, currentNode, chatTimeline, addChatMessage]);
+  // 新架構：移除節點導航邏輯，使用固定任務面板
 
   const renderContent = () => {
-    if (!currentNode) return <div className="p-10 text-center">Loading Stage...</div>;
-    const type = currentNode.data.type;
-
-    // start 和 end 節點顯示簡單畫面
-    if (type === 'start' || type === 'end') {
-      return (
-        <div className="flex h-full w-full relative">
-          <div className="flex-[0.7] h-full flex flex-col border-r border-slate-200">
-            <ReaderPanel />
-          </div>
-          <div className="flex-[0.3] h-full flex flex-col bg-white relative">
-            <div className="flex-1 p-6 overflow-hidden flex items-center justify-center">
-              {type === 'start' && (
-                <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                  <BookOpen size={64} className="text-indigo-600 mb-4 opacity-50" />
-                  <h2 className="text-2xl font-bold mb-2 text-slate-800">開始本次學習流程</h2>
-                  <p className="text-slate-500 mb-6">
-                    請先確認左側文獻資源與任務說明，準備好後按下「開始第一階段」進入下一步。
-                  </p>
-                  <button className="btn btn-primary" onClick={navigateNext}>
-                    開始第一階段 <ArrowRight size={16} />
-                  </button>
-                </div>
-              )}
-              {type === 'end' && (
-                <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                  <CheckCircle2 size={64} className="text-green-500 mb-4 opacity-50" />
-                  <h2 className="text-2xl font-bold mb-2 text-slate-800">流程已完成</h2>
-                  <p className="text-slate-500 mb-6">恭喜你完成了所有任務！</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // 其他節點使用 Chat 主區
+    // 新架構：直接顯示主界面（文獻閱讀器 + 任務面板）
     return (
       <div className="flex h-full w-full relative">
         <div
@@ -2912,7 +2483,7 @@ export default function StudentInterface() {
               data-tour="chat-panel"
               className={`h-full ${activeTab === 'chat' ? 'block' : 'hidden'}`}
             >
-              <ChatPanelWrapper currentNode={currentNode} />
+              <ChatPanelWrapper currentNode={null} />
             </div>
             <div
               data-tour="task-panel"
@@ -2921,7 +2492,7 @@ export default function StudentInterface() {
               {_currentProject && activeProjectId && (
                 <TaskPanelWrapper
                   projectId={activeProjectId}
-                  config={_currentProject.task_config}
+                  config={effectiveTaskConfig}
                   documents={documents}
                 />
               )}

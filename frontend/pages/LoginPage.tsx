@@ -46,7 +46,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen font-sans text-gray-900 relative">
+    <div className="h-screen font-sans text-gray-900 relative overflow-y-auto">
       <GradientBackground />
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
         <motion.div
