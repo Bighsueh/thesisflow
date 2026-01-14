@@ -5,6 +5,7 @@ import {
   File,
   Highlighter,
   ChevronRight,
+  ChevronDown,
   X,
   MessageCircle,
   ClipboardList,
@@ -26,6 +27,7 @@ import {
   Sparkles,
   LayoutTemplate,
   LogOut,
+  CheckCircle2,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
@@ -1203,8 +1205,10 @@ const ReaderPanel = () => {
     bindDocumentsToProject,
     loadDocuments,
     removeAllHighlights,
+    selectDocument,
   } = useStore();
   const [isLibraryOpen, setLibraryOpen] = useState(false);
+  const [isDocSelectorOpen, setIsDocSelectorOpen] = useState(false);
   const [isEvidencePanelOpen, setIsEvidencePanelOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -1621,9 +1625,58 @@ const ReaderPanel = () => {
               {isDragOver ? '放開以加入文檔' : '拖曳文獻到此處以加入專案'}
             </div>
           ) : (
-            <span className="text-sm font-medium text-slate-700 truncate">
-              {doc?.title || '請選擇文獻'}
-            </span>
+            <div className="relative">
+              <button
+                onClick={() => setIsDocSelectorOpen(!isDocSelectorOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-200 hover:border-indigo-200 rounded-lg text-slate-600 hover:text-indigo-600 transition-all shadow-sm group max-w-[280px]"
+              >
+                <FileText
+                  size={14}
+                  className="text-slate-500 group-hover:text-indigo-600 transition-colors shrink-0"
+                />
+                <span className="text-sm font-medium truncate">{doc?.title || '請選擇文獻'}</span>
+                <ChevronDown
+                  size={14}
+                  className={`text-slate-400 group-hover:text-indigo-600 transition-all shrink-0 ${isDocSelectorOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+              {isDocSelectorOpen && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setIsDocSelectorOpen(false)} />
+                  <div className="absolute top-full left-0 mt-1 w-80 bg-white border border-slate-200 rounded-lg shadow-lg z-30 max-h-64 overflow-y-auto">
+                    {documents.map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => {
+                          selectDocument(d.id);
+                          setIsDocSelectorOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 hover:bg-indigo-50 transition-colors text-left ${
+                          d.id === currentDocId ? 'bg-indigo-50 border-l-2 border-indigo-500' : ''
+                        }`}
+                      >
+                        <div className="h-7 w-7 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                          {d.type === 'pdf' ? <FileText size={14} /> : <File size={14} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-sm font-medium truncate ${d.id === currentDocId ? 'text-indigo-700' : 'text-slate-700'}`}
+                          >
+                            {d.title}
+                          </p>
+                          {d.highlights && d.highlights.length > 0 && (
+                            <p className="text-xs text-slate-400">{d.highlights.length} 個標記</p>
+                          )}
+                        </div>
+                        {d.id === currentDocId && (
+                          <CheckCircle2 size={16} className="text-indigo-500 shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           )}
         </div>
 
