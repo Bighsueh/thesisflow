@@ -2556,7 +2556,7 @@ export default function StudentInterface() {
     );
   };
 
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const getUserInitials = () => {
     if (user?.name) {
       return user.name
