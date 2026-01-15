@@ -48,35 +48,35 @@ class TaskConfig(BaseModel):
     comparison: TaskConfigComparison = Field(default_factory=TaskConfigComparison)
 
 
-class ProjectCreate(BaseModel):
+class LearningTaskCreate(BaseModel):
     title: str
     semester: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
     task_config: Optional[TaskConfig] = Field(default_factory=TaskConfig)
-    cohort_id: Optional[str] = None  # 新架構：專案屬於群組
+    cohort_id: Optional[str] = None  # 新架構：學習任務屬於群組
     # 保留以向後相容
     nodes: List[FlowNodePayload] = Field(default_factory=list)
     edges: List[FlowEdgePayload] = Field(default_factory=list)
 
 
-class ProjectUpdate(BaseModel):
+class LearningTaskUpdate(BaseModel):
     title: Optional[str] = None
     semester: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
     task_config: Optional[TaskConfig] = None
-    cohort_id: Optional[str] = None  # 新架構：專案屬於群組
+    cohort_id: Optional[str] = None  # 新架構：學習任務屬於群組
     # 保留以向後相容
     nodes: Optional[List[FlowNodePayload]] = None
     edges: Optional[List[FlowEdgePayload]] = None
 
 
-class ProjectOut(BaseModel):
+class LearningTaskOut(BaseModel):
     id: str
     title: str
     semester: Optional[str]
     tags: List[str]
     task_config: Optional[dict] = None
-    cohort_id: Optional[str] = None  # 新架構：專案屬於群組
+    cohort_id: Optional[str] = None  # 新架構：學習任務屬於群組
     # 保留以向後相容
     nodes: Optional[List[FlowNodePayload]] = None
     edges: Optional[List[FlowEdgePayload]] = None
@@ -86,7 +86,7 @@ class ProjectOut(BaseModel):
 
 
 class DocumentCreate(BaseModel):
-    project_id: Optional[str] = None
+    learning_task_id: Optional[str] = None
     title: str
     object_key: str
     content_type: Optional[str] = None
@@ -96,12 +96,12 @@ class DocumentCreate(BaseModel):
 
 
 class DocumentUpdate(BaseModel):
-    project_id: Optional[str] = None
+    learning_task_id: Optional[str] = None
 
 
 class DocumentOut(BaseModel):
     id: str
-    project_id: Optional[str] = None
+    learning_task_id: Optional[str] = None
     title: str
     object_key: str
     content_type: Optional[str]
@@ -173,7 +173,7 @@ class HighlightOut(BaseModel):
 
 
 class TaskRequest(BaseModel):
-    project_id: str
+    learning_task_id: str
     target_doc_id: Optional[str] = None
     task_type: str
     content: Any
@@ -282,20 +282,20 @@ class TokenWithUser(BaseModel):
 class CohortCreate(BaseModel):
     name: str
     code: Optional[str] = None
-    project_id: Optional[str] = None
+    learning_task_id: Optional[str] = None
 
 
 class CohortUpdate(BaseModel):
     name: Optional[str] = None
     code: Optional[str] = None
-    project_id: Optional[str] = None
+    learning_task_id: Optional[str] = None
 
 
 class CohortOut(BaseModel):
     id: str
     name: str
     code: Optional[str] = None
-    project_id: Optional[str] = None
+    learning_task_id: Optional[str] = None
     created_at: int
     member_count: int = 0
 
@@ -312,8 +312,8 @@ class CohortMemberOut(BaseModel):
 class UsageOut(BaseModel):
     id: str
     user: UserOut
-    project_id: str
-    project_title: Optional[str] = None
+    learning_task_id: str
+    learning_task_title: Optional[str] = None
     task_type: str
     created_at: int
     cohort_id: Optional[str] = None
@@ -321,7 +321,7 @@ class UsageOut(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    project_id: str
+    learning_task_id: str
     node_id: str
     message: str
     context: dict  # 包含 current_document_id, evidence_ids, widget_states, chat_history
@@ -341,7 +341,7 @@ class ChatResponse(BaseModel):
 
 class ChatMessageOut(BaseModel):
     id: str
-    project_id: str
+    learning_task_id: str
     user_id: str
     user_name: Optional[str] = None
     role: str
@@ -354,7 +354,7 @@ class ChatMessageOut(BaseModel):
 
 
 class WorkflowStateCreate(BaseModel):
-    project_id: str
+    learning_task_id: str
     node_id: str
     widget_state: dict = Field(default_factory=dict)
     task_b_data: list = Field(default_factory=list)
@@ -370,7 +370,7 @@ class WorkflowStateUpdate(BaseModel):
 
 class WorkflowStateOut(BaseModel):
     id: str
-    project_id: str
+    learning_task_id: str
     user_id: str
     node_id: str
     widget_state: dict
@@ -404,7 +404,7 @@ try:
     # Pydantic v2: use model_rebuild()
     DocumentOut.model_rebuild()
     HighlightOut.model_rebuild()
-    ProjectOut.model_rebuild()
+    LearningTaskOut.model_rebuild()
     TaskResponse.model_rebuild()
     RagProcessingLogOut.model_rebuild()
 except (AttributeError, TypeError):
@@ -412,7 +412,7 @@ except (AttributeError, TypeError):
     try:
         DocumentOut.update_forward_refs()
         HighlightOut.update_forward_refs()
-        ProjectOut.update_forward_refs()
+        LearningTaskOut.update_forward_refs()
         TaskResponse.update_forward_refs()
         RagProcessingLogOut.update_forward_refs()
     except (AttributeError, TypeError) as e:

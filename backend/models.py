@@ -11,8 +11,8 @@ def generate_uuid() -> str:
     return str(uuid.uuid4())
 
 
-class Project(Base):
-    __tablename__ = "projects"
+class LearningTask(Base):
+    __tablename__ = "learning_tasks"
     id = Column(String, primary_key=True, default=generate_uuid)
     title = Column(String, nullable=False)
     semester = Column(String, nullable=True)
@@ -21,20 +21,20 @@ class Project(Base):
     # 新的簡化配置結構，用以取代 flow_nodes/flow_edges
     task_config = Column(JSONB, default=dict)
 
-    # 新架構：專案屬於群組（一個群組可以有多個專案）
+    # 新架構：學習任務屬於群組（一個群組可以有多個學習任務）
     cohort_id = Column(String, ForeignKey("cohorts.id", ondelete="CASCADE"), nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # 保留以支援資料遷移
-    flow_nodes = relationship("FlowNode", cascade="all, delete-orphan", back_populates="project")
-    flow_edges = relationship("FlowEdge", cascade="all, delete-orphan", back_populates="project")
-    documents = relationship("Document", cascade="all, delete-orphan", back_populates="project")
-    task_versions = relationship("TaskVersion", cascade="all, delete-orphan", back_populates="project")
+    flow_nodes = relationship("FlowNode", cascade="all, delete-orphan", back_populates="learning_task")
+    flow_edges = relationship("FlowEdge", cascade="all, delete-orphan", back_populates="learning_task")
+    documents = relationship("Document", cascade="all, delete-orphan", back_populates="learning_task")
+    task_versions = relationship("TaskVersion", cascade="all, delete-orphan", back_populates="learning_task")
     cohort = relationship(
         "Cohort",
-        back_populates="projects",
+        back_populates="learning_tasks",
         foreign_keys=[cohort_id],
     )
 
@@ -42,30 +42,30 @@ class Project(Base):
 class FlowNode(Base):
     __tablename__ = "flow_nodes"
     id = Column(String, primary_key=True)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"))
+    learning_task_id = Column(String, ForeignKey("learning_tasks.id", ondelete="CASCADE"))
     type = Column(String, nullable=False)
     label = Column(String, nullable=False)
     config = Column(JSONB, default=dict)
     position = Column(JSONB, default=dict)
 
-    project = relationship("Project", back_populates="flow_nodes")
+    learning_task = relationship("LearningTask", back_populates="flow_nodes")
 
 
 class FlowEdge(Base):
     __tablename__ = "flow_edges"
     id = Column(String, primary_key=True)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"))
+    learning_task_id = Column(String, ForeignKey("learning_tasks.id", ondelete="CASCADE"))
     source = Column(String, nullable=False)
     target = Column(String, nullable=False)
     data = Column(JSONB, default=dict)
 
-    project = relationship("Project", back_populates="flow_edges")
+    learning_task = relationship("LearningTask", back_populates="flow_edges")
 
 
 class Document(Base):
     __tablename__ = "documents"
     id = Column(String, primary_key=True, default=generate_uuid)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"))
+    learning_task_id = Column(String, ForeignKey("learning_tasks.id", ondelete="CASCADE"))
     user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # 上傳者
     title = Column(String, nullable=False)
     object_key = Column(String, nullable=False)
@@ -80,7 +80,7 @@ class Document(Base):
     rag_error = Column(Text, nullable=True)  # RAG 處理錯誤訊息
     chunk_count = Column(Integer, default=0)  # 切分後的 chunk 數量
 
-    project = relationship("Project", back_populates="documents")
+    learning_task = relationship("LearningTask", back_populates="documents")
     user = relationship("User", foreign_keys=[user_id])
     highlights = relationship("Highlight", cascade="all, delete-orphan", back_populates="document")
     chunks = relationship("DocumentChunk", cascade="all, delete-orphan", back_populates="document")
@@ -109,7 +109,7 @@ class Highlight(Base):
 class TaskVersion(Base):
     __tablename__ = "task_versions"
     id = Column(String, primary_key=True, default=generate_uuid)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"))
+    learning_task_id = Column(String, ForeignKey("learning_tasks.id", ondelete="CASCADE"))
     # 可為空，舊資料不一定有紀錄是哪位學生提交
     user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     target_doc_id = Column(String, nullable=True)
@@ -121,7 +121,7 @@ class TaskVersion(Base):
     validation_errors = Column(JSONB, default=list)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    project = relationship("Project", back_populates="task_versions")
+    learning_task = relationship("LearningTask", back_populates="task_versions")
 
 
 class User(Base):
@@ -142,16 +142,16 @@ class Cohort(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     name = Column(String, nullable=False)
     code = Column(String, nullable=True)
-    # 保留以向後兼容（deprecated，新架構使用 Project.cohort_id）
-    project_id = Column(String, ForeignKey("projects.id", ondelete="SET NULL"), nullable=True)
+    # 保留以向後兼容（deprecated，新架構使用 LearningTask.cohort_id）
+    learning_task_id = Column(String, ForeignKey("learning_tasks.id", ondelete="SET NULL"), nullable=True)
     teacher_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # 新架構：一個群組可以有多個專案
-    projects = relationship(
-        "Project",
+    # 新架構：一個群組可以有多個學習任務
+    learning_tasks = relationship(
+        "LearningTask",
         back_populates="cohort",
-        foreign_keys="Project.cohort_id",
+        foreign_keys="LearningTask.cohort_id",
     )
     teacher = relationship("User", back_populates="cohorts")
     members = relationship("CohortMember", cascade="all, delete-orphan", back_populates="cohort")
@@ -171,28 +171,28 @@ class CohortMember(Base):
     __table_args__ = (UniqueConstraint("cohort_id", "user_id", name="uq_cohort_member"),)
 
 
-class ProjectCohort(Base):
+class LearningTaskCohort(Base):
     """
-    專案與群組的多對多關聯表
+    學習任務與群組的多對多關聯表
     
-    一個專案可以被指派給多個群組，一個群組可以有多個專案
+    一個學習任務可以被指派給多個群組，一個群組可以有多個學習任務
     """
-    __tablename__ = "project_cohorts"
+    __tablename__ = "learning_task_cohorts"
     id = Column(String, primary_key=True, default=generate_uuid)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    learning_task_id = Column(String, ForeignKey("learning_tasks.id", ondelete="CASCADE"), nullable=False)
     cohort_id = Column(String, ForeignKey("cohorts.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    project = relationship("Project")
+    learning_task = relationship("LearningTask")
     cohort = relationship("Cohort")
 
-    __table_args__ = (UniqueConstraint("project_id", "cohort_id", name="uq_project_cohort"),)
+    __table_args__ = (UniqueConstraint("learning_task_id", "cohort_id", name="uq_learning_task_cohort"),)
 
 
 class WorkflowState(Base):
     __tablename__ = "workflow_states"
     id = Column(String, primary_key=True, default=generate_uuid)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    learning_task_id = Column(String, ForeignKey("learning_tasks.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     node_id = Column(String, nullable=False)  # 當前節點 ID
     widget_state = Column(JSONB, default=dict)  # Widget 狀態
@@ -201,17 +201,17 @@ class WorkflowState(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    project = relationship("Project")
+    learning_task = relationship("LearningTask")
     user = relationship("User")
 
-    __table_args__ = (UniqueConstraint("project_id", "user_id", name="uq_workflow_state"),)
+    __table_args__ = (UniqueConstraint("learning_task_id", "user_id", name="uq_workflow_state"),)
 
 
 class TaskState(Base):
     """簡化的任務狀態，取代 WorkflowState（不需要 node_id）"""
     __tablename__ = "task_states"
     id = Column(String, primary_key=True, default=generate_uuid)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    learning_task_id = Column(String, ForeignKey("learning_tasks.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # 固定的兩個任務狀態
@@ -221,10 +221,10 @@ class TaskState(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    project = relationship("Project")
+    learning_task = relationship("LearningTask")
     user = relationship("User")
 
-    __table_args__ = (UniqueConstraint("project_id", "user_id", name="uq_task_state"),)
+    __table_args__ = (UniqueConstraint("learning_task_id", "user_id", name="uq_task_state"),)
 
 
 class DocumentChunk(Base):
@@ -266,13 +266,13 @@ class ChatMessage(Base):
     """
     __tablename__ = "chat_messages"
     id = Column(String, primary_key=True, default=generate_uuid)
-    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    learning_task_id = Column(String, ForeignKey("learning_tasks.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     role = Column(String, nullable=False)  # user | coach | status
     content = Column(Text, nullable=False)
     context = Column(JSONB, default=dict)  # 儲存 evidence_ids, current_doc_id 等上下文資訊
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    project = relationship("Project")
+    learning_task = relationship("LearningTask")
     user = relationship("User")
 

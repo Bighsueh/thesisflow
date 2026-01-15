@@ -6,7 +6,7 @@ from db import Base, engine
 from db_migration import auto_migrate_highlights_table
 from middleware.cors import setup_cors
 from middleware.exception_handler import setup_exception_handler
-from routes import auth, students, projects, documents, highlights, cohorts, chat, tasks, uploads, workflow, usage, analytics
+from routes import auth, students, learning_tasks, documents, highlights, cohorts, chat, tasks, uploads, workflow, usage, analytics
 
 # 載入環境變數
 _env_paths = [
@@ -30,18 +30,45 @@ from sqlalchemy import text
 from db import SessionLocal
 try:
     db = SessionLocal()
-    # Check if task_config column exists in projects table
-    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='projects' AND column_name='task_config'"))
+    # Check if task_config column exists in learning_tasks table
+    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='learning_tasks' AND column_name='task_config'"))
     if not result.fetchone():
-        print("Adding missing task_config column to projects table...")
-        db.execute(text("ALTER TABLE projects ADD COLUMN task_config JSONB DEFAULT '{}'"))
+        print("Adding missing task_config column to learning_tasks table...")
+        db.execute(text("ALTER TABLE learning_tasks ADD COLUMN task_config JSONB DEFAULT '{}'"))
         db.commit()
-    # Check if cohort_id column exists in projects table
-    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='projects' AND column_name='cohort_id'"))
+    # Check if cohort_id column exists in learning_tasks table
+    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='learning_tasks' AND column_name='cohort_id'"))
     if not result.fetchone():
-        print("Adding missing cohort_id column to projects table...")
-        db.execute(text("ALTER TABLE projects ADD COLUMN cohort_id VARCHAR REFERENCES cohorts(id) ON DELETE CASCADE"))
+        print("Adding missing cohort_id column to learning_tasks table...")
+        db.execute(text("ALTER TABLE learning_tasks ADD COLUMN cohort_id VARCHAR REFERENCES cohorts(id) ON DELETE CASCADE"))
         db.commit()
+    # Check if learning_task_id column exists in cohorts table
+    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='cohorts' AND column_name='learning_task_id'"))
+    if not result.fetchone():
+        print("Adding missing learning_task_id column to cohorts table...")
+        db.execute(text("ALTER TABLE cohorts ADD COLUMN learning_task_id VARCHAR REFERENCES learning_tasks(id) ON DELETE SET NULL"))
+        db.commit()
+    # Check if learning_task_id column exists in task_versions table
+    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='task_versions' AND column_name='learning_task_id'"))
+    if not result.fetchone():
+        print("Adding missing learning_task_id column to task_versions table...")
+        db.execute(text("ALTER TABLE task_versions ADD COLUMN learning_task_id VARCHAR REFERENCES learning_tasks(id) ON DELETE CASCADE"))
+        db.commit()
+    
+    # Check if learning_task_id column exists in task_states table
+    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='task_states' AND column_name='learning_task_id'"))
+    if not result.fetchone():
+        print("Adding missing learning_task_id column to task_states table...")
+        db.execute(text("ALTER TABLE task_states ADD COLUMN learning_task_id VARCHAR REFERENCES learning_tasks(id) ON DELETE CASCADE"))
+        db.commit()
+    
+    # Check if learning_task_id column exists in chat_messages table
+    result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='chat_messages' AND column_name='learning_task_id'"))
+    if not result.fetchone():
+        print("Adding missing learning_task_id column to chat_messages table...")
+        db.execute(text("ALTER TABLE chat_messages ADD COLUMN learning_task_id VARCHAR REFERENCES learning_tasks(id) ON DELETE CASCADE"))
+        db.commit()
+    
     db.close()
 except Exception as e:
     print(f"Migration error: {e}")
@@ -57,7 +84,7 @@ setup_exception_handler(app)
 # 註冊路由
 app.include_router(auth.router)
 app.include_router(students.router)
-app.include_router(projects.router)
+app.include_router(learning_tasks.router)
 app.include_router(documents.router)
 app.include_router(highlights.router)
 app.include_router(cohorts.router)
