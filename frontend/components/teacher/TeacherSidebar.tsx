@@ -1,19 +1,25 @@
 import { motion } from 'framer-motion';
-import { Workflow, Users, LogOut, Home } from 'lucide-react';
+import { Users, LogOut, Home, BarChart3 } from 'lucide-react';
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../authStore';
 import { Button } from '../ui/Button';
 
 interface TeacherSidebarProps {
-  activeSection: 'accounts' | 'groups';
-  onSectionChange: (section: 'accounts' | 'groups') => void;
+  activeSection: 'accounts' | 'groups' | 'dashboard';
+  onSectionChange: (section: 'accounts' | 'groups' | 'dashboard') => void;
 }
 
 export function TeacherSidebar({ activeSection, onSectionChange }: TeacherSidebarProps) {
   const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   const navItems = [
+    {
+      id: 'dashboard' as const,
+      label: '學習儀表板',
+      icon: <BarChart3 size={20} />,
+    },
     {
       id: 'accounts' as const,
       label: '學生帳號管理',
@@ -47,7 +53,13 @@ export function TeacherSidebar({ activeSection, onSectionChange }: TeacherSideba
           return (
             <button
               key={item.id}
-              onClick={() => onSectionChange(item.id)}
+              onClick={() => {
+                if (item.id === 'dashboard') {
+                  navigate('/teacher/dashboard');
+                } else {
+                  onSectionChange(item.id);
+                }
+              }}
               className={`
                 w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative
                 ${

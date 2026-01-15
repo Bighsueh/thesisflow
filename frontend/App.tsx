@@ -15,7 +15,7 @@ import LoginPage from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import TeacherCohort from './pages/TeacherCohort';
-import TeacherHome from './pages/TeacherHome';
+import TeacherDashboard from './pages/TeacherDashboard';
 
 export function App() {
   const { hydrate, checkTokenExpiry } = useAuthStore();
@@ -137,7 +137,7 @@ export function App() {
             path="/teacher"
             element={
               <ProtectedRoute requiredRole="teacher">
-                <TeacherHome />
+                <Navigate to="/teacher/dashboard" replace />
               </ProtectedRoute>
             }
           />
@@ -146,6 +146,22 @@ export function App() {
             element={
               <ProtectedRoute requiredRole="teacher">
                 <TeacherCohort />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/dashboard"
+            element={
+              <ProtectedRoute requiredRole="teacher">
+                <TeacherDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/dashboard/:cohortId"
+            element={
+              <ProtectedRoute requiredRole="teacher">
+                <TeacherDashboard />
               </ProtectedRoute>
             }
           />

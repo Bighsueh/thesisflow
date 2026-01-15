@@ -6,7 +6,7 @@ from db import Base, engine
 from db_migration import auto_migrate_highlights_table
 from middleware.cors import setup_cors
 from middleware.exception_handler import setup_exception_handler
-from routes import auth, students, projects, documents, highlights, cohorts, chat, tasks, uploads, workflow, usage
+from routes import auth, students, projects, documents, highlights, cohorts, chat, tasks, uploads, workflow, usage, analytics
 
 # 載入環境變數
 _env_paths = [
@@ -66,6 +66,7 @@ app.include_router(tasks.router)
 app.include_router(uploads.router)
 app.include_router(workflow.router)
 app.include_router(usage.router)
+app.include_router(analytics.router)
 
 @app.get("/health")
 def health():
