@@ -66,6 +66,7 @@ class Document(Base):
     __tablename__ = "documents"
     id = Column(String, primary_key=True, default=generate_uuid)
     project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"))
+    user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # 上傳者
     title = Column(String, nullable=False)
     object_key = Column(String, nullable=False)
     content_type = Column(String, nullable=True)
@@ -80,6 +81,7 @@ class Document(Base):
     chunk_count = Column(Integer, default=0)  # 切分後的 chunk 數量
 
     project = relationship("Project", back_populates="documents")
+    user = relationship("User", foreign_keys=[user_id])
     highlights = relationship("Highlight", cascade="all, delete-orphan", back_populates="document")
     chunks = relationship("DocumentChunk", cascade="all, delete-orphan", back_populates="document")
     rag_logs = relationship("RagProcessingLog", cascade="all, delete-orphan", back_populates="document")
@@ -89,6 +91,7 @@ class Highlight(Base):
     __tablename__ = "highlights"
     id = Column(String, primary_key=True, default=generate_uuid)
     document_id = Column(String, ForeignKey("documents.id", ondelete="CASCADE"))
+    user_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # 建立者
     snippet = Column(Text, nullable=False)
     name = Column(String, nullable=True)  # 標記片段名稱，使用者自訂
     page = Column(Integer, nullable=True)
@@ -100,6 +103,7 @@ class Highlight(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     document = relationship("Document", back_populates="highlights")
+    user = relationship("User", foreign_keys=[user_id])
 
 
 class TaskVersion(Base):
@@ -165,6 +169,24 @@ class CohortMember(Base):
     user = relationship("User", back_populates="memberships")
 
     __table_args__ = (UniqueConstraint("cohort_id", "user_id", name="uq_cohort_member"),)
+
+
+class ProjectCohort(Base):
+    """
+    專案與群組的多對多關聯表
+    
+    一個專案可以被指派給多個群組，一個群組可以有多個專案
+    """
+    __tablename__ = "project_cohorts"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    cohort_id = Column(String, ForeignKey("cohorts.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project")
+    cohort = relationship("Cohort")
+
+    __table_args__ = (UniqueConstraint("project_id", "cohort_id", name="uq_project_cohort"),)
 
 
 class WorkflowState(Base):
