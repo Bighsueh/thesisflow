@@ -251,38 +251,45 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
             此群組尚未有專案。點擊上方按鈕建立新專案。
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="flex flex-col gap-2">
             {cohortProjects.map((p) => (
-              <GlassCard key={p.id} className="p-4" hoverEffect>
-                <div className="space-y-3">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">{p.title}</h3>
-                    <p className="text-gray-500 text-sm">{p.semester || '未指定學期'}</p>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-500 text-sm">
-                    <FileText size={16} />
-                    <span>任務配置已設定</span>
-                  </div>
-                  {p.updatedAt && (
-                    <div className="text-xs text-gray-400">
-                      最後編輯：{new Date(p.updatedAt).toLocaleDateString('zh-TW')}
-                    </div>
-                  )}
-                  <div className="flex gap-2 pt-3 border-t border-gray-100">
-                    <Button variant="ghost" size="sm" onClick={() => handleEditProject(p.id)}>
-                      編輯
-                    </Button>
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      leftIcon={<Trash2 size={14} />}
-                      onClick={() => handleDeleteProject(p.id)}
-                    >
-                      刪除
-                    </Button>
+              <div
+                key={p.id}
+                className="flex items-center gap-4 px-4 py-3 rounded-xl border border-gray-100 bg-white/50 hover:bg-white/80 hover:border-violet-200 transition-all group"
+              >
+                {/* 專案圖示 */}
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white shadow-md flex-shrink-0">
+                  <FileText size={16} />
+                </div>
+
+                {/* 專案資訊 */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-gray-900 group-hover:text-violet-700 transition-colors truncate">
+                    {p.title}
+                  </h3>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    <span>{p.semester || '未指定學期'}</span>
+                    {p.updatedAt && (
+                      <span>編輯於 {new Date(p.updatedAt).toLocaleDateString('zh-TW')}</span>
+                    )}
                   </div>
                 </div>
-              </GlassCard>
+
+                {/* 操作按鈕 */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button variant="ghost" size="sm" onClick={() => handleEditProject(p.id)}>
+                    編輯
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    leftIcon={<Trash2 size={14} />}
+                    onClick={() => handleDeleteProject(p.id)}
+                  >
+                    刪除
+                  </Button>
+                </div>
+              </div>
             ))}
           </div>
         )}
