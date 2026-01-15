@@ -1,9 +1,12 @@
 import { X, Copy, Plus, RefreshCw, FileText, Trash2 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuthStore } from '../authStore';
+import { useConfirm } from '../hooks/useConfirm';
 import { useStore } from '../store';
 import { Button } from './ui/Button';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 import { GlassCard } from './ui/GlassCard';
 import { Input } from './ui/Input';
 
@@ -42,6 +45,8 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
     usageRecords,
     deleteProject,
   } = useStore();
+
+  const { confirmState, isOpen, confirm, handleConfirm, handleCancel } = useConfirm();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,13 +134,20 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
   }, [currentCohort]);
 
   const handleDeleteProject = async (projectId: string) => {
-    if (!window.confirm('確定要刪除這個專案嗎？')) return;
+    const confirmed = await confirm({
+      title: '刪除專案',
+      message: '確定要刪除這個專案嗎？',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    
     try {
       await deleteProject(projectId);
       await loadProjects(cohortId); // 重新載入該群組的專案
+      toast.success('專案已成功刪除');
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : '刪除失敗';
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -179,9 +191,10 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
       setIsAddStudentModalOpen(false);
       setSelectedStudentIds([]);
       setStudentSearch('');
+      toast.success(`已成功加入 ${selectedStudentIds.length} 位學生`);
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : '加入學生失敗';
-      alert(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setAddingStudents(false);
     }
@@ -222,9 +235,9 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(currentCohort?.code || '');
-                      alert('邀請碼已複製到剪貼簿');
+                      toast.success('邀請碼已複製到剪貼簿');
                     } catch {
-                      alert('複製失敗，請手動選取文字複製');
+                      toast.error('複製失敗，請手動選取文字複製');
                     }
                   }}
                 >
@@ -552,6 +565,16 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
           </div>
         )}
       </GlassCard>
+
+      {/* 確認對話框 */}
+      {confirmState && (
+        <ConfirmDialog
+          isOpen={isOpen}
+          onClose={handleCancel}
+          onConfirm={handleConfirm}
+          {...confirmState}
+        />
+      )}
     </div>
   );
 }

@@ -1,11 +1,13 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { useAuthStore } from './authStore';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Layout } from './components/layout/Layout';
 import StudentInterface from './components/student/StudentInterface';
 import ProjectConfigEditor from './components/teacher/ProjectConfigEditor';
 import { TourProvider } from './components/tour/TourProvider';
+import { UploadProgressOverlay } from './components/ui/UploadProgressOverlay';
 import { allTours } from './config/tours';
 import { Dashboard } from './pages/Dashboard';
 import { GroupsPage } from './pages/GroupsPage';
@@ -39,6 +41,8 @@ export function App() {
 
   return (
     <BrowserRouter>
+      <Toaster richColors position="top-center" />
+      <UploadProgressOverlay />
       <TourProvider tours={allTours}>
         <Routes>
           {/* Public Routes */}

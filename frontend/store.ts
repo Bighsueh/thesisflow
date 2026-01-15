@@ -92,6 +92,8 @@ interface AppState {
   currentDocId: string | null;
   loadDocuments: (learningTaskId?: string | null) => Promise<void>;
   bindDocumentsToLearningTask: (documentIds: string[], learningTaskId: string) => Promise<void>;
+  bindDocumentsToProject: (documentIds: string[], projectId: string) => Promise<void>;
+  unbindDocumentsFromProject: (documentIds: string[], projectId: string) => Promise<void>;
   uploadDocument: (title: string, content: string) => Promise<void>;
   uploadFileDocument: (title: string, file: File) => Promise<void>;
   removeDocument: (id: string) => Promise<void>;
@@ -341,6 +343,10 @@ export const useStore = create<AppState>((set, get) => ({
   bindDocumentsToLearningTask: async (documentIds: string[], learningTaskId: string) => {
     await documentService.bindDocumentsToProject(documentIds, learningTaskId);
     await get().loadDocuments(learningTaskId);
+  },
+  bindDocumentsToProject: async (documentIds: string[], projectId: string) => {
+    await documentService.bindDocumentsToProject(documentIds, projectId);
+    await get().loadDocuments(projectId);
   },
   unbindDocumentsFromProject: async (documentIds: string[], learningTaskId: string) => {
     await documentService.unbindDocumentsFromProject(documentIds, learningTaskId);
