@@ -69,8 +69,9 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
           loadCohortMembers(cohortId),
           loadUsageRecords({ cohortId }),
         ]);
-      } catch (e: any) {
-        setError(e.message || '無法載入資料');
+      } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : '無法載入資料';
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -119,13 +120,6 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
     [availableStudents, studentSearch]
   );
 
-  useEffect(() => {
-    const current = cohorts.find((c) => c.id === cohortId);
-    if (current) {
-      setSelectedProject(current.project_id || null);
-    }
-  }, [cohortId, cohorts]);
-
   const currentCohort = useMemo(() => cohorts.find((c) => c.id === cohortId), [cohorts, cohortId]);
 
   const formattedCode = useMemo(() => {
@@ -139,8 +133,9 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
     try {
       await deleteProject(projectId);
       await loadProjects(cohortId); // 重新載入該群組的專案
-    } catch (e: any) {
-      alert(e?.message || '刪除失敗');
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : '刪除失敗';
+      alert(errorMessage);
     }
   };
 
@@ -184,8 +179,9 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
       setIsAddStudentModalOpen(false);
       setSelectedStudentIds([]);
       setStudentSearch('');
-    } catch (e: any) {
-      alert(e?.message || '加入學生失敗');
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : '加入學生失敗';
+      alert(errorMessage);
     } finally {
       setAddingStudents(false);
     }
@@ -225,7 +221,7 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                   leftIcon={<Copy size={14} />}
                   onClick={async () => {
                     try {
-                      await navigator.clipboard.writeText(currentCohort.code!);
+                      await navigator.clipboard.writeText(currentCohort?.code || '');
                       alert('邀請碼已複製到剪貼簿');
                     } catch {
                       alert('複製失敗，請手動選取文字複製');

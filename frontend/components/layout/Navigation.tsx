@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { LayoutGrid, Users, FileText, User, LogOut, Sparkles, Home } from 'lucide-react';
+import { LayoutGrid, Users, User, LogOut, Home } from 'lucide-react';
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../authStore';
@@ -25,19 +25,9 @@ export function Navigation() {
       icon: <LayoutGrid size={18} />,
     },
     {
-      path: '/projects',
-      label: '專案',
-      icon: <Sparkles size={18} />,
-    },
-    {
       path: '/groups',
       label: '群組',
       icon: <Users size={18} />,
-    },
-    {
-      path: '/literature',
-      label: '文獻',
-      icon: <FileText size={18} />,
     },
   ];
 

@@ -64,8 +64,10 @@ export default function TeacherDashboard() {
   const handleSectionChange = (section: 'accounts' | 'groups' | 'dashboard') => {
     if (section === 'dashboard') {
       navigate('/teacher/dashboard');
-    } else {
-      navigate('/teacher');
+    } else if (section === 'accounts') {
+      navigate('/teacher/accounts');
+    } else if (section === 'groups') {
+      navigate('/teacher/groups');
     }
   };
 

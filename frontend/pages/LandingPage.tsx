@@ -7,14 +7,16 @@ import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 
 export function LandingPage() {
-  const [animationData, setAnimationData] = useState<any>(null);
+  const [animationData, setAnimationData] = useState<unknown>(null);
 
   useEffect(() => {
     // 從 public 資料夾載入本地 JSON 檔案
     fetch('/animations/Businessman flies up with rocket.json')
       .then((res) => res.json())
       .then((data) => setAnimationData(data))
-      .catch((err) => console.error('載入動畫失敗:', err));
+      .catch((_err) => {
+        // 動畫載入失敗，繼續顯示頁面
+      });
   }, []);
 
   return (
@@ -101,9 +103,6 @@ export function LandingPage() {
                   開始研究
                 </Button>
               </Link>
-              <Button variant="secondary" size="lg">
-                查看示範
-              </Button>
             </motion.div>
           </div>
 

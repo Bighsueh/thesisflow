@@ -6,10 +6,16 @@ import { StudentGroupSection } from '../components/teacher/StudentGroupSection';
 import { TeacherLayout } from '../components/teacher/TeacherLayout';
 import { TeacherSidebar } from '../components/teacher/TeacherSidebar';
 
-export default function TeacherHome() {
+interface TeacherHomeProps {
+  initialSection?: 'accounts' | 'groups';
+}
+
+export default function TeacherHome({ initialSection = 'groups' }: TeacherHomeProps) {
   const navigate = useNavigate();
   const { user, hydrate } = useAuthStore();
-  const [activeSection, setActiveSection] = useState<'accounts' | 'groups' | 'dashboard'>('groups');
+  const [activeSection, setActiveSection] = useState<'accounts' | 'groups' | 'dashboard'>(
+    initialSection
+  );
 
   useEffect(() => {
     hydrate();
