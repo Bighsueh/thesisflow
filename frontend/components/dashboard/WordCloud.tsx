@@ -3,6 +3,17 @@ import ReactWordcloud from 'react-wordcloud';
 import { analyticsService, WordCloudData } from '../../services/analyticsService';
 import { GlassCard } from '../ui/GlassCard';
 
+// Fix: Remove defaultProps to prevent React 18.3+ warning
+const WordCloudBase = ReactWordcloud as any;
+const wordcloudDefaultProps = WordCloudBase?.defaultProps ?? {};
+if (WordCloudBase?.defaultProps) {
+  try {
+    delete WordCloudBase.defaultProps;
+  } catch {
+    // Ignore if deletion fails
+  }
+}
+
 interface WordCloudProps {
   cohortId: string;
 }
@@ -12,6 +23,7 @@ export function WordCloud({ cohortId }: WordCloudProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!cohortId) return;
     loadData();
   }, [cohortId]);
 
@@ -50,7 +62,8 @@ export function WordCloud({ cohortId }: WordCloudProps) {
       <h3 className="text-lg font-bold text-gray-900 mb-4">學生對話關鍵詞</h3>
       {data && data.words.length > 0 ? (
         <div style={{ height: 300 }}>
-          <ReactWordcloud
+          <WordCloudBase
+            {...wordcloudDefaultProps}
             words={data.words}
             options={{
               rotations: 2,

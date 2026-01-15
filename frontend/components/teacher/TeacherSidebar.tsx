@@ -56,9 +56,12 @@ export function TeacherSidebar({ activeSection, onSectionChange }: TeacherSideba
               onClick={() => {
                 if (item.id === 'dashboard') {
                   navigate('/teacher/dashboard');
-                } else {
-                  onSectionChange(item.id);
+                } else if (item.id === 'accounts') {
+                  navigate('/teacher/accounts');
+                } else if (item.id === 'groups') {
+                  navigate('/teacher/groups');
                 }
+                onSectionChange(item.id);
               }}
               className={`
                 w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative

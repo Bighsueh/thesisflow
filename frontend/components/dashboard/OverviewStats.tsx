@@ -15,6 +15,9 @@ export function OverviewStats({ cohortId }: OverviewStatsProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!cohortId) {
+      return;
+    }
     loadStats();
   }, [cohortId]);
 
