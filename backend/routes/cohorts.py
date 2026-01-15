@@ -45,7 +45,7 @@ def list_cohorts(
                 id=c.id,
                 name=c.name,
                 code=c.code,
-                project_id=c.project_id,
+                learning_task_id=c.learning_task_id,
                 created_at=int(c.created_at.timestamp() * 1000),
                 member_count=len(c.members),
             )
@@ -64,7 +64,7 @@ def create_cohort(
     cohort = models.Cohort(
         name=payload.name,
         code=code,
-        project_id=payload.project_id,
+        learning_task_id=payload.learning_task_id,
         teacher_id=current_user.id
     )
     db.add(cohort)
@@ -74,7 +74,7 @@ def create_cohort(
         id=cohort.id,
         name=cohort.name,
         code=cohort.code,
-        project_id=cohort.project_id,
+        learning_task_id=cohort.learning_task_id,
         created_at=int(cohort.created_at.timestamp() * 1000),
         member_count=0,
     )
@@ -101,7 +101,7 @@ def get_cohort(
         id=cohort.id,
         name=cohort.name,
         code=cohort.code,
-        project_id=cohort.project_id,
+        learning_task_id=cohort.learning_task_id,
         created_at=int(cohort.created_at.timestamp() * 1000),
         member_count=len(cohort.members),
     )
@@ -130,7 +130,7 @@ def update_cohort(
         id=cohort.id,
         name=cohort.name,
         code=cohort.code,
-        project_id=cohort.project_id,
+        learning_task_id=cohort.learning_task_id,
         created_at=int(cohort.created_at.timestamp() * 1000),
         member_count=len(cohort.members),
     )

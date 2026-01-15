@@ -4,7 +4,7 @@ from db import get_db
 import models
 import schemas
 from auth import get_current_user
-from auth_helpers import check_project_access
+from auth_helpers import check_learning_task_access
 from services import AzureResponsesAPIClient, presign_get, download_file_from_minio
 import json
 import base64
@@ -12,29 +12,29 @@ import logging
 from typing import Optional
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/projects", tags=["chat"])
+router = APIRouter(prefix="/api/learning_tasks", tags=["chat"])
 
 # PDF 大小限制：50MB
 MAX_PDF_SIZE = 50 * 1024 * 1024
 
 
-@router.post("/{project_id}/chat", response_model=schemas.ChatResponse)
+@router.post("/{learning_task_id}/chat", response_model=schemas.ChatResponse)
 async def chat(
-    project_id: str,
+    learning_task_id: str,
     payload: schemas.ChatRequest,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    # 驗證 payload 中的 project_id 與路徑參數一致
-    if payload.project_id != project_id:
-        raise HTTPException(status_code=400, detail="project_id in payload must match path parameter")
+    # 驗證 payload 中的 learning_task_id 與路徑參數一致
+    if payload.learning_task_id != learning_task_id:
+        raise HTTPException(status_code=400, detail="learning_task_id in payload must match path parameter")
     
-    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    project = db.query(models.LearningTask).filter(models.LearningTask.id == learning_task_id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Learning task not found")
     
     # 驗證用戶有權訪問此專案
-    if not check_project_access(db, current_user, project_id):
+    if not check_project_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     # 新架構：支援 "general" 作為通用節點 ID（不需要查找實際的 FlowNode）
@@ -45,7 +45,7 @@ async def chat(
     if payload.node_id != "general":
         node = db.query(models.FlowNode).filter(
             models.FlowNode.id == payload.node_id,
-            models.FlowNode.project_id == project_id
+            models.FlowNode.learning_task_id == learning_task_id
         ).first()
         if not node:
             raise HTTPException(status_code=404, detail="Node not found")
@@ -163,7 +163,7 @@ async def chat(
     
     # 儲存用戶訊息到資料庫
     user_message = models.ChatMessage(
-        project_id=project_id,
+        learning_task_id=learning_task_id,
         user_id=current_user.id,
         role="user",
         content=payload.message,
@@ -195,7 +195,7 @@ async def chat(
     
     # 儲存 AI 回覆到資料庫
     ai_message = models.ChatMessage(
-        project_id=project_id,
+        learning_task_id=learning_task_id,
         user_id=current_user.id,
         role="coach",
         content=response,
@@ -209,9 +209,9 @@ async def chat(
     
     return schemas.ChatResponse(message=response, role="ai")
 
-@router.get("/{project_id}/chat", response_model=list[schemas.ChatMessageOut])
+@router.get("/{learning_task_id}/chat", response_model=list[schemas.ChatMessageOut])
 def get_chat_history(
-    project_id: str,
+    learning_task_id: str,
     step_id: str = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -220,17 +220,17 @@ def get_chat_history(
     獲取專案的對話歷史記錄
     """
     # 驗證專案存在
-    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    project = db.query(models.LearningTask).filter(models.LearningTask.id == learning_task_id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Learning task not found")
     
     # 驗證用戶有權訪問此專案
-    if not check_project_access(db, current_user, project_id):
+    if not check_project_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     # 查詢該用戶在該專案的所有對話記錄
     messages = db.query(models.ChatMessage).filter(
-        models.ChatMessage.project_id == project_id,
+        models.ChatMessage.learning_task_id == learning_task_id,
         models.ChatMessage.user_id == current_user.id
     ).order_by(models.ChatMessage.created_at.asc()).all()
     
@@ -239,7 +239,7 @@ def get_chat_history(
     for msg in messages:
         result.append({
             "id": msg.id,
-            "project_id": msg.project_id,
+            "learning_task_id": msg.learning_task_id,
             "user_id": msg.user_id,
             "user_name": current_user.name,
             "role": msg.role,

@@ -21,7 +21,7 @@ def to_pydantic(model_class, obj):
 @router.get("", response_model=list[schemas.UsageOut])
 def list_usage(
     cohort_id: str | None = Query(None),
-    project_id: str | None = Query(None),
+    learning_task_id: str | None = Query(None),
     user_id: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
@@ -30,8 +30,8 @@ def list_usage(
         raise HTTPException(status_code=403, detail="Only teacher can view usage")
 
     query = db.query(models.TaskVersion)
-    if project_id:
-        query = query.filter(models.TaskVersion.project_id == project_id)
+    if learning_task_id:
+        query = query.filter(models.TaskVersion.learning_task_id == learning_task_id)
     if user_id:
         query = query.filter(models.TaskVersion.user_id == user_id)
     if cohort_id:
@@ -44,13 +44,13 @@ def list_usage(
         user = db.query(models.User).filter(models.User.id == t.user_id).first()
         if not user:
             continue
-        project = db.query(models.Project).filter(models.Project.id == t.project_id).first()
+        learning_task = db.query(models.LearningTask).filter(models.LearningTask.id == t.learning_task_id).first()
         results.append(
             schemas.UsageOut(
                 id=t.id,
                 user=to_pydantic(schemas.UserOut, user),
-                project_id=t.project_id,
-                project_title=project.title if project else None,
+                learning_task_id=t.learning_task_id,
+                learning_task_title=learning_task.title if learning_task else None,
                 task_type=t.task_type,
                 created_at=int(t.created_at.timestamp() * 1000),
                 cohort_id=cohort_id,

@@ -4,7 +4,7 @@ from db import get_db
 import models
 import schemas
 from auth import get_current_user
-from auth_helpers import check_project_access
+from auth_helpers import check_learning_task_access
 
 router = APIRouter(prefix="/api/highlights", tags=["highlights"])
 
@@ -13,13 +13,13 @@ def _check_document_access(db: Session, user: models.User, doc: models.Document)
     """檢查用戶是否有權訪問文檔（用於 Highlight 操作）"""
     if user.role == "teacher":
         return True
-    # 如果文檔有綁定專案，檢查專案權限
-    if doc.project_id:
-        return check_project_access(db, user, doc.project_id)
-    # 如果文檔沒有綁定專案，檢查是否為文檔擁有者
+    # 如果文檔有綁定學習任務，檢查學習任務權限
+    if doc.learning_task_id:
+        return check_learning_task_access(db, user, doc.learning_task_id)
+    # 如果文檔沒有綁定學習任務，檢查是否為文檔擁有者
     if doc.user_id:
         return doc.user_id == user.id
-    # 沒有綁定專案也沒有擁有者的文檔（舊資料），允許訪問
+    # 沒有綁定學習任務也沒有擁有者的文檔（舊資料），允許訪問
     return True
 
 

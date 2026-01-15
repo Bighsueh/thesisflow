@@ -5,7 +5,7 @@ from db import get_db
 import models
 import schemas
 from auth import get_current_user
-from auth_helpers import check_project_access, get_user_accessible_project_ids
+from auth_helpers import check_learning_task_access, get_user_accessible_learning_task_ids
 from services import presign_upload, presign_get, get_s3_client
 import uuid
 from datetime import datetime
@@ -29,7 +29,7 @@ router = APIRouter(prefix="/api/documents", tags=["documents"])
 
 @router.get("", response_model=list[schemas.DocumentOut])
 def list_documents(
-    project_id: Optional[str] = Query(None),
+    learning_task_id: Optional[str] = Query(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
@@ -39,40 +39,40 @@ def list_documents(
     教師：可以看到所有文獻
     學生：只能看到以下文獻：
       1. 自己上傳的文獻（user_id = current_user.id）
-      2. 已綁定到可訪問專案的文獻
-      3. 未綁定專案且無 user_id 的舊資料（向後兼容）
+      2. 已綁定到可訪問學習任務的文獻
+      3. 未綁定學習任務且無 user_id 的舊資料（向後兼容）
     """
     try:
         query = db.query(models.Document)
         
-        if project_id:
-            # 按專案過濾
+        if learning_task_id:
+            # 按學習任務過濾
             if current_user.role == "student":
-                # 學生需要有該專案的訪問權限
-                if not check_project_access(db, current_user, project_id):
+                # 學生需要有該學習任務的訪問權限
+                if not check_learning_task_access(db, current_user, learning_task_id):
                     raise HTTPException(status_code=403, detail="Forbidden")
-            docs = query.filter(models.Document.project_id == project_id).all()
+            docs = query.filter(models.Document.learning_task_id == learning_task_id).all()
         else:
-            # 不按專案過濾
+            # 不按學習任務過濾
             if current_user.role == "teacher":
                 # 教師可以看到所有文獻
                 docs = query.all()
             else:
-                # 學生：只能看到自己的文獻、可訪問專案的文獻、或無主文獻
-                accessible_project_ids = get_user_accessible_project_ids(db, current_user)
+                # 學生：只能看到自己的文獻、可訪問學習任務的文獻、或無主文獻
+                accessible_learning_task_ids = get_user_accessible_learning_task_ids(db, current_user)
                 
                 # 構建條件：
                 # 1. user_id = current_user.id（自己的文獻）
-                # 2. project_id in accessible_project_ids（可訪問專案的文獻）
-                # 3. user_id IS NULL AND project_id IS NULL（舊資料，向後兼容）
+                # 2. learning_task_id in accessible_learning_task_ids（可訪問學習任務的文獻）
+                # 3. user_id IS NULL AND learning_task_id IS NULL（舊資料，向後兼容）
                 conditions = [
                     models.Document.user_id == current_user.id,
                 ]
-                if accessible_project_ids:
-                    conditions.append(models.Document.project_id.in_(accessible_project_ids))
-                # 向後兼容：無主且未綁定專案的舊文獻
+                if accessible_learning_task_ids:
+                    conditions.append(models.Document.learning_task_id.in_(accessible_learning_task_ids))
+                # 向後兼容：無主且未綁定學習任務的舊文獻
                 conditions.append(
-                    (models.Document.user_id == None) & (models.Document.project_id == None)
+                    (models.Document.user_id == None) & (models.Document.learning_task_id == None)
                 )
                 
                 docs = query.filter(or_(*conditions)).all()
@@ -109,7 +109,7 @@ def list_documents(
                 result.append(
                     schemas.DocumentOut(
                         id=d.id,
-                        project_id=d.project_id,
+                        learning_task_id=d.learning_task_id,
                         title=d.title,
                         object_key=d.object_key,
                         content_type=d.content_type,
@@ -172,7 +172,7 @@ def get_document(
 
     return schemas.DocumentOut(
         id=doc.id,
-        project_id=doc.project_id,
+        learning_task_id=doc.learning_task_id,
         title=doc.title,
         object_key=doc.object_key,
         content_type=doc.content_type,
@@ -193,7 +193,7 @@ def create_document(
     current_user: models.User = Depends(get_current_user)
 ):
     doc = models.Document(
-        project_id=payload.project_id,
+        learning_task_id=payload.learning_task_id,
         user_id=current_user.id,  # 記錄上傳者
         title=payload.title,
         object_key=payload.object_key,
@@ -208,7 +208,7 @@ def create_document(
     db.refresh(doc)
     return schemas.DocumentOut(
         id=doc.id,
-        project_id=doc.project_id,
+        learning_task_id=doc.learning_task_id,
         title=doc.title,
         object_key=doc.object_key,
         content_type=doc.content_type,
@@ -298,7 +298,7 @@ async def upload_document(
         doc_type = "file"
     
     doc = models.Document(
-        project_id=None,
+        learning_task_id=None,
         user_id=current_user.id,  # 記錄上傳者
         title=title,
         object_key=object_key,
@@ -314,7 +314,7 @@ async def upload_document(
 
     return schemas.DocumentOut(
         id=doc.id,
-        project_id=doc.project_id,
+        learning_task_id=doc.learning_task_id,
         title=doc.title,
         object_key=doc.object_key,
         content_type=doc.content_type,
@@ -334,20 +334,20 @@ def bind_documents(
     current_user: models.User = Depends(get_current_user)
 ):
     document_ids = payload.get("document_ids", [])
-    project_id = payload.get("project_id")
+    learning_task_id = payload.get("learning_task_id")
     
-    if not project_id:
-        raise HTTPException(status_code=400, detail="project_id is required")
+    if not learning_task_id:
+        raise HTTPException(status_code=400, detail="learning_task_id is required")
     
     # 驗證專案存在
-    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    project = db.query(models.Project).filter(models.Project.id == learning_task_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     
-    # 更新文檔的 project_id
+    # 更新文檔的 learning_task_id
     updated = db.query(models.Document).filter(
         models.Document.id.in_(document_ids)
-    ).update({"project_id": project_id}, synchronize_session=False)
+    ).update({"learning_task_id": learning_task_id}, synchronize_session=False)
     
     db.commit()
     return {"bound": updated}
@@ -360,10 +360,10 @@ def unbind_documents(
 ):
     document_ids = payload.get("document_ids", [])
     
-    # 將文檔的 project_id 設為 None
+    # 將文檔的 learning_task_id 設為 None
     updated = db.query(models.Document).filter(
         models.Document.id.in_(document_ids)
-    ).update({"project_id": None}, synchronize_session=False)
+    ).update({"learning_task_id": None}, synchronize_session=False)
     
     db.commit()
     return {"unbound": updated}
@@ -378,8 +378,8 @@ def update_document(
     doc = db.query(models.Document).filter(models.Document.id == doc_id).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    # 無條件更新 project_id（包括設為 None 以解除綁定）
-    doc.project_id = payload.project_id
+    # 無條件更新 learning_task_id（包括設為 None 以解除綁定）
+    doc.learning_task_id = payload.learning_task_id
     db.commit()
     db.refresh(doc)
     highlights = [
@@ -400,7 +400,7 @@ def update_document(
     ]
     return schemas.DocumentOut(
         id=doc.id,
-        project_id=doc.project_id,
+        learning_task_id=doc.learning_task_id,
         title=doc.title,
         object_key=doc.object_key,
         content_type=doc.content_type,
@@ -428,8 +428,8 @@ def add_highlight_to_document(
     if current_user.role == "student":
         has_access = False
         # 檢查專案權限
-        if doc.project_id:
-            has_access = check_project_access(db, current_user, doc.project_id)
+        if doc.learning_task_id:
+            has_access = check_project_access(db, current_user, doc.learning_task_id)
         # 檢查文檔擁有者
         elif doc.user_id:
             has_access = doc.user_id == current_user.id
@@ -482,11 +482,11 @@ def delete_all_highlights_for_document(
 
     # 驗證權限
     if current_user.role == "student":
-        if doc.project_id:
+        if doc.learning_task_id:
             cohort_ids = [m.cohort_id for m in current_user.memberships]
             cohorts = db.query(models.Cohort).filter(models.Cohort.id.in_(cohort_ids)).all()
-            project_ids = {c.project_id for c in cohorts if c.project_id}
-            if doc.project_id not in project_ids:
+            learning_task_ids = {c.learning_task_id for c in cohorts if c.learning_task_id}
+            if doc.learning_task_id not in learning_task_ids:
                 raise HTTPException(status_code=403, detail="Forbidden")
 
     deleted_count = db.query(models.Highlight).filter(models.Highlight.document_id == doc_id).delete()

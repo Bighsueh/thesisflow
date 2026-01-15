@@ -4,37 +4,37 @@ from db import get_db
 import models
 import schemas
 from auth import get_current_user
-from auth_helpers import check_project_access
+from auth_helpers import check_learning_task_access
 from services import AzureOpenAIClient
 
-router = APIRouter(prefix="/api/projects", tags=["tasks"])
+router = APIRouter(prefix="/api/learning_tasks", tags=["tasks"])
 
-@router.post("/{project_id}/tasks/A", response_model=schemas.TaskResponse)
+@router.post("/{learning_task_id}/tasks/A", response_model=schemas.TaskResponse)
 async def submit_task_a(
-    project_id: str,
+    learning_task_id: str,
     payload: dict,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    project = db.query(models.LearningTask).filter(models.LearningTask.id == learning_task_id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Learning task not found")
     
     # 驗證用戶有權訪問此專案
-    if not check_project_access(db, current_user, project_id):
+    if not check_project_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     target_doc_id = payload.get("target_doc_id")
     content = payload.get("content", {})
     
     version = db.query(models.TaskVersion).filter(
-        models.TaskVersion.project_id == project_id,
+        models.TaskVersion.learning_task_id == learning_task_id,
         models.TaskVersion.task_type == "A",
         models.TaskVersion.target_doc_id == target_doc_id,
     ).count() + 1
     
     tv = models.TaskVersion(
-        project_id=project_id,
+        learning_task_id=learning_task_id,
         user_id=current_user.id,
         target_doc_id=target_doc_id,
         task_type="A",
@@ -61,30 +61,30 @@ async def submit_task_a(
         validation_errors=tv.validation_errors or []
     )
 
-@router.post("/{project_id}/tasks/B", response_model=schemas.TaskResponse)
+@router.post("/{learning_task_id}/tasks/B", response_model=schemas.TaskResponse)
 async def submit_task_b(
-    project_id: str,
+    learning_task_id: str,
     payload: dict,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    project = db.query(models.LearningTask).filter(models.LearningTask.id == learning_task_id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Learning task not found")
     
     # 驗證用戶有權訪問此專案
-    if not check_project_access(db, current_user, project_id):
+    if not check_project_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     content = payload.get("content", [])
     
     version = db.query(models.TaskVersion).filter(
-        models.TaskVersion.project_id == project_id,
+        models.TaskVersion.learning_task_id == learning_task_id,
         models.TaskVersion.task_type == "B",
     ).count() + 1
     
     tv = models.TaskVersion(
-        project_id=project_id,
+        learning_task_id=learning_task_id,
         user_id=current_user.id,
         target_doc_id=None,
         task_type="B",
@@ -111,30 +111,30 @@ async def submit_task_b(
         validation_errors=tv.validation_errors or []
     )
 
-@router.post("/{project_id}/tasks/C", response_model=schemas.TaskResponse)
+@router.post("/{learning_task_id}/tasks/C", response_model=schemas.TaskResponse)
 async def submit_task_c(
-    project_id: str,
+    learning_task_id: str,
     payload: dict,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    project = db.query(models.LearningTask).filter(models.LearningTask.id == learning_task_id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Learning task not found")
     
     # 驗證用戶有權訪問此專案
-    if not check_project_access(db, current_user, project_id):
+    if not check_project_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     content = payload.get("content", {})
     
     version = db.query(models.TaskVersion).filter(
-        models.TaskVersion.project_id == project_id,
+        models.TaskVersion.learning_task_id == learning_task_id,
         models.TaskVersion.task_type == "C",
     ).count() + 1
     
     tv = models.TaskVersion(
-        project_id=project_id,
+        learning_task_id=learning_task_id,
         user_id=current_user.id,
         target_doc_id=None,
         task_type="C",

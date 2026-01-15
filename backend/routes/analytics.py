@@ -11,24 +11,24 @@ from collections import Counter
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
 
-def get_cohort_project_ids(db: Session, cohort_id: str) -> list[str]:
-    """獲取群組相關的所有專案 ID（支持新舊兩種架構）"""
-    project_ids = set()
+def get_cohort_learning_task_ids(db: Session, cohort_id: str) -> list[str]:
+    """獲取群組相關的所有學習任務 ID（支持新舊兩種架構）"""
+    learning_task_ids = set()
     
-    # 新架構：Project.cohort_id
-    new_projects = db.query(models.Project.id).filter(
-        models.Project.cohort_id == cohort_id
+    # 新架構：LearningTask.cohort_id
+    new_learning_tasks = db.query(models.LearningTask.id).filter(
+        models.LearningTask.cohort_id == cohort_id
     ).all()
-    project_ids.update([p.id for p in new_projects])
+    learning_task_ids.update([lt.id for lt in new_learning_tasks])
     
-    # 舊架構：Cohort.project_id
+    # 舊架構：Cohort.learning_task_id
     cohort = db.query(models.Cohort).filter(
         models.Cohort.id == cohort_id
     ).first()
-    if cohort and cohort.project_id:
-        project_ids.add(cohort.project_id)
+    if cohort and cohort.learning_task_id:
+        learning_task_ids.add(cohort.learning_task_id)
     
-    return list(project_ids)
+    return list(learning_task_ids)
 
 
 @router.get("/{cohort_id}/overview")
@@ -66,14 +66,14 @@ def get_overview(
     ).count()
     
     # 取得群組相關專案 ID（支持新舊架構）
-    project_ids = get_cohort_project_ids(db, cohort_id)
+    learning_task_ids = get_cohort_learning_task_ids(db, cohort_id)
     
     active_from_highlights = 0
-    if project_ids:
+    if learning_task_ids:
         active_from_highlights = db.query(distinct(models.Highlight.id)).join(
             models.Document
         ).filter(
-            models.Document.project_id.in_(project_ids),
+            models.Document.learning_task_id.in_(learning_task_ids),
             models.Highlight.created_at >= today_start
         ).count()
     
@@ -81,11 +81,11 @@ def get_overview(
     
     # 總 Highlight 數量
     total_highlights = 0
-    if project_ids:
+    if learning_task_ids:
         total_highlights = db.query(models.Highlight).join(
             models.Document
         ).filter(
-            models.Document.project_id.in_(project_ids)
+            models.Document.learning_task_id.in_(learning_task_ids)
         ).count()
     
     # 平均進度
@@ -207,14 +207,14 @@ def get_word_cloud(
     
     # 如果指定了文檔，僅分析該文檔相關的對話
     if document_id:
-        query = query.join(models.Project).join(models.Document).filter(
+        query = query.join(models.LearningTask).join(models.Document).filter(
             models.Document.id == document_id
         )
     else:
         # 否則僅分析該群組的專案對話（支持新舊架構）
-        project_ids = get_cohort_project_ids(db, cohort_id)
-        if len(project_ids) > 0:
-            query = query.filter(models.ChatMessage.project_id.in_(project_ids))
+        learning_task_ids = get_cohort_learning_task_ids(db, cohort_id)
+        if len(learning_task_ids) > 0:
+            query = query.filter(models.ChatMessage.learning_task_id.in_(learning_task_ids))
     
     messages = query.all()
     
@@ -270,29 +270,29 @@ def get_activity_trend(
     ).group_by(func.date(models.TaskState.updated_at)).all()
     
     # 取得群組相關專案 ID（支持新舊架構）
-    project_ids = get_cohort_project_ids(db, cohort_id)
+    learning_task_ids = get_cohort_learning_task_ids(db, cohort_id)
     
     # 統計 Highlight 建立
     highlights = []
-    if project_ids:
+    if learning_task_ids:
         highlights = db.query(
             func.date(models.Highlight.created_at).label('date'),
             func.count().label('count')
         ).join(models.Document).filter(
-            models.Document.project_id.in_(project_ids),
+            models.Document.learning_task_id.in_(learning_task_ids),
             models.Highlight.created_at >= start_date
         ).group_by(func.date(models.Highlight.created_at)).all()
     
     # 統計 ChatMessage（學生對話）
     
     chat_messages = []
-    if len(member_ids) > 0 and len(project_ids) > 0:
+    if len(member_ids) > 0 and len(learning_task_ids) > 0:
         chat_messages = db.query(
             func.date(models.ChatMessage.created_at).label('date'),
             func.count().label('count')
         ).filter(
             models.ChatMessage.user_id.in_(member_ids),
-            models.ChatMessage.project_id.in_(project_ids),
+            models.ChatMessage.learning_task_id.in_(learning_task_ids),
             models.ChatMessage.role == "user",  # 僅統計學生發送的訊息
             models.ChatMessage.created_at >= start_date
         ).group_by(func.date(models.ChatMessage.created_at)).all()
@@ -330,13 +330,13 @@ def get_evidence_stats(
         raise HTTPException(status_code=403, detail="Only teachers can access analytics")
     
     # 取得群組相關專案 ID（支持新舊架構）
-    project_ids = get_cohort_project_ids(db, cohort_id)
+    learning_task_ids = get_cohort_learning_task_ids(db, cohort_id)
     
     # 取得所有 Highlights
     highlights = []
-    if project_ids:
+    if learning_task_ids:
         highlights = db.query(models.Highlight).join(models.Document).filter(
-            models.Document.project_id.in_(project_ids)
+            models.Document.learning_task_id.in_(learning_task_ids)
         ).all()
     
     # 按學生統計
@@ -385,13 +385,13 @@ def get_document_usage(
         raise HTTPException(status_code=403, detail="Only teachers can access analytics")
     
     # 取得群組相關專案 ID（支持新舊架構）
-    project_ids = get_cohort_project_ids(db, cohort_id)
+    learning_task_ids = get_cohort_learning_task_ids(db, cohort_id)
     
     # 取得群組相關專案的文檔
     documents = []
-    if project_ids:
+    if learning_task_ids:
         documents = db.query(models.Document).filter(
-            models.Document.project_id.in_(project_ids)
+            models.Document.learning_task_id.in_(learning_task_ids)
         ).all()
     
     result = []
@@ -429,14 +429,14 @@ def get_page_heatmap(
         raise HTTPException(status_code=403, detail="Only teachers can access analytics")
     
     # 取得群組相關專案 ID（支持新舊架構）
-    project_ids = get_cohort_project_ids(db, cohort_id)
+    learning_task_ids = get_cohort_learning_task_ids(db, cohort_id)
     
     # 驗證文檔屬於該群組
     doc = None
-    if project_ids:
+    if learning_task_ids:
         doc = db.query(models.Document).filter(
             models.Document.id == document_id,
-            models.Document.project_id.in_(project_ids)
+            models.Document.learning_task_id.in_(learning_task_ids)
         ).first()
     
     if not doc:
@@ -622,22 +622,22 @@ def get_activity_timeline(
     ).all()
     
     # 取得群組相關專案 ID（支持新舊架構）
-    project_ids = get_cohort_project_ids(db, cohort_id)
+    learning_task_ids = get_cohort_learning_task_ids(db, cohort_id)
     
     highlights = []
-    if project_ids:
+    if learning_task_ids:
         highlights = db.query(models.Highlight).join(models.Document).filter(
-            models.Document.project_id.in_(project_ids),
+            models.Document.learning_task_id.in_(learning_task_ids),
             models.Highlight.created_at >= start_date
         ).all()
     
     # 統計 ChatMessage（學生對話）
     
     chat_messages = []
-    if len(member_ids) > 0 and len(project_ids) > 0:
+    if len(member_ids) > 0 and len(learning_task_ids) > 0:
         chat_messages = db.query(models.ChatMessage).filter(
             models.ChatMessage.user_id.in_(member_ids),
-            models.ChatMessage.project_id.in_(project_ids),
+            models.ChatMessage.learning_task_id.in_(learning_task_ids),
             models.ChatMessage.role == "user",  # 僅統計學生發送的訊息
             models.ChatMessage.created_at >= start_date
         ).all()
@@ -740,18 +740,18 @@ def get_chat_logs(
         query = query.filter(models.ChatMessage.user_id == student_id)
     
     # 取得群組相關專案 ID（支持新舊架構）
-    project_ids = get_cohort_project_ids(db, cohort_id)
+    learning_task_ids = get_cohort_learning_task_ids(db, cohort_id)
     
     # 如果指定了專案 ID，只查詢該專案
     if project_id:
         # 驗證專案屬於該群組
-        if project_id not in project_ids:
+        if project_id not in learning_task_ids:
             raise HTTPException(status_code=404, detail="Project not found in this cohort")
-        query = query.filter(models.ChatMessage.project_id == project_id)
+        query = query.filter(models.ChatMessage.learning_task_id == project_id)
     else:
         # 如果沒有指定專案，則查詢該群組所有專案
-        if len(project_ids) > 0:
-            query = query.filter(models.ChatMessage.project_id.in_(project_ids))
+        if len(learning_task_ids) > 0:
+            query = query.filter(models.ChatMessage.learning_task_id.in_(learning_task_ids))
     
     # 按時間倒序排列並限制數量
     messages = query.order_by(models.ChatMessage.created_at.desc()).limit(limit).all()
@@ -760,11 +760,11 @@ def get_chat_logs(
     result = []
     for msg in messages:
         user = db.query(models.User).filter(models.User.id == msg.user_id).first()
-        project = db.query(models.Project).filter(models.Project.id == msg.project_id).first()
+        project = db.query(models.LearningTask).filter(models.LearningTask.id == msg.learning_task_id).first()
         
         result.append({
             "id": msg.id,
-            "project_id": msg.project_id,
+            "project_id": msg.learning_task_id,
             "project_title": project.title if project else "未知專案",
             "user_id": msg.user_id,
             "user_name": user.name if user else "未知學生",
