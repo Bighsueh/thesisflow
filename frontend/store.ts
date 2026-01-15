@@ -3,7 +3,7 @@ import { chatService } from './services/chatService';
 import { cohortService } from './services/cohortService';
 import { documentService } from './services/documentService';
 import { fileService } from './services/fileService';
-import { projectService } from './services/projectService';
+import { learningTaskService } from './services/learningTaskService';
 import { studentService } from './services/studentService';
 import { taskService } from './services/taskService';
 import { usageService } from './services/usageService';
@@ -16,7 +16,7 @@ import {
   ComparisonRow,
   TaskAContent,
   TaskCContent,
-  Project,
+  LearningTask,
   FieldWithEvidence,
   Cohort,
   Student,
@@ -25,30 +25,30 @@ import {
 } from './types';
 
 interface AppState {
-  projects: Project[];
-  loadProjects: (cohortId?: string) => Promise<void>;
-  activeProjectId: string | null;
-  enterProject: (projectId: string) => Promise<void>;
-  exitProject: () => void;
-  saveProject: (meta: {
+  learningTasks: LearningTask[];
+  loadLearningTasks: (cohortId?: string) => Promise<void>;
+  activeLearningTaskId: string | null;
+  enterLearningTask: (learningTaskId: string) => Promise<void>;
+  exitLearningTask: () => void;
+  saveLearningTask: (meta: {
     id?: string;
     title: string;
     semester?: string;
     tags?: string[];
     task_config?: any;
     cohort_id?: string;
-  }) => Promise<Project>;
-  deleteProject: (projectId: string) => Promise<void>;
+  }) => Promise<LearningTask>;
+  deleteLearningTask: (learningTaskId: string) => Promise<void>;
   cohorts: Cohort[];
   loadCohorts: () => Promise<void>;
   createCohort: (payload: {
     name: string;
     code?: string;
-    project_id?: string | null;
+    learning_task_id?: string | null;
   }) => Promise<void>;
   updateCohort: (
     cohortId: string,
-    payload: { name?: string; code?: string | null; project_id?: string | null }
+    payload: { name?: string; code?: string | null; learning_task_id?: string | null }
   ) => Promise<void>;
   deleteCohort: (cohortId: string) => Promise<void>;
   cohortMembers: Record<string, CohortMember[]>;
@@ -81,7 +81,7 @@ interface AppState {
   usageRecords: UsageRecord[];
   loadUsageRecords: (filters: {
     cohortId?: string;
-    projectId?: string;
+    learningTaskId?: string;
     userId?: string;
   }) => Promise<UsageRecord[]>;
 
@@ -90,8 +90,8 @@ interface AppState {
   documents: Document[];
   pdfCache: Record<string, { url: string; createdAt: number }>;
   currentDocId: string | null;
-  loadDocuments: (projectId?: string | null) => Promise<void>;
-  bindDocumentsToProject: (documentIds: string[], projectId: string) => Promise<void>;
+  loadDocuments: (learningTaskId?: string | null) => Promise<void>;
+  bindDocumentsToLearningTask: (documentIds: string[], learningTaskId: string) => Promise<void>;
   uploadDocument: (title: string, content: string) => Promise<void>;
   uploadFileDocument: (title: string, file: File) => Promise<void>;
   removeDocument: (id: string) => Promise<void>;
@@ -156,7 +156,7 @@ interface AppState {
   getFileUrl: (objectKey: string) => Promise<string>;
   getCachedFileUrl: (objectKey: string) => Promise<string>;
   saveTaskState: () => Promise<void>;
-  loadTaskState: (projectId: string) => Promise<void>;
+  loadTaskState: (learningTaskId: string) => Promise<void>;
 
   // Chat 相關方法
   addChatMessage: (message: Message) => void;
@@ -186,7 +186,7 @@ const debouncedSave = (saveFn: () => Promise<void>, delay: number = 1000) => {
 export const useStore = create<AppState>((set, get) => ({
   projects: [],
   loadProjects: async (cohortId?: string) => {
-    const projects = await projectService.loadProjects(cohortId);
+    const projects = await learningTaskService.loadProjects(cohortId);
     set({ projects });
   },
   cohorts: [],
@@ -272,7 +272,7 @@ export const useStore = create<AppState>((set, get) => ({
     set({ usageRecords: usage });
     return usage;
   },
-  saveProject: async (meta) => {
+  saveLearningTask: async (meta) => {
     const body = {
       title: meta.title,
       semester: meta.semester,
@@ -286,9 +286,9 @@ export const useStore = create<AppState>((set, get) => ({
 
     let saved: Project;
     if (meta.id) {
-      saved = await projectService.updateProject(meta.id, body);
+      saved = await learningTaskService.updateProject(meta.id, body);
     } else {
-      saved = await projectService.saveProject(body);
+      saved = await learningTaskService.saveProject(body);
     }
     set((s) => {
       const other = s.projects.filter((p) => p.id !== saved.id);
@@ -296,33 +296,33 @@ export const useStore = create<AppState>((set, get) => ({
     });
     return saved;
   },
-  deleteProject: async (projectId: string) => {
-    await projectService.deleteProject(projectId);
-    set((s) => ({ projects: s.projects.filter((p) => p.id !== projectId) }));
+  deleteLearningTask: async (learningTaskId: string) => {
+    await learningTaskService.deleteProject(learningTaskId);
+    set((s) => ({ projects: s.projects.filter((p) => p.id !== learningTaskId) }));
     // 若刪除的是目前進入的專案，重置流程狀態
-    if (get().activeProjectId === projectId) {
+    if (get().activeProjectId === learningTaskId) {
       get().exitProject();
     }
   },
   activeProjectId: null,
-  enterProject: async (projectId: string) => {
-    const project = get().projects.find((p) => p.id === projectId);
+  enterProject: async (learningTaskId: string) => {
+    const project = get().projects.find((p) => p.id === learningTaskId);
     if (!project) return;
 
     set({
-      activeProjectId: projectId,
+      activeProjectId: learningTaskId,
       chatTimeline: [], // 重置對話時間線
       currentWidgetState: {}, // 重置 Widget 狀態
       activeEvidenceIds: [], // 重置選中的證據
       taskBData: [], // 重置 taskBData
     });
 
-    await get().loadDocuments(projectId);
+    await get().loadDocuments(learningTaskId);
     // 載入保存的任務狀態
-    await get().loadTaskState(projectId);
+    await get().loadTaskState(learningTaskId);
     // 載入對話歷史
     try {
-      const chatHistory = await chatService.getChatHistory(projectId);
+      const chatHistory = await chatService.getChatHistory(learningTaskId);
       set({ chatTimeline: chatHistory, chatMessages: chatHistory });
     } catch (error) {
       console.error('載入對話歷史失敗:', error);
@@ -334,17 +334,17 @@ export const useStore = create<AppState>((set, get) => ({
   documents: [],
   pdfCache: {},
   currentDocId: null,
-  loadDocuments: async (projectId?: string | null) => {
-    const docs = await documentService.loadDocuments(projectId);
+  loadDocuments: async (learningTaskId?: string | null) => {
+    const docs = await documentService.loadDocuments(learningTaskId);
     set({ documents: docs, currentDocId: docs[0]?.id || null });
   },
-  bindDocumentsToProject: async (documentIds: string[], projectId: string) => {
-    await documentService.bindDocumentsToProject(documentIds, projectId);
-    await get().loadDocuments(projectId);
+  bindDocumentsToLearningTask: async (documentIds: string[], learningTaskId: string) => {
+    await documentService.bindDocumentsToProject(documentIds, learningTaskId);
+    await get().loadDocuments(learningTaskId);
   },
-  unbindDocumentsFromProject: async (documentIds: string[], projectId: string) => {
-    await documentService.unbindDocumentsFromProject(documentIds, projectId);
-    await get().loadDocuments(projectId);
+  unbindDocumentsFromProject: async (documentIds: string[], learningTaskId: string) => {
+    await documentService.unbindDocumentsFromProject(documentIds, learningTaskId);
+    await get().loadDocuments(learningTaskId);
   },
   uploadDocument: async (title: string, content: string) => {
     const created = await documentService.uploadDocument(title, content);
@@ -465,7 +465,7 @@ export const useStore = create<AppState>((set, get) => ({
           (s.taskAVersions.filter((v) => v.targetDocId === docId).length || 0) + 1;
         const newVersion: TaskVersion = {
           id: res.id,
-          projectId: state.activeProjectId!,
+          learningTaskId: state.activeProjectId!,
           targetDocId: docId,
           version: nextVersion,
           taskType: 'A',
@@ -526,7 +526,7 @@ export const useStore = create<AppState>((set, get) => ({
       set((s) => {
         const newVersion: TaskVersion = {
           id: res.id,
-          projectId: state.activeProjectId!,
+          learningTaskId: state.activeProjectId!,
           version: (s.taskAVersions.filter((v) => v.taskType === 'B').length || 0) + 1,
           taskType: 'B',
           content: state.taskBData,
@@ -564,7 +564,7 @@ export const useStore = create<AppState>((set, get) => ({
       set((s) => {
         const newVersion: TaskVersion = {
           id: res.id,
-          projectId: state.activeProjectId!,
+          learningTaskId: state.activeProjectId!,
           version: (s.taskAVersions.filter((v) => v.taskType === 'C').length || 0) + 1,
           taskType: 'C',
           content: state.taskCData,
@@ -803,24 +803,24 @@ export const useStore = create<AppState>((set, get) => ({
 
     try {
       const payload = {
-        project_id: state.activeProjectId,
+        learning_task_id: state.activeProjectId,
         summary_state: state.currentWidgetState['summary'] || {},
         comparison_state: state.taskBData || [],
       };
-      await projectService.saveTaskState(state.activeProjectId, payload);
+      await learningTaskService.saveTaskState(state.activeProjectId, payload);
     } catch (error) {
       console.error('保存任務狀態失敗:', error);
       // 不拋出錯誤，避免影響用戶體驗
     }
   },
 
-  loadTaskState: async (projectId: string) => {
+  loadTaskState: async (learningTaskId: string) => {
     try {
-      if (!projectService || typeof projectService.loadTaskState !== 'function') {
-        console.error('projectService.loadTaskState is not available');
+      if (!learningTaskService || typeof learningTaskService.loadTaskState !== 'function') {
+        console.error('learningTaskService.loadTaskState is not available');
         return;
       }
-      const taskState = await projectService.loadTaskState(projectId);
+      const taskState = await learningTaskService.loadTaskState(learningTaskId);
       if (taskState) {
         set({
           currentWidgetState: taskState.summary_state

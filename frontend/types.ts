@@ -80,14 +80,14 @@ export interface NewTaskConfig {
   comparison: TaskConfigComparison;
 }
 
-export interface Project {
+export interface LearningTask {
   id: string;
   title: string;
   semester?: string;
   tags: string[];
   // 新的任務配置結構
   task_config?: NewTaskConfig | Record<string, any>;
-  cohort_id?: string; // 新架構：專案屬於群組
+  cohort_id?: string; // 新架構：學習任務屬於群組
   // 保留以向後相容
   nodes?: FlowNodePayload[];
   edges?: FlowEdgePayload[];
@@ -114,7 +114,7 @@ export type RagStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'not
 
 export interface Document {
   id: string;
-  project_id?: string | null;
+  learning_task_id?: string | null;
   title: string;
   object_key: string;
   content_type?: string;
@@ -156,7 +156,7 @@ export interface Cohort {
   id: string;
   name: string;
   code?: string;
-  project_id?: string;
+  learning_task_id?: string;
   created_at: number;
   member_count: number;
 }
@@ -178,8 +178,8 @@ export interface CohortMember {
 export interface UsageRecord {
   id: string;
   user: Student;
-  project_id: string;
-  project_title?: string;
+  learning_task_id: string;
+  learning_task_title?: string;
   task_type: string;
   created_at: number;
   cohort_id?: string | null;
@@ -229,7 +229,7 @@ export interface TaskCContent {
 
 export interface TaskVersion {
   id: string;
-  projectId: string;
+  learningTaskId: string;
   targetDocId?: string; // For Task A
   version: number;
   taskType: 'A' | 'B' | 'C';
@@ -269,7 +269,7 @@ export interface Message {
 }
 
 export interface ChatContext {
-  projectId: string;
+  learningTaskId: string;
   nodeId: string;
   evidenceIds: string[];
   widgetStates: Record<string, any>;
