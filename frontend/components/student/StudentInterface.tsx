@@ -28,6 +28,7 @@ import {
   LayoutTemplate,
   LogOut,
   CheckCircle2,
+  Search,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
@@ -117,7 +118,7 @@ const EvidenceSelector = ({
               />
               <div>
                 <div className="font-bold text-slate-500">{h.docTitle}</div>
-                <div className="text-slate-700">\"{h.snippet}\"</div>
+                <div className="text-slate-700">&quot;{h.snippet}&quot;</div>
               </div>
             </div>
           ))}
@@ -416,7 +417,7 @@ const HighlightHoverCard = ({
 
       {/* Snippet Preview */}
       <p className="text-xs text-slate-600 line-clamp-3 italic leading-relaxed pl-2 border-l-2 border-slate-200">
-        "{highlight.snippet}"
+        &quot;{highlight.snippet}&quot;
       </p>
 
       <div className="flex items-center text-[10px] text-slate-400 pt-1">
@@ -591,7 +592,7 @@ const HighlightSidebar = ({
                       </div>
                     </div>
                     <p className="text-xs text-slate-500 line-clamp-2 pl-2 border-l-2 border-slate-100 italic">
-                      "{h.snippet}"
+                      &quot;{h.snippet}&quot;
                     </p>
                     <div className="absolute top-1/2 right-[-10px] transform -translate-y-1/2 opacity-0 group-hover:opacity-100 group-hover:right-2 transition-all">
                       <GripVertical size={14} className="text-slate-300" />
@@ -647,8 +648,8 @@ const ChatPanelWrapper = ({ currentNode: _currentNode }: { currentNode: AppNode 
     setInputMessage('');
     try {
       await sendCoachMessage(message);
-    } catch (error) {
-      console.error('發送訊息失敗:', error);
+    } catch (_error) {
+      // 發送訊息失敗，錯誤已通過UI通知使用者
     }
   };
 
@@ -670,8 +671,8 @@ const ChatPanelWrapper = ({ currentNode: _currentNode }: { currentNode: AppNode 
         if (highlightId) {
           handleInsertEvidence(highlightId);
         }
-      } catch (err) {
-        console.error('Failed to parse highlight data', err);
+      } catch (_err) {
+        // 解析亮點資料失敗，忽略此事件
       }
     }
   };
@@ -736,7 +737,7 @@ const ChatPanelWrapper = ({ currentNode: _currentNode }: { currentNode: AppNode 
                   >
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-slate-500">{h.docTitle}</div>
-                      <div className="text-slate-700 line-clamp-1">"{h.snippet}"</div>
+                      <div className="text-slate-700 line-clamp-1">&quot;{h.snippet}&quot;</div>
                     </div>
                   </div>
                 ))}
@@ -872,7 +873,8 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
     const loadAvailableDocuments = async () => {
       if (!activeProjectId) return;
       const API_BASE =
-        ((import.meta as any).env?.VITE_API_BASE as string) || 'http://localhost:8000';
+        ((import.meta as unknown as { env?: { VITE_API_BASE?: string } }).env
+          ?.VITE_API_BASE as string) || 'http://localhost:8000';
       const token = useAuthStore.getState().token;
       const res = await fetch(`${API_BASE}/api/documents`, {
         headers: {
@@ -961,7 +963,7 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       setNewContent('');
       setSelectedFile(null);
       alert('文獻已上傳成功');
-    } catch (e: any) {
+    } catch (e: unknown) {
       alert(`文獻上傳失敗：${e?.message || e || '未知錯誤'}`);
     }
   };
@@ -990,7 +992,8 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       await loadDocuments(activeProjectId);
       // 重新載入可用文檔列表
       const API_BASE =
-        ((import.meta as any).env?.VITE_API_BASE as string) || 'http://localhost:8000';
+        ((import.meta as unknown as { env?: { VITE_API_BASE?: string } }).env
+          ?.VITE_API_BASE as string) || 'http://localhost:8000';
       const token = useAuthStore.getState().token;
       const res = await fetch(`${API_BASE}/api/documents`, {
         headers: {
@@ -1002,7 +1005,7 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         const allDocs: Document[] = await res.json();
         setAvailableDocuments(allDocs.filter((d) => !d.project_id));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       alert(`操作失敗：${error?.message || error || '未知錯誤'}`);
     }
   };
@@ -1271,7 +1274,7 @@ const ReaderPanel = () => {
       try {
         await bindDocumentsToProject([docId], activeProjectId);
         await loadDocuments(activeProjectId);
-      } catch (error: any) {
+      } catch (error: unknown) {
         alert(`加入文檔失敗：${error?.message || error || '未知錯誤'}`);
       }
     }
@@ -2008,7 +2011,7 @@ const ReaderPanel = () => {
 // --- Task Components (保留但不再使用，邏輯已移至 ChatMainPanel) ---
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const TaskATab = ({ nodeData }: { nodeData: any }) => {
+const TaskATab = ({ nodeData }: { nodeData: unknown }) => {
   const { documents, submitTaskA, taskAVersions, isAiThinking } = useStore();
   const [selectedDocId, setSelectedDocId] = useState<string>('');
 
@@ -2124,7 +2127,7 @@ const TaskATab = ({ nodeData }: { nodeData: any }) => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const TaskBTab = ({ nodeData: _nodeData }: { nodeData: any }) => {
+const TaskBTab = ({ nodeData: _nodeData }: { nodeData: unknown }) => {
   const { taskBData, updateTaskBRow, addTaskBRow, removeTaskBRow, submitTaskBCheck, isAiThinking } =
     useStore();
 
@@ -2227,7 +2230,7 @@ const TaskBTab = ({ nodeData: _nodeData }: { nodeData: any }) => {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const TaskCTab = ({ nodeData: _nodeData }: { nodeData: any }) => {
+const TaskCTab = ({ nodeData: _nodeData }: { nodeData: unknown }) => {
   const { taskCData, updateTaskC, submitTaskCCheck, isAiThinking } = useStore();
 
   return (
@@ -2373,6 +2376,11 @@ export default function StudentInterface() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'task'>('chat');
   const [editingHighlight, setEditingHighlight] = useState<ExtendedHighlight | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [activeDocTab, setActiveDocTab] = useState<'select' | 'upload'>('select');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleJoinCohort = async () => {
     const code = joinCode.trim();
@@ -2383,7 +2391,7 @@ export default function StudentInterface() {
       setJoinCode('');
       setIsJoinModalOpen(false);
       alert('已加入學生群組！');
-    } catch (e: any) {
+    } catch (e: unknown) {
       alert(e?.message || '加入失敗，請確認群組編號是否正確。');
     } finally {
       setJoining(false);
@@ -2393,8 +2401,12 @@ export default function StudentInterface() {
   const handleUpdateHighlight = async (id: string, updates: Partial<ExtendedHighlight>) => {
     if (!updateHighlight) return;
     await updateHighlight(id, {
-      name: (updates as any).tag || (updates as any).name,
-      evidence_type: (updates as any).type || (updates as any).evidence_type,
+      name:
+        (updates as unknown as { tag?: string; name?: string }).tag ||
+        (updates as unknown as { tag?: string; name?: string }).name,
+      evidence_type:
+        (updates as unknown as { type?: string; evidence_type?: string }).type ||
+        (updates as unknown as { type?: string; evidence_type?: string }).evidence_type,
     });
     await loadDocuments(activeProjectId || undefined);
   };
@@ -2413,7 +2425,8 @@ export default function StudentInterface() {
         // 沒有綁定文檔，載入所有可用文檔供選擇
         // 直接調用 API 獲取所有文檔，避免更新 store
         const API_BASE =
-          ((import.meta as any).env?.VITE_API_BASE as string) || 'http://localhost:8000';
+          ((import.meta as unknown as { env?: { VITE_API_BASE?: string } }).env
+            ?.VITE_API_BASE as string) || 'http://localhost:8000';
         const token = useAuthStore.getState().token;
         const res = await fetch(`${API_BASE}/api/documents`, {
           headers: {
@@ -2423,7 +2436,7 @@ export default function StudentInterface() {
         });
         if (res.ok) {
           const allDocs: Document[] = await res.json();
-          setAvailableDocuments(allDocs.filter((d) => !d.project_id));
+          setAvailableDocuments(allDocs);
           setIsDocumentSelectModalOpen(true);
         }
       }
@@ -2431,6 +2444,13 @@ export default function StudentInterface() {
 
     checkProjectDocuments();
   }, [activeProjectId, loadDocuments, isDocumentSelectModalOpen]);
+
+  // 根據文檔數量設置初始 tab
+  useEffect(() => {
+    if (isDocumentSelectModalOpen) {
+      setActiveDocTab(availableDocuments.length === 0 ? 'upload' : 'select');
+    }
+  }, [isDocumentSelectModalOpen, availableDocuments.length]);
 
   const handleBindDocuments = async () => {
     if (!activeProjectId || selectedDocumentIds.length === 0) return;
@@ -2441,7 +2461,7 @@ export default function StudentInterface() {
       setIsDocumentSelectModalOpen(false);
       setSelectedDocumentIds([]);
       await loadDocuments(activeProjectId);
-    } catch (e: any) {
+    } catch (e: unknown) {
       alert(`綁定失敗：${e?.message || e || '未知錯誤'}`);
     } finally {
       setIsBinding(false);
@@ -2454,6 +2474,54 @@ export default function StudentInterface() {
     } else {
       setSelectedDocumentIds([...selectedDocumentIds, docId]);
     }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const newDoc = await uploadFileDocument(file.name, file);
+      setAvailableDocuments((prev) => [...prev, newDoc]);
+      setSelectedDocumentIds((prev) => [...prev, newDoc.id]);
+      // 上傳成功後切換到選擇 tab
+      setActiveDocTab('select');
+    } catch (e: unknown) {
+      alert(`上傳失敗：${e?.message || e || '未知錯誤'}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleDragOverUpload = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(true);
+  };
+
+  const handleDragLeaveUpload = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+  };
+
+  const handleDropUpload = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFile(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
+
+  const handleCancelDocumentSelect = () => {
+    _navigate('/dashboard');
   };
 
   // 新架構：移除節點導航邏輯，使用固定任務面板
@@ -2693,68 +2761,205 @@ export default function StudentInterface() {
         </div>
       )}
       {isDocumentSelectModalOpen && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-base-200 flex justify-between items-center">
-              <div>
-                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <BookOpen size={18} className="text-primary" />
-                  選擇要加入專案的文檔
-                </h3>
-                <p className="text-sm text-slate-600 mt-1">
-                  此專案尚未綁定任何文檔，請選擇要加入的文檔。
-                </p>
-              </div>
-              <button
-                className="btn btn-ghost btn-sm btn-circle"
-                onClick={() => !isBinding && setIsDocumentSelectModalOpen(false)}
-                disabled={isBinding}
-              >
-                <X size={16} />
-              </button>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="p-6 pb-4">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <BookOpen size={18} className="text-primary" />
+                選擇要加入專案的文檔
+              </h3>
+              <p className="text-sm text-slate-500 mt-1">
+                此專案尚未綁定任何文檔，請上傳新文檔或從現有文檔中選擇。
+              </p>
             </div>
-            <div className="flex-1 overflow-y-auto p-6">
-              {availableDocuments.length === 0 ? (
-                <div className="text-center py-8 text-slate-400">
-                  <p className="text-sm">目前沒有可用的文檔。</p>
-                  <p className="text-xs mt-2">請先上傳文檔後再選擇。</p>
+
+            {/* Tabs */}
+            {availableDocuments.length > 0 && (
+              <div className="px-6">
+                <div className="flex gap-1 border-b border-slate-200">
+                  <button
+                    onClick={() => setActiveDocTab('select')}
+                    className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                      activeDocTab === 'select'
+                        ? 'text-primary'
+                        : 'text-slate-600 hover:text-slate-800'
+                    }`}
+                  >
+                    選擇現有文檔
+                    {availableDocuments.length > 0 && (
+                      <span className="ml-2 text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
+                        {availableDocuments.length}
+                      </span>
+                    )}
+                    {activeDocTab === 'select' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setActiveDocTab('upload')}
+                    className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+                      activeDocTab === 'upload'
+                        ? 'text-primary'
+                        : 'text-slate-600 hover:text-slate-800'
+                    }`}
+                  >
+                    上傳新文檔
+                    {activeDocTab === 'upload' && (
+                      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"></div>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.txt,.doc,.docx"
+              onChange={handleFileSelect}
+            />
+
+            {/* Content Area */}
+            <div
+              className="flex-1 overflow-hidden relative"
+              onDragOver={handleDragOverUpload}
+              onDragLeave={handleDragLeaveUpload}
+              onDrop={handleDropUpload}
+            >
+              {activeDocTab === 'select' && availableDocuments.length > 0 ? (
+                /* Select Tab Content */
+                <div className="h-full flex flex-col">
+                  {/* 搜尋框 */}
+                  <div className="px-6 pt-6 pb-4 shrink-0">
+                    <div className="relative">
+                      <Search
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                        size={18}
+                      />
+                      <input
+                        type="text"
+                        placeholder="搜尋文檔..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-11 pr-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 文檔列表 */}
+                  <div className="flex-1 overflow-y-auto px-6 pb-4">
+                    <div className="space-y-2">
+                      {availableDocuments
+                        .filter((doc) =>
+                          doc.title.toLowerCase().includes(searchQuery.toLowerCase())
+                        )
+                        .map((doc) => {
+                          const isBoundToOther =
+                            doc.project_id && doc.project_id !== activeProjectId;
+                          const isSelectable = !isBoundToOther;
+                          return (
+                            <div
+                              key={doc.id}
+                              className={`group p-4 rounded-lg transition-all cursor-pointer ${
+                                isBoundToOther
+                                  ? 'bg-slate-50 opacity-60 cursor-not-allowed'
+                                  : selectedDocumentIds.includes(doc.id)
+                                    ? 'bg-primary/5 shadow-sm'
+                                    : 'hover:bg-slate-50'
+                              }`}
+                              onClick={() => isSelectable && toggleDocumentSelection(doc.id)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedDocumentIds.includes(doc.id)}
+                                  onChange={() => isSelectable && toggleDocumentSelection(doc.id)}
+                                  className="checkbox checkbox-primary checkbox-sm"
+                                  disabled={!isSelectable}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <h4
+                                    className={`font-medium truncate ${
+                                      isBoundToOther ? 'text-slate-500' : 'text-slate-800'
+                                    }`}
+                                  >
+                                    {doc.title}
+                                  </h4>
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    {doc.type?.toUpperCase() || 'FILE'} ·{' '}
+                                    {new Date(doc.uploaded_at || Date.now()).toLocaleDateString()}
+                                    {isBoundToOther && (
+                                      <span className="ml-2 text-amber-600">
+                                        （已綁定至其他專案）
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {availableDocuments.map((doc) => (
-                    <div
-                      key={doc.id}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        selectedDocumentIds.includes(doc.id)
-                          ? 'border-primary bg-primary/5'
-                          : 'border-base-200 hover:border-primary/50'
-                      }`}
-                      onClick={() => toggleDocumentSelection(doc.id)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedDocumentIds.includes(doc.id)}
-                          onChange={() => toggleDocumentSelection(doc.id)}
-                          className="checkbox checkbox-primary"
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-slate-800">{doc.title}</h4>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {doc.type?.toUpperCase() || 'FILE'} ·{' '}
-                            {new Date(doc.uploaded_at || Date.now()).toLocaleDateString()}
-                          </p>
-                        </div>
+                /* Upload Tab Content */
+                <div className="h-full flex items-center justify-center p-8">
+                  <div
+                    className={`w-full max-w-lg border-2 border-dashed rounded-2xl p-16 text-center transition-all cursor-pointer ${
+                      isDraggingFile
+                        ? 'border-primary bg-primary/5 scale-105'
+                        : 'border-slate-300 hover:border-primary hover:bg-slate-50'
+                    }`}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <div className="flex flex-col items-center gap-6">
+                      <div
+                        className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+                          isDraggingFile ? 'bg-primary/20 scale-110' : 'bg-primary/10'
+                        }`}
+                      >
+                        <Upload size={36} className="text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-xl font-semibold text-slate-800 mb-2">
+                          {isUploading
+                            ? '上傳中...'
+                            : isDraggingFile
+                              ? '放開以上傳文檔'
+                              : availableDocuments.length === 0
+                                ? '上傳您的第一個文檔'
+                                : '上傳新文檔'}
+                        </p>
+                        <p className="text-sm text-slate-500">拖曳文件至此處，或點擊選擇文件</p>
+                        <p className="text-xs text-slate-400 mt-3">
+                          支援 PDF、TXT、DOC、DOCX 格式，最大 100MB
+                        </p>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 全域拖曳覆蓋層 */}
+              {isDraggingFile && (
+                <div className="absolute inset-0 bg-primary/10 border-4 border-dashed border-primary flex items-center justify-center backdrop-blur-sm pointer-events-none z-10">
+                  <div className="text-center">
+                    <div className="w-24 h-24 mx-auto rounded-full bg-primary/20 flex items-center justify-center mb-6 animate-pulse">
+                      <Upload size={48} className="text-primary" />
+                    </div>
+                    <p className="text-2xl font-bold text-primary mb-2">放開以上傳文檔</p>
+                    <p className="text-slate-600">文檔將自動加入選擇清單</p>
+                  </div>
                 </div>
               )}
             </div>
             <div className="p-6 border-t border-base-200 flex justify-end gap-2">
               <button
                 className="btn btn-ghost"
-                onClick={() => setIsDocumentSelectModalOpen(false)}
+                onClick={handleCancelDocumentSelect}
                 disabled={isBinding}
               >
                 取消

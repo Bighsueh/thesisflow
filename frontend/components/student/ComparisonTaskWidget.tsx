@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useAutoSave } from '../../hooks/useAutoSave';
 import { useStore } from '../../store';
 import { TaskConfigComparison, Document, ComparisonRow } from '../../types';
-import { useAutoSave } from '../../hooks/useAutoSave';
-import { MatrixCompare } from '../widgets/MatrixCompare';
 import { ChecklistSubmit } from '../widgets/ChecklistSubmit';
+import { MatrixCompare } from '../widgets/MatrixCompare';
 
 interface ComparisonTaskWidgetProps {
-  projectId: string;
+  learningTaskId: string;
   config: TaskConfigComparison;
   documents: Document[];
 }
 
 export default function ComparisonTaskWidget({
-  projectId,
+  learningTaskId,
   config,
   documents,
 }: ComparisonTaskWidgetProps) {
@@ -29,19 +29,19 @@ export default function ComparisonTaskWidget({
   const autoSave = useAutoSave(1000);
   const nodeId = 'comparison'; // 固定使用 'comparison' 作為節點 ID
   const minEvidence = config.minEvidence || 1;
-  const dimensions = config.dimensions || [];
 
   // 初始化比較任務資料
   useEffect(() => {
+    const dimensions = config.dimensions || [];
     if (dimensions.length > 0 && taskBData.length === 0) {
       initializeTaskBDataForNode(nodeId, dimensions);
     }
-  }, [dimensions, taskBData.length, nodeId, initializeTaskBDataForNode]);
+  }, [config.dimensions, taskBData.length, nodeId, initializeTaskBDataForNode]);
 
   const handleUpdateRow = (
     index: number,
     field: keyof ComparisonRow | 'doc1Claim' | 'doc2Claim',
-    value: any
+    value: unknown
   ) => {
     updateTaskBRow(index, field, value);
     autoSave();
@@ -66,9 +66,9 @@ export default function ComparisonTaskWidget({
     try {
       await submitTaskBCheck();
       // 提交成功後，保存任務狀態
-      await saveTaskState(projectId);
-    } catch (error) {
-      console.error('提交失敗:', error);
+      await saveTaskState(learningTaskId);
+    } catch (_error) {
+      // 提交失敗，記錄錯誤但不中斷流程
     }
   };
 
