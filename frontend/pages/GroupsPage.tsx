@@ -1,5 +1,6 @@
 import { Users, Hash, LogIn, School } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Input } from '../components/ui/Input';
@@ -27,7 +28,7 @@ export function GroupsPage() {
       await joinCohortByCode(code);
       await loadCohorts();
       setJoinCode('');
-      alert('已加入學生群組！');
+      toast.success('已加入學生群組！');
     } catch (e: any) {
       setError(e?.message || '加入失敗，請確認群組編號是否正確。');
     } finally {
@@ -37,7 +38,7 @@ export function GroupsPage() {
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    alert('已複製群組代碼！');
+    toast.success('已複製群組代碼！');
   };
 
   return (

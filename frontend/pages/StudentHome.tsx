@@ -12,6 +12,7 @@ import {
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuthStore } from '../authStore';
 import { useStore } from '../store';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -75,9 +76,9 @@ export default function StudentHome() {
       // 成功加入學生群組後，重新載入專案與群組清單，確保學生端卡片立即更新
       await Promise.all([loadProjects(), loadCohorts()]);
       setJoinCode('');
-      alert('已加入學生群組！');
+      toast.success('已加入學生群組！');
     } catch (e: any) {
-      alert(e?.message || '加入失敗，請確認群組編號是否正確。');
+      toast.error(e?.message || '加入失敗，請確認群組編號是否正確。');
     } finally {
       setJoining(false);
     }
@@ -107,7 +108,8 @@ export default function StudentHome() {
       setSelectedFile(null);
       await loadDocuments();
     } catch (e: any) {
-      alert(`上傳失敗：${e?.message || e || '未知錯誤'}`);
+      // 錯誤已在全局進度條顯示
+      console.error('上傳失敗：', e);
     } finally {
       setUploading(false);
     }
@@ -168,7 +170,7 @@ export default function StudentHome() {
       await loadDocuments();
       setDeleteConfirmId(null);
     } catch (e: any) {
-      alert(`刪除失敗：${e?.message || e || '未知錯誤'}`);
+      toast.error(`刪除失敗：${e?.message || e || '未知錯誤'}`);
     }
   };
 

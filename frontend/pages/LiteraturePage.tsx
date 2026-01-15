@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Upload, FileText, Trash2, Eye, Search, Filter, X } from 'lucide-react';
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
+import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
 import { GlassCard } from '../components/ui/GlassCard';
 import { Input } from '../components/ui/Input';
@@ -85,7 +86,7 @@ export function LiteraturePage() {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      alert('請先選擇檔案');
+      toast.error('請先選擇檔案');
       return;
     }
     setUploading(true);
@@ -98,7 +99,8 @@ export function LiteraturePage() {
       setSelectedFile(null);
       await loadDocuments();
     } catch (e: any) {
-      alert(`上傳失敗：${e?.message || e || '未知錯誤'}`);
+      // 錯誤已在全局進度條顯示
+      console.error('上傳失敗：', e);
     } finally {
       setUploading(false);
     }
@@ -157,7 +159,7 @@ export function LiteraturePage() {
       await loadDocuments();
       setDeleteConfirmId(null);
     } catch (e: any) {
-      alert(`刪除失敗：${e?.message || e || '未知錯誤'}`);
+      toast.error(`刪除失敗：${e?.message || e || '未知錯誤'}`);
     }
   };
 
