@@ -119,57 +119,58 @@ export function ProjectsPage() {
           </p>
         </GlassCard>
       ) : (
-        <div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-          data-tour="project-list"
-        >
+        <div className="flex flex-col gap-3" data-tour="project-list">
           {filteredProjects.map((project, index) => (
             <GlassCard
               key={project.id}
-              className="p-6 flex flex-col h-full group"
+              className="p-4 group"
               hoverEffect
               onClick={() => handleEnterProject(project.id)}
             >
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-4">
+                {/* 專案圖示 */}
                 <div
-                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getProjectColor(index)} flex items-center justify-center text-white shadow-md`}
+                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${getProjectColor(index)} flex items-center justify-center text-white shadow-md flex-shrink-0`}
                 >
-                  <span className="font-bold text-lg">{getProjectInitials(project.title)}</span>
+                  <span className="font-bold text-sm">{getProjectInitials(project.title)}</span>
                 </div>
-              </div>
 
-              <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-violet-700 transition-colors">
-                {project.title}
-              </h3>
-
-              <div className="flex items-center gap-4 text-sm text-gray-500 mb-6">
-                {project.semester && (
-                  <div className="flex items-center gap-1.5">
-                    <Calendar size={14} />
-                    <span>{project.semester}</span>
+                {/* 專案標題與資訊 */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-semibold text-gray-900 group-hover:text-violet-700 transition-colors truncate">
+                    {project.title}
+                  </h3>
+                  <div className="flex items-center gap-3 text-sm text-gray-500 mt-0.5">
+                    {project.semester && (
+                      <div className="flex items-center gap-1">
+                        <Calendar size={12} />
+                        <span>{project.semester}</span>
+                      </div>
+                    )}
+                    {project.currentStage && (
+                      <div className="flex items-center gap-1">
+                        <FileText size={12} />
+                        <span>{project.currentStage}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-                {project.currentStage && (
-                  <div className="flex items-center gap-1.5">
-                    <FileText size={14} />
-                    <span>{project.currentStage}</span>
-                  </div>
-                )}
-              </div>
+                </div>
 
-              <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+                {/* 狀態標籤 */}
                 <span
                   className={`
-                  text-xs font-medium px-2.5 py-1 rounded-full
-                  ${getStatusColor(project.currentStage || 'Active')}
-                `}
+                    text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0
+                    ${getStatusColor(project.currentStage || 'Active')}
+                  `}
                 >
                   {getStatusLabel(project.currentStage)}
                 </span>
+
+                {/* 進入按鈕 */}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-violet-600 hover:bg-violet-50 pr-0"
+                  className="text-violet-600 hover:bg-violet-50 flex-shrink-0"
                 >
                   進入 <ArrowRight size={16} className="ml-1" />
                 </Button>
