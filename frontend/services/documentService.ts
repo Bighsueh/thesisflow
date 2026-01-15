@@ -3,7 +3,7 @@ import { api } from './api';
 
 export const documentService = {
   loadDocuments: async (projectId?: string | null): Promise<Document[]> => {
-    const endpoint = projectId ? `/api/documents?project_id=${projectId}` : '/api/documents';
+    const endpoint = projectId ? `/api/documents?learning_task_id=${projectId}` : '/api/documents';
     return api.get(endpoint);
   },
   // 取得單一文檔（用於輪詢 RAG 狀態，避免載入所有文檔）
@@ -11,10 +11,16 @@ export const documentService = {
     return api.get(`/api/documents/${docId}`);
   },
   bindDocumentsToProject: async (documentIds: string[], projectId: string): Promise<void> => {
-    return api.post(`/api/documents/bind`, { document_ids: documentIds, project_id: projectId });
+    return api.post(`/api/documents/bind`, {
+      document_ids: documentIds,
+      learning_task_id: projectId,
+    });
   },
   unbindDocumentsFromProject: async (documentIds: string[], projectId: string): Promise<void> => {
-    return api.post(`/api/documents/unbind`, { document_ids: documentIds, project_id: projectId });
+    return api.post(`/api/documents/unbind`, {
+      document_ids: documentIds,
+      learning_task_id: projectId,
+    });
   },
   uploadDocument: async (title: string, content: string): Promise<Document> => {
     return api.post('/api/documents', { title, content });

@@ -3,7 +3,7 @@ import { api } from './api';
 
 interface ChatMessageFromAPI {
   id: string;
-  project_id: string;
+  learning_task_id: string;
   user_id: string;
   user_name?: string;
   role: string;
@@ -19,8 +19,8 @@ export const chatService = {
     message: string,
     context?: any
   ): Promise<Message> => {
-    return api.post(`/api/projects/${projectId}/chat`, {
-      project_id: projectId,
+    return api.post(`/api/learning_tasks/${projectId}/chat`, {
+      learning_task_id: projectId,
       node_id: stepId,
       message,
       context: context || {},
@@ -28,7 +28,7 @@ export const chatService = {
   },
   getChatHistory: async (projectId: string, stepId?: string): Promise<Message[]> => {
     const data: ChatMessageFromAPI[] = await api.get(
-      `/api/projects/${projectId}/chat${stepId ? `?step_id=${stepId}` : ''}`
+      `/api/learning_tasks/${projectId}/chat${stepId ? `?step_id=${stepId}` : ''}`
     );
     // 轉換為前端的 Message 格式
     return data.map((msg) => ({

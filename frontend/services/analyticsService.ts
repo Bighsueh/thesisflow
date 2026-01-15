@@ -128,7 +128,7 @@ export interface ComparisonDimensions {
 
 export interface ChatLogMessage {
   id: string;
-  project_id: string;
+  learning_task_id: string;
   project_title: string;
   user_id: string;
   user_name: string;
@@ -269,7 +269,7 @@ export const analyticsService = {
     const token = localStorage.getItem('thesisflow_token');
     const params: any = {};
     if (options?.studentId) params.student_id = options.studentId;
-    if (options?.projectId) params.project_id = options.projectId;
+    if (options?.projectId) params.learning_task_id = options.projectId;
     if (options?.limit) params.limit = options.limit;
 
     const response = await axios.get(`${API_BASE}/api/analytics/${cohortId}/chat-logs`, {

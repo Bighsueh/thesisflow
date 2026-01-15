@@ -9,7 +9,7 @@ export const usageService = {
   }): Promise<UsageRecord[]> => {
     const params = new URLSearchParams();
     if (filters.cohortId) params.append('cohort_id', filters.cohortId);
-    if (filters.projectId) params.append('project_id', filters.projectId);
+    if (filters.projectId) params.append('learning_task_id', filters.projectId);
     if (filters.userId) params.append('user_id', filters.userId);
     const query = params.toString();
     return api.get(`/api/usage${query ? `?${query}` : ''}`);

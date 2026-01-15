@@ -8,13 +8,13 @@ export const cohortService = {
   createCohort: async (payload: {
     name: string;
     code?: string;
-    project_id?: string | null;
+    learning_task_id?: string | null;
   }): Promise<Cohort> => {
     return api.post('/api/cohorts', payload);
   },
   updateCohort: async (
     cohortId: string,
-    payload: { name?: string; code?: string | null; project_id?: string | null }
+    payload: { name?: string; code?: string | null; learning_task_id?: string | null }
   ): Promise<Cohort> => {
     return api.put(`/api/cohorts/${cohortId}`, payload);
   },

@@ -7,12 +7,12 @@ export const taskService = {
     docId: string,
     content: TaskAContent
   ): Promise<{ id: string; feedback: string; is_valid: boolean; validation_errors: string[] }> => {
-    return api.post(`/api/projects/${projectId}/tasks/A`, { target_doc_id: docId, content });
+    return api.post(`/api/learning_tasks/${projectId}/tasks/A`, { target_doc_id: docId, content });
   },
   submitTaskB: async (projectId: string, data: any): Promise<any> => {
-    return api.post(`/api/projects/${projectId}/tasks/B`, data);
+    return api.post(`/api/learning_tasks/${projectId}/tasks/B`, data);
   },
   submitTaskC: async (projectId: string, data: any): Promise<any> => {
-    return api.post(`/api/projects/${projectId}/tasks/C`, data);
+    return api.post(`/api/learning_tasks/${projectId}/tasks/C`, data);
   },
 };
