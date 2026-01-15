@@ -17,10 +17,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 複製後端程式碼
 COPY . .
 
+# 設定 entrypoint 腳本權限
+RUN chmod +x /app/entrypoint.sh
+
 # 暴露 port 8000
 EXPOSE 8000
 
-# 啟動 FastAPI 應用
-# 使用 python -m uvicorn 確保模組路徑正確
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 使用 entrypoint 腳本啟動（會自動執行資料庫遷移）
+ENTRYPOINT ["/app/entrypoint.sh"]
 
