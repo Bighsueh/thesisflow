@@ -1,12 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
-from db import get_db, SessionLocal
+from db import get_db
 import models
 import schemas
 from auth import get_current_user
 from services import presign_upload, presign_get, get_s3_client
-# 注意：log_rag_event 定義於 rag_services.py:25，用於記錄 RAG 處理事件到 RagProcessingLog 表
-from rag_services import process_document_rag, delete_document_vectors, log_rag_event
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -17,27 +15,6 @@ logger = logging.getLogger(__name__)
 
 # 檔案大小限制：100 MB
 MAX_FILE_SIZE = 100 * 1024 * 1024
-
-
-def process_rag_background(document_id: str, file_content: bytes):
-    """背景執行 RAG 處理"""
-    db = SessionLocal()
-    try:
-        # 狀態更新由 rag_services.process_document_rag 統一處理
-        # 執行 RAG 處理
-        success, error = process_document_rag(document_id, file_content, db)
-        if not success:
-            logger.warning(f"RAG processing failed for document {document_id}: {error}")
-    except Exception as e:
-        logger.error(f"RAG background processing error for document {document_id}: {e}")
-        # 更新為失敗狀態
-        doc = db.query(models.Document).filter(models.Document.id == document_id).first()
-        if doc:
-            doc.rag_status = "failed"
-            doc.rag_error = str(e)[:500]
-            db.commit()
-    finally:
-        db.close()
 
 # Ensure forward refs are resolved (for Pydantic v1 compatibility)
 try:
@@ -206,7 +183,6 @@ def create_document(
 
 @router.post("/upload", response_model=schemas.DocumentOut)
 async def upload_document(
-    background_tasks: BackgroundTasks,
     title: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -289,16 +265,11 @@ async def upload_document(
         size=file.size,
         type=doc_type,
         raw_preview=None,
-        rag_status="pending" if doc_type == "pdf" else "not_applicable",
+        rag_status="not_applicable",  # 不再使用 RAG 處理
     )
     db.add(doc)
     db.commit()
     db.refresh(doc)
-
-    # 若為 PDF，背景執行 RAG 處理（非同步）
-    if doc_type == "pdf":
-        log_rag_event(db, doc.id, "upload", "success", "檔案上傳完成，等待處理", {"size": file.size})
-        background_tasks.add_task(process_rag_background, doc.id, file_content)
 
     return schemas.DocumentOut(
         id=doc.id,
