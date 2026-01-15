@@ -9,7 +9,7 @@ import { TeacherSidebar } from '../components/teacher/TeacherSidebar';
 export default function TeacherHome() {
   const navigate = useNavigate();
   const { user, hydrate } = useAuthStore();
-  const [activeSection, setActiveSection] = useState<'accounts' | 'groups'>('groups');
+  const [activeSection, setActiveSection] = useState<'accounts' | 'groups' | 'dashboard'>('groups');
 
   useEffect(() => {
     hydrate();

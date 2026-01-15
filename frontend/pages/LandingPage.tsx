@@ -149,7 +149,7 @@ export function LandingPage() {
           </div>
           <h3 className="text-xl font-bold text-gray-900">AI 分析</h3>
           <p className="text-gray-600 leading-relaxed">
-            自動從您的 PDF 文獻庫中提取關鍵見解、研究方法與發現。
+            自動從您的 PDF 文獻庫中擷取關鍵見解、研究方法與發現。
           </p>
         </GlassCard>
 
@@ -167,7 +167,7 @@ export function LandingPage() {
           <div className="w-12 h-12 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 mb-4">
             <Zap size={24} />
           </div>
-          <h3 className="text-xl font-bold text-gray-900">智能綜合</h3>
+          <h3 className="text-xl font-bold text-gray-900">智慧整合</h3>
           <p className="text-gray-600 leading-relaxed">
             根據您選擇的論文，即時生成文獻矩陣與探討草稿。
           </p>
@@ -187,7 +187,7 @@ export function LandingPage() {
           </div>
           <div>
             <div className="text-4xl font-bold text-blue-600 mb-2">98%</div>
-            <div className="text-gray-600 font-medium">用戶滿意度</div>
+            <div className="text-gray-600 font-medium">使用者滿意度</div>
           </div>
         </div>
       </GlassCard>
