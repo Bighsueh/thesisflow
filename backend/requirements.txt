@@ -9,6 +9,7 @@ httpx==0.27.2
 boto3==1.35.57
 passlib[bcrypt]==1.7.4
 python-jose==3.3.0
+tenacity==9.0.0
 
 # RAG 模組依賴
 pymupdf==1.25.3
