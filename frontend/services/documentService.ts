@@ -25,23 +25,60 @@ export const documentService = {
   uploadDocument: async (title: string, content: string): Promise<Document> => {
     return api.post('/api/documents', { title, content });
   },
-  uploadFileDocument: async (title: string, file: File): Promise<Document> => {
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('file', file);
-    const token = localStorage.getItem('thesisflow_token');
-    const API_BASE = ((import.meta as any).env?.VITE_API_BASE as string) || 'http://localhost:8000';
-    const res = await fetch(`${API_BASE}/api/documents/upload`, {
-      method: 'POST',
-      headers: {
-        Authorization: token ? `Bearer ${token}` : '',
-      },
-      body: formData,
+  uploadFileDocument: async (
+    title: string,
+    file: File,
+    onProgress?: (progress: number) => void
+  ): Promise<Document> => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('file', file);
+
+      const xhr = new XMLHttpRequest();
+      const token = localStorage.getItem('thesisflow_token');
+      const API_BASE =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((import.meta as any).env?.VITE_API_BASE as string) || 'http://localhost:8000';
+
+      // 追蹤上傳進度
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          onProgress(progress);
+        }
+      };
+
+      // 上傳完成
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            resolve(response);
+          } catch (_e) {
+            reject(new Error('Failed to parse response'));
+          }
+        } else {
+          reject(new Error(`API Error: ${xhr.statusText}`));
+        }
+      };
+
+      // 上傳錯誤
+      xhr.onerror = () => {
+        reject(new Error('Network error occurred'));
+      };
+
+      // 上傳中止
+      xhr.onabort = () => {
+        reject(new Error('Upload aborted'));
+      };
+
+      xhr.open('POST', `${API_BASE}/api/documents/upload`);
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+      xhr.send(formData);
     });
-    if (!res.ok) {
-      throw new Error(`API Error: ${res.statusText}`);
-    }
-    return res.json();
   },
   getRagLogs: async (docId: string): Promise<RagProcessingLog[]> => {
     return api.get(`/api/documents/${docId}/rag-logs`);
