@@ -15,6 +15,7 @@
   "dependencies": {
     "@google/genai": "^1.33.0",
     "@lottiefiles/dotlottie-react": "^0.17.10",
+    "axios": "^1.13.2",
     "framer-motion": "^12.23.26",
     "lottie-react": "^2.4.1",
     "lucide-react": "0.294.0",
@@ -23,7 +24,9 @@
     "react-dom": "18.3.1",
     "react-pdf": "^7.6.0",
     "react-router-dom": "^7.0.2",
+    "react-wordcloud": "^1.2.7",
     "reactflow": "11.10.1",
+    "recharts": "^3.6.0",
     "zustand": "4.4.7"
   },
   "devDependencies": {
