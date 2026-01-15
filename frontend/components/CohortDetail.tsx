@@ -1,4 +1,4 @@
-import { X, Copy, Plus, RefreshCw, FileText, Clock, Trash2 } from 'lucide-react';
+import { X, Copy, Plus, RefreshCw, FileText, Trash2 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../authStore';
@@ -38,8 +38,6 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
     loadStudents,
     addCohortMember,
     removeCohortMember,
-    updateCohortMember,
-    updateCohort,
     loadUsageRecords,
     usageRecords,
     deleteProject,
@@ -47,8 +45,6 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [savingProject, setSavingProject] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [studentSearch, setStudentSearch] = useState('');
@@ -195,30 +191,6 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
     }
   };
 
-  const handleUpdateStatus = async (userId: string) => {
-    if (!cohortId) return;
-    const status = window.prompt('輸入狀態（active / blocked / done）');
-    if (!status) return;
-    try {
-      await updateCohortMember(cohortId, userId, { status });
-    } catch (e: any) {
-      alert(e?.message || '更新失敗');
-    }
-  };
-
-  const handleUpdateProgress = async (userId: string) => {
-    if (!cohortId) return;
-    const progressInput = window.prompt('輸入進度百分比（0-100）');
-    if (progressInput === null) return;
-    const progress = parseInt(progressInput, 10);
-    if (Number.isNaN(progress)) return;
-    try {
-      await updateCohortMember(cohortId, userId, { progress });
-    } catch (e: any) {
-      alert(e?.message || '更新失敗');
-    }
-  };
-
   if (loading) {
     return <div className="text-gray-500">載入中...</div>;
   }
@@ -359,20 +331,6 @@ export default function CohortDetail({ cohortId }: CohortDetailProps) {
                     <td className="py-3 px-4 text-sm">{m.progress ?? 0}%</td>
                     <td className="py-3 px-4">
                       <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleUpdateStatus(m.user.id)}
-                        >
-                          狀態
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleUpdateProgress(m.user.id)}
-                        >
-                          進度
-                        </Button>
                         <Button
                           variant="danger"
                           size="sm"
