@@ -339,6 +339,20 @@ class ChatResponse(BaseModel):
     role: str = "ai"
 
 
+class ChatMessageOut(BaseModel):
+    id: str
+    project_id: str
+    user_id: str
+    user_name: Optional[str] = None
+    role: str
+    content: str
+    context: dict = Field(default_factory=dict)
+    created_at: int
+
+    class Config:
+        from_attributes = True
+
+
 class WorkflowStateCreate(BaseModel):
     project_id: str
     node_id: str

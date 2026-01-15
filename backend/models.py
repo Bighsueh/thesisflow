@@ -235,3 +235,22 @@ class RagProcessingLog(Base):
 
     document = relationship("Document", back_populates="rag_logs")
 
+
+class ChatMessage(Base):
+    """
+    對話訊息記錄
+    
+    儲存學生與 AI 教練的對話記錄
+    """
+    __tablename__ = "chat_messages"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    role = Column(String, nullable=False)  # user | coach | status
+    content = Column(Text, nullable=False)
+    context = Column(JSONB, default=dict)  # 儲存 evidence_ids, current_doc_id 等上下文資訊
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project")
+    user = relationship("User")
+

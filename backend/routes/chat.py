@@ -4,85 +4,17 @@ from db import get_db
 import models
 import schemas
 from auth import get_current_user
-from services import AzureOpenAIClient, presign_get
+from services import AzureResponsesAPIClient, presign_get, download_file_from_minio
 import json
+import base64
 import logging
 from typing import Optional
-
-# RAG 相關導入
-try:
-    from rag import get_embedding_client, get_vector_store
-    RAG_AVAILABLE = True
-except ImportError:
-    RAG_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/projects", tags=["chat"])
 
-
-async def retrieve_rag_context(
-    query: str,
-    document_id: str,
-    db: Session,
-    n_results: int = 3
-) -> Optional[str]:
-    """
-    從指定文檔檢索相關內容
-
-    Args:
-        query: 查詢文本
-        document_id: 文檔 ID
-        db: 資料庫 session
-        n_results: 返回結果數量
-
-    Returns:
-        str: 格式化的相關內容，若失敗則返回 None
-    """
-    if not RAG_AVAILABLE:
-        logger.warning("RAG module not available")
-        return None
-
-    try:
-        # 驗證文檔存在且 RAG 處理已完成
-        doc = db.query(models.Document).filter(models.Document.id == document_id).first()
-        if not doc:
-            logger.warning(f"Document not found: {document_id}")
-            return None
-
-        if doc.rag_status != "completed":
-            logger.info(f"Document RAG not ready: {document_id}, status={doc.rag_status}")
-            return None
-
-        # 生成查詢向量
-        embedding_client = get_embedding_client()
-        query_embedding = embedding_client.embed_text(query)
-
-        # 搜尋相關 chunks（只搜尋當前文檔）
-        vector_store = get_vector_store()
-        results = vector_store.search(
-            query_embedding=query_embedding,
-            document_ids=[document_id],
-            n_results=n_results
-        )
-
-        if not results:
-            logger.info(f"No relevant chunks found for document: {document_id}")
-            return None
-
-        # 格式化結果
-        context_parts = []
-        for i, result in enumerate(results):
-            page_info = f"第 {', '.join(map(str, result.page_numbers))} 頁" if result.page_numbers else ""
-            context_parts.append(f"""
-[相關段落 {i + 1}] {page_info}
-{result.content}
-""")
-
-        return "\n".join(context_parts)
-
-    except Exception as e:
-        logger.error(f"RAG retrieval failed: {e}")
-        return None
+# PDF 大小限制：50MB
+MAX_PDF_SIZE = 50 * 1024 * 1024
 
 
 @router.post("/{project_id}/chat", response_model=schemas.ChatResponse)
@@ -123,23 +55,42 @@ async def chat(
     widget_states = context.get("widget_states", {})
     chat_history = context.get("chat_history", [])
 
-    # RAG 檢索：從當前文檔取得相關內容
-    rag_context = None
+    # 取得當前文檔資訊
+    current_doc = None
     current_doc_title = None
+    pdf_base64 = None
+    
     if current_document_id:
-        # 取得文檔標題
         current_doc = db.query(models.Document).filter(
             models.Document.id == current_document_id
         ).first()
+        
         if current_doc:
             current_doc_title = current_doc.title
-            # 執行 RAG 檢索
-            rag_context = await retrieve_rag_context(
-                query=payload.message,
-                document_id=current_document_id,
-                db=db,
-                n_results=3
-            )
+            
+            # 如果是 PDF 文檔，下載並轉換為 Base64
+            if current_doc.type == "pdf" and current_doc.object_key:
+                try:
+                    # 從 MinIO 下載 PDF
+                    pdf_content = download_file_from_minio(current_doc.object_key)
+                    
+                    # 檢查檔案大小
+                    if len(pdf_content) > MAX_PDF_SIZE:
+                        raise HTTPException(
+                            status_code=413,
+                            detail=f"PDF 檔案過大（{len(pdf_content) / (1024*1024):.1f}MB），無法進行 AI 分析（限制 50MB）"
+                        )
+                    
+                    # 轉換為 Base64
+                    pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
+                    logger.info(f"PDF loaded for chat: {current_doc.title}, size: {len(pdf_content) / 1024:.1f}KB")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to load PDF for chat: {e}")
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"無法載入 PDF 檔案：{str(e)}"
+                    )
 
     # 構建系統提示
     system_prompt_parts = [f"""你是論文寫作教練，正在指導學生完成「{node_label}」任務。
@@ -149,13 +100,8 @@ async def chat(
     # 加入當前文檔資訊
     if current_doc_title:
         system_prompt_parts.append(f"\n當前討論文檔：《{current_doc_title}》")
-
-    # 加入 RAG 檢索到的相關內容
-    if rag_context:
-        system_prompt_parts.append(f"""
-
-以下是從當前文檔中檢索到的相關段落，請參考這些內容回答學生的問題：
-{rag_context}""")
+        if pdf_base64:
+            system_prompt_parts.append("\n你可以直接閱讀並分析這份 PDF 文檔的完整內容。")
 
     system_prompt_parts.append("""
 
@@ -164,7 +110,7 @@ async def chat(
 2. 檢核學生的填寫是否符合要求（如是否有證據支持）
 3. 指出需要改進的地方，但不要直接代寫
 4. 根據學生的進度給予適當的鼓勵或提醒
-5. 如果有相關段落資訊，請引用具體的頁碼和內容來支持你的回答
+5. 引用文檔中具體的內容和頁碼來支持你的回答
 
 請用中文回覆，語氣友善且專業。""")
 
@@ -210,19 +156,87 @@ async def chat(
     
     user_prompt = "\n".join(user_parts)
     
-    # 調用 Azure OpenAI
-    azure = AzureOpenAIClient()
-    response = await azure.chat(system_prompt, user_prompt)
+    # 儲存用戶訊息到資料庫
+    user_message = models.ChatMessage(
+        project_id=project_id,
+        user_id=current_user.id,
+        role="user",
+        content=payload.message,
+        context={
+            "current_document_id": current_document_id,
+            "evidence_ids": evidence_ids,
+            "evidence_info": evidence_info,
+            "node_id": payload.node_id
+        }
+    )
+    db.add(user_message)
+    db.commit()
+    
+    # 調用 Azure OpenAI（使用 Responses API 處理 PDF）
+    if pdf_base64:
+        # 有 PDF 時使用 Responses API
+        azure = AzureResponsesAPIClient()
+        response = await azure.chat_with_pdf(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            pdf_base64=pdf_base64,
+            filename=current_doc.title
+        )
+    else:
+        # 無 PDF 時使用標準 Chat API（保留向後相容）
+        from services import AzureOpenAIClient
+        azure = AzureOpenAIClient()
+        response = await azure.chat(system_prompt, user_prompt)
+    
+    # 儲存 AI 回覆到資料庫
+    ai_message = models.ChatMessage(
+        project_id=project_id,
+        user_id=current_user.id,
+        role="coach",
+        content=response,
+        context={
+            "current_document_id": current_document_id,
+            "node_id": payload.node_id
+        }
+    )
+    db.add(ai_message)
+    db.commit()
     
     return schemas.ChatResponse(message=response, role="ai")
 
-@router.get("/{project_id}/chat", response_model=list[schemas.ChatResponse])
+@router.get("/{project_id}/chat", response_model=list[schemas.ChatMessageOut])
 def get_chat_history(
     project_id: str,
     step_id: str = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
-    # TODO: 實現聊天歷史記錄功能
-    # 目前返回空列表，可以後續實現持久化存儲
-    return []
+    """
+    獲取專案的對話歷史記錄
+    """
+    # 驗證專案存在
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # 查詢該用戶在該專案的所有對話記錄
+    messages = db.query(models.ChatMessage).filter(
+        models.ChatMessage.project_id == project_id,
+        models.ChatMessage.user_id == current_user.id
+    ).order_by(models.ChatMessage.created_at.asc()).all()
+    
+    # 轉換為輸出格式
+    result = []
+    for msg in messages:
+        result.append({
+            "id": msg.id,
+            "project_id": msg.project_id,
+            "user_id": msg.user_id,
+            "user_name": current_user.name,
+            "role": msg.role,
+            "content": msg.content,
+            "context": msg.context or {},
+            "created_at": int(msg.created_at.timestamp() * 1000)
+        })
+    
+    return result
