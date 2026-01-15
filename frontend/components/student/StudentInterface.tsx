@@ -33,6 +33,7 @@ import {
 import React, { useEffect, useRef, useState } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuthStore } from '../../authStore';
 import { useStore } from '../../store';
 import { TaskConfig } from '../../types';
@@ -962,9 +963,9 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       setNewTitle('');
       setNewContent('');
       setSelectedFile(null);
-      alert('文獻已上傳成功');
     } catch (e: unknown) {
-      alert(`文獻上傳失敗：${e?.message || e || '未知錯誤'}`);
+      // 錯誤已在全局進度條顯示
+      console.error('文獻上傳失敗：', e);
     }
   };
 
@@ -1006,7 +1007,7 @@ const LibraryPanel = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
         setAvailableDocuments(allDocs.filter((d) => !d.project_id));
       }
     } catch (error: unknown) {
-      alert(`操作失敗：${error?.message || error || '未知錯誤'}`);
+      toast.error(`操作失敗：${error?.message || error || '未知錯誤'}`);
     }
   };
 
@@ -1275,7 +1276,7 @@ const ReaderPanel = () => {
         await bindDocumentsToProject([docId], activeProjectId);
         await loadDocuments(activeProjectId);
       } catch (error: unknown) {
-        alert(`加入文檔失敗：${error?.message || error || '未知錯誤'}`);
+        toast.error(`加入文檔失敗：${error?.message || error || '未知錯誤'}`);
       }
     }
   };
@@ -2390,9 +2391,9 @@ export default function StudentInterface() {
       await joinCohortByCode(code);
       setJoinCode('');
       setIsJoinModalOpen(false);
-      alert('已加入學生群組！');
+      toast.success('已加入學生群組！');
     } catch (e: unknown) {
-      alert(e?.message || '加入失敗，請確認群組編號是否正確。');
+      toast.error(e?.message || '加入失敗，請確認群組編號是否正確。');
     } finally {
       setJoining(false);
     }
@@ -2462,7 +2463,7 @@ export default function StudentInterface() {
       setSelectedDocumentIds([]);
       await loadDocuments(activeProjectId);
     } catch (e: unknown) {
-      alert(`綁定失敗：${e?.message || e || '未知錯誤'}`);
+      toast.error(`綁定失敗：${e?.message || e || '未知錯誤'}`);
     } finally {
       setIsBinding(false);
     }
@@ -2485,7 +2486,8 @@ export default function StudentInterface() {
       // 上傳成功後切換到選擇 tab
       setActiveDocTab('select');
     } catch (e: unknown) {
-      alert(`上傳失敗：${e?.message || e || '未知錯誤'}`);
+      // 錯誤已在全局進度條顯示
+      console.error('上傳失敗：', e);
     } finally {
       setIsUploading(false);
     }
