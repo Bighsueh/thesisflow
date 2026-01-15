@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from db import get_db
 import models
 import schemas
 from auth import get_current_user
+from auth_helpers import check_project_access, get_user_accessible_project_ids
 from services import presign_upload, presign_get, get_s3_client
 import uuid
 from datetime import datetime
@@ -31,12 +33,49 @@ def list_documents(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
+    """
+    獲取文獻列表
+    
+    教師：可以看到所有文獻
+    學生：只能看到以下文獻：
+      1. 自己上傳的文獻（user_id = current_user.id）
+      2. 已綁定到可訪問專案的文獻
+      3. 未綁定專案且無 user_id 的舊資料（向後兼容）
+    """
     try:
         query = db.query(models.Document)
+        
         if project_id:
+            # 按專案過濾
+            if current_user.role == "student":
+                # 學生需要有該專案的訪問權限
+                if not check_project_access(db, current_user, project_id):
+                    raise HTTPException(status_code=403, detail="Forbidden")
             docs = query.filter(models.Document.project_id == project_id).all()
         else:
-            docs = query.all()
+            # 不按專案過濾
+            if current_user.role == "teacher":
+                # 教師可以看到所有文獻
+                docs = query.all()
+            else:
+                # 學生：只能看到自己的文獻、可訪問專案的文獻、或無主文獻
+                accessible_project_ids = get_user_accessible_project_ids(db, current_user)
+                
+                # 構建條件：
+                # 1. user_id = current_user.id（自己的文獻）
+                # 2. project_id in accessible_project_ids（可訪問專案的文獻）
+                # 3. user_id IS NULL AND project_id IS NULL（舊資料，向後兼容）
+                conditions = [
+                    models.Document.user_id == current_user.id,
+                ]
+                if accessible_project_ids:
+                    conditions.append(models.Document.project_id.in_(accessible_project_ids))
+                # 向後兼容：無主且未綁定專案的舊文獻
+                conditions.append(
+                    (models.Document.user_id == None) & (models.Document.project_id == None)
+                )
+                
+                docs = query.filter(or_(*conditions)).all()
         
         result = []
         for d in docs:
@@ -155,6 +194,7 @@ def create_document(
 ):
     doc = models.Document(
         project_id=payload.project_id,
+        user_id=current_user.id,  # 記錄上傳者
         title=payload.title,
         object_key=payload.object_key,
         content_type=payload.content_type,
@@ -259,6 +299,7 @@ async def upload_document(
     
     doc = models.Document(
         project_id=None,
+        user_id=current_user.id,  # 記錄上傳者
         title=title,
         object_key=object_key,
         content_type=file.content_type,
@@ -383,17 +424,25 @@ def add_highlight_to_document(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    # 驗證權限
+    # 使用統一的權限檢查（支援新舊架構）
     if current_user.role == "student":
+        has_access = False
+        # 檢查專案權限
         if doc.project_id:
-            cohort_ids = [m.cohort_id for m in current_user.memberships]
-            cohorts = db.query(models.Cohort).filter(models.Cohort.id.in_(cohort_ids)).all()
-            project_ids = {c.project_id for c in cohorts if c.project_id}
-            if doc.project_id not in project_ids:
-                raise HTTPException(status_code=403, detail="Forbidden")
+            has_access = check_project_access(db, current_user, doc.project_id)
+        # 檢查文檔擁有者
+        elif doc.user_id:
+            has_access = doc.user_id == current_user.id
+        # 無主且未綁定專案的舊文獻允許訪問
+        else:
+            has_access = True
+        
+        if not has_access:
+            raise HTTPException(status_code=403, detail="Forbidden")
     
     highlight = models.Highlight(
         document_id=doc_id,
+        user_id=current_user.id,  # 記錄建立者
         snippet=payload.get("snippet", ""),
         name=payload.get("name"),
         page=payload.get("page"),

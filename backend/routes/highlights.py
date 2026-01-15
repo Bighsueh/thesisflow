@@ -4,8 +4,24 @@ from db import get_db
 import models
 import schemas
 from auth import get_current_user
+from auth_helpers import check_project_access
 
 router = APIRouter(prefix="/api/highlights", tags=["highlights"])
+
+
+def _check_document_access(db: Session, user: models.User, doc: models.Document) -> bool:
+    """檢查用戶是否有權訪問文檔（用於 Highlight 操作）"""
+    if user.role == "teacher":
+        return True
+    # 如果文檔有綁定專案，檢查專案權限
+    if doc.project_id:
+        return check_project_access(db, user, doc.project_id)
+    # 如果文檔沒有綁定專案，檢查是否為文檔擁有者
+    if doc.user_id:
+        return doc.user_id == user.id
+    # 沒有綁定專案也沒有擁有者的文檔（舊資料），允許訪問
+    return True
+
 
 @router.post("", response_model=schemas.HighlightOut)
 def add_highlight(
@@ -17,17 +33,13 @@ def add_highlight(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    # 驗證權限：檢查文檔是否屬於用戶的專案
-    if current_user.role == "student":
-        if doc.project_id:
-            cohort_ids = [m.cohort_id for m in current_user.memberships]
-            cohorts = db.query(models.Cohort).filter(models.Cohort.id.in_(cohort_ids)).all()
-            project_ids = {c.project_id for c in cohorts if c.project_id}
-            if doc.project_id not in project_ids:
-                raise HTTPException(status_code=403, detail="Forbidden")
+    # 使用統一的權限檢查（支援新舊架構）
+    if not _check_document_access(db, current_user, doc):
+        raise HTTPException(status_code=403, detail="Forbidden")
     
     highlight = models.Highlight(
         document_id=payload.document_id,
+        user_id=current_user.id,  # 記錄建立者
         snippet=payload.snippet,
         name=payload.name,
         page=payload.page,
@@ -69,13 +81,9 @@ def get_highlight(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    if current_user.role == "student":
-        if doc.project_id:
-            cohort_ids = [m.cohort_id for m in current_user.memberships]
-            cohorts = db.query(models.Cohort).filter(models.Cohort.id.in_(cohort_ids)).all()
-            project_ids = {c.project_id for c in cohorts if c.project_id}
-            if doc.project_id not in project_ids:
-                raise HTTPException(status_code=403, detail="Forbidden")
+    # 使用統一的權限檢查（支援新舊架構）
+    if not _check_document_access(db, current_user, doc):
+        raise HTTPException(status_code=403, detail="Forbidden")
     
     return schemas.HighlightOut(
         id=highlight.id,
@@ -107,13 +115,9 @@ def update_highlight(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    if current_user.role == "student":
-        if doc.project_id:
-            cohort_ids = [m.cohort_id for m in current_user.memberships]
-            cohorts = db.query(models.Cohort).filter(models.Cohort.id.in_(cohort_ids)).all()
-            project_ids = {c.project_id for c in cohorts if c.project_id}
-            if doc.project_id not in project_ids:
-                raise HTTPException(status_code=403, detail="Forbidden")
+    # 使用統一的權限檢查（支援新舊架構）
+    if not _check_document_access(db, current_user, doc):
+        raise HTTPException(status_code=403, detail="Forbidden")
     
     # 更新字段
     if payload.snippet is not None:
@@ -165,13 +169,9 @@ def delete_highlight(
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    if current_user.role == "student":
-        if doc.project_id:
-            cohort_ids = [m.cohort_id for m in current_user.memberships]
-            cohorts = db.query(models.Cohort).filter(models.Cohort.id.in_(cohort_ids)).all()
-            project_ids = {c.project_id for c in cohorts if c.project_id}
-            if doc.project_id not in project_ids:
-                raise HTTPException(status_code=403, detail="Forbidden")
+    # 使用統一的權限檢查（支援新舊架構）
+    if not _check_document_access(db, current_user, doc):
+        raise HTTPException(status_code=403, detail="Forbidden")
     
     db.delete(highlight)
     db.commit()

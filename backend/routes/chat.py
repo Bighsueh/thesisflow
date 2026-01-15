@@ -4,6 +4,7 @@ from db import get_db
 import models
 import schemas
 from auth import get_current_user
+from auth_helpers import check_project_access
 from services import AzureResponsesAPIClient, presign_get, download_file_from_minio
 import json
 import base64
@@ -31,6 +32,10 @@ async def chat(
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # 驗證用戶有權訪問此專案
+    if not check_project_access(db, current_user, project_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
     
     # 新架構：支援 "general" 作為通用節點 ID（不需要查找實際的 FlowNode）
     node = None
@@ -218,6 +223,10 @@ def get_chat_history(
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # 驗證用戶有權訪問此專案
+    if not check_project_access(db, current_user, project_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
     
     # 查詢該用戶在該專案的所有對話記錄
     messages = db.query(models.ChatMessage).filter(

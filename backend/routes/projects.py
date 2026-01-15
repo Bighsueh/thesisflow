@@ -4,6 +4,7 @@ from db import get_db
 import models
 import schemas
 from auth import get_current_user
+from auth_helpers import get_user_accessible_project_ids, check_project_access
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
@@ -17,36 +18,61 @@ def list_projects(
     教師：可以看到自己建立的所有教學流程（目前沒有 teacher_id 欄位，暫時回傳全部專案）。
     學生：只能看到自己「已加入學生群組」所對應到的專案。
     支援按 cohort_id 過濾。
+    
+    使用 auth_helpers 統一處理新舊架構的權限邏輯：
+    - 新架構：ProjectCohort 多對多關聯表
+    - 舊架構：Project.cohort_id 和 Cohort.project_id（向後兼容）
     """
     if current_user.role == "teacher":
         query = db.query(models.Project)
         if cohort_id:
-            query = query.filter(models.Project.cohort_id == cohort_id)
+            # 教師按群組過濾時，需要同時支援新舊架構
+            # 新架構：ProjectCohort
+            try:
+                pc_project_ids = {
+                    pc.project_id for pc in 
+                    db.query(models.ProjectCohort).filter(models.ProjectCohort.cohort_id == cohort_id).all()
+                }
+            except Exception:
+                pc_project_ids = set()
+            
+            # 舊架構：Project.cohort_id
+            old_project_ids = {
+                p.id for p in 
+                db.query(models.Project).filter(models.Project.cohort_id == cohort_id).all()
+            }
+            
+            all_project_ids = pc_project_ids | old_project_ids
+            if all_project_ids:
+                query = query.filter(models.Project.id.in_(all_project_ids))
+            else:
+                query = query.filter(models.Project.id == None)  # 空結果
         projects = query.all()
     else:
-        # 學生：取得所在群組的所有專案（新架構：透過 Project.cohort_id）
-        cohort_ids = [m.cohort_id for m in current_user.memberships]
-        if not cohort_ids:
+        # 學生：使用統一的權限檢查函數
+        accessible_project_ids = get_user_accessible_project_ids(db, current_user)
+        if not accessible_project_ids:
             projects = []
         else:
-            # 新架構：直接查詢 cohort_id 在學生所屬群組中的專案
-            query = db.query(models.Project).filter(models.Project.cohort_id.in_(cohort_ids))
+            query = db.query(models.Project).filter(models.Project.id.in_(accessible_project_ids))
             if cohort_id:
-                query = query.filter(models.Project.cohort_id == cohort_id)
-            projects = query.all()
+                # 進一步按 cohort_id 過濾（需同時支援新舊架構）
+                try:
+                    pc_project_ids = {
+                        pc.project_id for pc in 
+                        db.query(models.ProjectCohort).filter(models.ProjectCohort.cohort_id == cohort_id).all()
+                    }
+                except Exception:
+                    pc_project_ids = set()
                 
-        # 向後兼容：同時查詢舊架構（Cohort.project_id）的專案
-        cohorts = db.query(models.Cohort).filter(models.Cohort.id.in_(cohort_ids)).all()
-        legacy_project_ids = {c.project_id for c in cohorts if c.project_id}
-        if legacy_project_ids:
-            legacy_projects = db.query(models.Project).filter(
-                models.Project.id.in_(legacy_project_ids)
-            ).all()
-            # 合併結果，避免重複
-            existing_ids = {p.id for p in projects}
-            for lp in legacy_projects:
-                if lp.id not in existing_ids:
-                    projects.append(lp)
+                old_project_ids = {
+                    p.id for p in 
+                    db.query(models.Project).filter(models.Project.cohort_id == cohort_id).all()
+                }
+                
+                cohort_project_ids = pc_project_ids | old_project_ids
+                query = query.filter(models.Project.id.in_(cohort_project_ids))
+            projects = query.all()
 
     result = []
     for p in projects:
@@ -161,13 +187,9 @@ def get_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # 驗證權限
-    if current_user.role == "student":
-        cohort_ids = [m.cohort_id for m in current_user.memberships]
-        cohorts = db.query(models.Cohort).filter(models.Cohort.id.in_(cohort_ids)).all()
-        project_ids = {c.project_id for c in cohorts if c.project_id}
-        if project_id not in project_ids:
-            raise HTTPException(status_code=403, detail="Forbidden")
+    # 使用統一的權限檢查函數（支援新舊架構）
+    if not check_project_access(db, current_user, project_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     # 優先返回新的 task_config
     if project.task_config:

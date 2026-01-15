@@ -4,6 +4,7 @@ from db import get_db
 import models
 import schemas
 from auth import get_current_user
+from auth_helpers import check_project_access
 from datetime import datetime
 
 router = APIRouter(prefix="/api/projects", tags=["workflow"])
@@ -15,6 +16,10 @@ def get_workflow_state(
     current_user: models.User = Depends(get_current_user)
 ):
     """獲取當前用戶在指定專案中的 workflow 狀態"""
+    # 驗證用戶有權訪問此專案
+    if not check_project_access(db, current_user, project_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
     state = db.query(models.WorkflowState).filter(
         models.WorkflowState.project_id == project_id,
         models.WorkflowState.user_id == current_user.id
@@ -47,6 +52,10 @@ def create_or_update_workflow_state(
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # 驗證用戶有權訪問此專案
+    if not check_project_access(db, current_user, project_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
     
     # 查找是否已存在狀態
     existing_state = db.query(models.WorkflowState).filter(
@@ -113,6 +122,10 @@ def update_workflow_state(
     current_user: models.User = Depends(get_current_user)
 ):
     """部分更新 workflow 狀態"""
+    # 驗證用戶有權訪問此專案
+    if not check_project_access(db, current_user, project_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
     state = db.query(models.WorkflowState).filter(
         models.WorkflowState.project_id == project_id,
         models.WorkflowState.user_id == current_user.id
@@ -156,6 +169,10 @@ def get_task_state(
     current_user: models.User = Depends(get_current_user)
 ):
     """獲取當前用戶在指定專案中的簡化任務狀態"""
+    # 驗證用戶有權訪問此專案
+    if not check_project_access(db, current_user, project_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    
     state = db.query(models.TaskState).filter(
         models.TaskState.project_id == project_id,
         models.TaskState.user_id == current_user.id
@@ -187,6 +204,10 @@ def save_task_state(
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+    
+    # 驗證用戶有權訪問此專案
+    if not check_project_access(db, current_user, project_id):
+        raise HTTPException(status_code=403, detail="Forbidden")
 
     # 查找是否已存在狀態
     existing_state = db.query(models.TaskState).filter(
