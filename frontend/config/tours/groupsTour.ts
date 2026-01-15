@@ -9,7 +9,7 @@ export const groupsTour: TourConfig = {
       target: '[data-tour="join-group-form"]',
       title: '加入群組',
       description:
-        '輸入授課教師提供的 9 位數群組代碼，即可加入群組。加入後您將獲得教師分配的專案流程。',
+        '輸入授課教師提供的 9 位數群組代碼，即可加入群組。加入後您將獲得教師分配的學習任務流程。',
       placement: 'right',
       spotlightShape: 'rect',
       highlightPulse: true,
@@ -24,7 +24,7 @@ export const groupsTour: TourConfig = {
     {
       target: 'body',
       title: '完成！',
-      description: '加入群組後，教師會分配專案流程給您。前往「專案」頁面開始您的研究之旅！',
+      description: '加入群組後，教師會分配學習任務流程給您。前往「學習任務」頁面開始您的研究之旅！',
       placement: 'center',
       spotlightShape: 'none',
     },

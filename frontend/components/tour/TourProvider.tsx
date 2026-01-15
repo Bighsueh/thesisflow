@@ -9,8 +9,8 @@ import { TourOverlay } from './TourOverlay';
 const PAGE_TOUR_MAP: Record<string, string> = {
   '/dashboard': 'dashboard-intro',
   '/literature': 'literature-upload',
-  '/student/project': 'student-interface',
-  '/projects': 'projects-management',
+  '/student/learning-task': 'student-interface',
+  '/learning-tasks': 'learning-tasks-management',
   '/groups': 'groups-join',
 };
 
