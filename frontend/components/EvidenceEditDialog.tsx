@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useStore } from '../store';
 import { Highlight, Document } from '../types';
 
@@ -43,7 +44,7 @@ export const EvidenceEditDialog: React.FC<EvidenceEditDialogProps> = ({
       onSave(updated);
     } catch (error) {
       console.error('更新標記片段失敗:', error);
-      alert('更新標記片段失敗，請重試');
+      toast.error('更新標記片段失敗，請重試');
     } finally {
       setSaving(false);
     }

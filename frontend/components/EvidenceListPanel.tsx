@@ -1,6 +1,8 @@
 import { X, Filter, Edit2, Trash2, MapPin, Trash } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
+import { useConfirm } from '../hooks/useConfirm';
 import { Highlight, Document } from '../types';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 import { EvidenceCreateDialog } from './EvidenceCreateDialog';
 import { EvidenceEditDialog } from './EvidenceEditDialog';
 
@@ -27,6 +29,7 @@ export const EvidenceListPanel: React.FC<EvidenceListPanelProps> = ({
   onCreate,
   onRemoveAll,
 }) => {
+  const { confirmState, isOpen: isConfirmOpen, confirm, handleConfirm, handleCancel } = useConfirm();
   const [filterType, setFilterType] = useState<string>('all');
   const [filterPage, setFilterPage] = useState<number | null>(null);
   const [editingHighlight, setEditingHighlight] = useState<Highlight | null>(null);
@@ -58,14 +61,24 @@ export const EvidenceListPanel: React.FC<EvidenceListPanelProps> = ({
     setEditingHighlight(null);
   };
 
-  const handleRemove = (highlightId: string) => {
-    if (window.confirm('確定要刪除此標記片段嗎？')) {
+  const handleRemove = async (highlightId: string) => {
+    const confirmed = await confirm({
+      title: '刪除標記片段',
+      message: '確定要刪除此標記片段嗎？',
+      variant: 'danger',
+    });
+    if (confirmed) {
       onRemove?.(highlightId);
     }
   };
 
-  const handleRemoveAll = () => {
-    if (window.confirm(`確定要刪除「${document.title}」的所有標記片段嗎？此操作無法復原。`)) {
+  const handleRemoveAll = async () => {
+    const confirmed = await confirm({
+      title: '清除所有標記片段',
+      message: `確定要刪除「${document.title}」的所有標記片段嗎？此操作無法復原。`,
+      variant: 'danger',
+    });
+    if (confirmed) {
       onRemoveAll?.();
     }
   };
@@ -262,6 +275,16 @@ export const EvidenceListPanel: React.FC<EvidenceListPanelProps> = ({
             setIsCreating(false);
           }}
           onCancel={() => setIsCreating(false)}
+        />
+      )}
+
+      {/* 確認對話框 */}
+      {confirmState && (
+        <ConfirmDialog
+          isOpen={isConfirmOpen}
+          onClose={handleCancel}
+          onConfirm={handleConfirm}
+          {...confirmState}
         />
       )}
     </>
