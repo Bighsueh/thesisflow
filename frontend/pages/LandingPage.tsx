@@ -173,24 +173,6 @@ export function LandingPage() {
           </p>
         </GlassCard>
       </section>
-
-      {/* Stats Section */}
-      <GlassCard className="p-12 text-center">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          <div>
-            <div className="text-4xl font-bold text-violet-600 mb-2">10k+</div>
-            <div className="text-gray-600 font-medium">已分析論文</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold text-indigo-600 mb-2">500+</div>
-            <div className="text-gray-600 font-medium">研究群組</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold text-blue-600 mb-2">98%</div>
-            <div className="text-gray-600 font-medium">使用者滿意度</div>
-          </div>
-        </div>
-      </GlassCard>
     </div>
   );
 }
