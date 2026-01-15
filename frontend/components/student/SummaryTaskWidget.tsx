@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useStore } from '../../store';
 import { TaskConfigSummary, FieldWithEvidence, Document } from '../../types';
 import { useAutoSave } from '../../hooks/useAutoSave';
@@ -69,7 +70,7 @@ export default function SummaryTaskWidget({
   const handleSubmit = async () => {
     const selectedDoc = documents.find((d) => d.id === widgetState.selectedDocId);
     if (!selectedDoc) {
-      alert('請先選擇目標文獻');
+      toast.warning('請先選擇目標文獻');
       return;
     }
     

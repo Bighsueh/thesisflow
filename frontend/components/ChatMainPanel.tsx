@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import React, { useRef, useEffect, useState } from 'react';
 import { getIncomers, getOutgoers } from 'reactflow';
+import { toast } from 'sonner';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { useStore } from '../store';
 import { AppNode, TaskAContent, ComparisonRow, TaskCContent } from '../types';
@@ -260,7 +261,7 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
         // 需要選擇文獻
         const selectedDoc = documents.find((d) => d.id === widgetState.selectedDocId);
         if (!selectedDoc) {
-          alert('請先選擇目標文獻');
+          toast.warning('請先選擇目標文獻');
           return;
         }
 
