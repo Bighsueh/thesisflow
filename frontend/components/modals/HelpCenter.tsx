@@ -12,10 +12,13 @@ import {
 } from 'lucide-react';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { modalContentVariants, modalOverlayVariants } from '../../config/animations';
 import { allTours } from '../../config/tours';
+import { useConfirm } from '../../hooks/useConfirm';
 import { useTourStore, type TourConfig } from '../../tourStore';
 import { Button } from '../ui/Button';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 interface HelpCenterProps {
   onClose: () => void;
@@ -61,6 +64,7 @@ const ROUTE_TO_TOUR_ID: Record<string, string> = {
 
 export function HelpCenter({ onClose }: HelpCenterProps) {
   const { completedTours, startTour, resetProgress } = useTourStore();
+  const { confirmState, isOpen, confirm, handleConfirm, handleCancel } = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -104,9 +108,15 @@ export function HelpCenter({ onClose }: HelpCenterProps) {
     }
   };
 
-  const handleReset = () => {
-    if (window.confirm('確定要重置所有導覽進度嗎？下次訪問各頁面時將重新顯示導覽。')) {
+  const handleReset = async () => {
+    const confirmed = await confirm({
+      title: '重置導覽進度',
+      message: '確定要重置所有導覽進度嗎？下次訪問各頁面時將重新顯示導覽。',
+      variant: 'info',
+    });
+    if (confirmed) {
       resetProgress();
+      toast.success('已重置所有導覽進度');
       onClose();
     }
   };
@@ -202,6 +212,16 @@ export function HelpCenter({ onClose }: HelpCenterProps) {
           <Button onClick={onClose}>關閉</Button>
         </div>
       </motion.div>
+
+      {/* 確認對話框 */}
+      {confirmState && (
+        <ConfirmDialog
+          isOpen={isOpen}
+          onClose={handleCancel}
+          onConfirm={handleConfirm}
+          {...confirmState}
+        />
+      )}
     </motion.div>
   );
 }

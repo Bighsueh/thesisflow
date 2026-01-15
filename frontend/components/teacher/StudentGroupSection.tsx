@@ -1,13 +1,17 @@
 import { Plus, ChevronRight, X } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { useConfirm } from '../../hooks/useConfirm';
 import { useStore } from '../../store';
 import CohortDetail from '../CohortDetail';
 import { Button } from '../ui/Button';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { GlassCard } from '../ui/GlassCard';
 import { Input } from '../ui/Input';
 
 export function StudentGroupSection() {
   const { cohorts, loadCohorts, createCohort, deleteCohort } = useStore();
+  const { confirmState, isOpen, confirm, handleConfirm, handleCancel } = useConfirm();
   const [activeCohortId, setActiveCohortId] = useState<string | null>(null);
   const [isCohortModalOpen, setIsCohortModalOpen] = useState(false);
   const [cohortName, setCohortName] = useState('');
@@ -95,17 +99,18 @@ export function StudentGroupSection() {
                         className="p-1 hover:bg-red-50 rounded transition-colors text-red-500"
                         onClick={async (e) => {
                           e.stopPropagation();
-                          if (
-                            !window.confirm(
-                              `確定要刪除學生群組「${c.name}」嗎？\n此動作會移除群組與其成員關聯，但不會刪除學生帳號本身。`
-                            )
-                          ) {
-                            return;
-                          }
+                          const confirmed = await confirm({
+                            title: '刪除學生群組',
+                            message: `確定要刪除學生群組「${c.name}」嗎？\n此動作會移除群組與其成員關聯，但不會刪除學生帳號本身。`,
+                            variant: 'danger',
+                          });
+                          if (!confirmed) return;
+                          
                           try {
                             await deleteCohort(c.id);
+                            toast.success(`學生群組「${c.name}」已刪除`);
                           } catch (err: any) {
-                            alert(err?.message || '刪除群組失敗');
+                            toast.error(err?.message || '刪除群組失敗');
                           }
                         }}
                       >
@@ -172,7 +177,7 @@ export function StudentGroupSection() {
                 disabled={cohortSaving || !cohortName.trim()}
                 onClick={async () => {
                   if (!cohortName.trim()) {
-                    alert('請輸入群組名稱');
+                    toast.error('請輸入群組名稱');
                     return;
                   }
                   setCohortSaving(true);
@@ -184,8 +189,9 @@ export function StudentGroupSection() {
                     });
                     await loadCohorts();
                     setIsCohortModalOpen(false);
+                    toast.success(`學生群組「${cohortName.trim()}」已建立`);
                   } catch (e: any) {
-                    alert(e?.message || '建立群組失敗');
+                    toast.error(e?.message || '建立群組失敗');
                   } finally {
                     setCohortSaving(false);
                   }
@@ -197,6 +203,16 @@ export function StudentGroupSection() {
             </div>
           </GlassCard>
         </div>
+      )}
+
+      {/* 確認對話框 */}
+      {confirmState && (
+        <ConfirmDialog
+          isOpen={isOpen}
+          onClose={handleCancel}
+          onConfirm={handleConfirm}
+          {...confirmState}
+        />
       )}
     </div>
   );

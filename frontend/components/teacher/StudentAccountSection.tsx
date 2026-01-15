@@ -1,7 +1,10 @@
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 import React, { useState } from 'react';
+import { toast } from 'sonner';
+import { useConfirm } from '../../hooks/useConfirm';
 import { useStore } from '../../store';
 import { Button } from '../ui/Button';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { GlassCard } from '../ui/GlassCard';
 import { Input } from '../ui/Input';
 
@@ -14,6 +17,7 @@ export function StudentAccountSection() {
     updateStudent,
     deleteStudent,
   } = useStore();
+  const { confirmState, isOpen, confirm, handleConfirm, handleCancel } = useConfirm();
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [studentEmail, setStudentEmail] = useState('');
@@ -44,7 +48,7 @@ export function StudentAccountSection() {
 
   const handleStudentSave = async () => {
     if (!studentName.trim() || !studentEmail.trim()) {
-      alert('請輸入姓名與 Email');
+      toast.error('請輸入姓名與 Email');
       return;
     }
     setStudentSaving(true);
@@ -59,7 +63,7 @@ export function StudentAccountSection() {
         }
         await updateStudent(editingStudentId, payload);
         await loadStudents();
-        alert('已更新學生資料');
+        toast.success('已更新學生資料');
       } else {
         await createStudent({
           name: studentName.trim(),
@@ -67,10 +71,11 @@ export function StudentAccountSection() {
           password: studentPassword || '',
         });
         await loadStudents();
+        toast.success(`已建立學生帳號：${studentName.trim()}`);
       }
       setIsStudentModalOpen(false);
     } catch (e: any) {
-      alert(e?.message || (editingStudentId ? '更新失敗' : '建立失敗'));
+      toast.error(e?.message || (editingStudentId ? '更新失敗' : '建立失敗'));
     } finally {
       setStudentSaving(false);
     }
@@ -85,11 +90,18 @@ export function StudentAccountSection() {
   };
 
   const onDeleteStudent = async (id: string) => {
-    if (!window.confirm('確定要刪除此學生帳號？此動作無法復原。')) return;
+    const confirmed = await confirm({
+      title: '刪除學生帳號',
+      message: '確定要刪除此學生帳號？此動作無法復原。',
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    
     try {
       await deleteStudent(id);
+      toast.success('學生帳號已刪除');
     } catch (e: any) {
-      alert(e?.message || '刪除失敗');
+      toast.error(e?.message || '刪除失敗');
     }
   };
 
@@ -357,11 +369,12 @@ export function StudentAccountSection() {
                 disabled={bulkSaving || !bulkPrefix || !bulkDomain || bulkEndNo < bulkStartNo}
                 onClick={async () => {
                   if (bulkEndNo < bulkStartNo) {
-                    alert('結束座號必須大於等於起始座號');
+                    toast.error('結束座號必須大於等於起始座號');
                     return;
                   }
                   try {
                     setBulkSaving(true);
+                    const count = Math.max(0, bulkEndNo - bulkStartNo + 1);
                     await bulkCreateStudents({
                       startNo: bulkStartNo,
                       endNo: bulkEndNo,
@@ -373,8 +386,9 @@ export function StudentAccountSection() {
                     });
                     await loadStudents();
                     setIsBulkStudentModalOpen(false);
+                    toast.success(`已成功建立 ${count} 個學生帳號`);
                   } catch (e: any) {
-                    alert(e?.message || '批量新增失敗');
+                    toast.error(e?.message || '批量新增失敗');
                   } finally {
                     setBulkSaving(false);
                   }
@@ -388,6 +402,16 @@ export function StudentAccountSection() {
             </div>
           </GlassCard>
         </div>
+      )}
+
+      {/* 確認對話框 */}
+      {confirmState && (
+        <ConfirmDialog
+          isOpen={isOpen}
+          onClose={handleCancel}
+          onConfirm={handleConfirm}
+          {...confirmState}
+        />
       )}
     </div>
   );
