@@ -261,7 +261,7 @@ docker compose up -d
   docker compose down
   docker compose up -d
   ```
-- 確認 `.env` 檔案位於專案根目錄
+- 確認 `.env` 檔案位於學習任務根目錄
 - 檢查環境變數名稱是否正確（區分大小寫）
 
 ### 6. Azure OpenAI 部署名稱錯誤

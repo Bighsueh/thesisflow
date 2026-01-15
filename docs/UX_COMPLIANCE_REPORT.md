@@ -256,7 +256,7 @@ export function getDevicePerformance(): PerformanceLevel {
 **ProjectsPage.tsx**
 ```typescript
 // ✅ 原本：data-tour={index === 0 ? 'project-card' : undefined}
-// ✅ 現在：data-tour="project-grid" (容器級別，所有專案卡片都在此內)
+// ✅ 現在：data-tour="learning-task-grid" (容器級別，所有學習任務卡片都在此內)
 ```
 
 **StudentInterface.tsx**
@@ -365,7 +365,7 @@ frontend/config/tours/studentInterfaceTour.ts:12 # ✅
 
 **計劃描述要點**：
 1. 中央卡片淡入 (毛玻璃效果) ✅
-2. 聚光燈液態流動至專案區域 (0.6s) ✅
+2. 聚光燈液態流動至學習任務區域 (0.6s) ✅
 3. 羽化邊框、脈動邊框、箭頭延遲出現 ✅
 4. 聚光燈流動收縮至卡片 (黏滯感) ✅
 5. 依次追蹤各個 UI 元素 ✅
