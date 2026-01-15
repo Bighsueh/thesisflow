@@ -17,7 +17,7 @@ def get_workflow_state(
 ):
     """獲取當前用戶在指定學習任務中的 workflow 狀態"""
     # 驗證用戶有權訪問此學習任務
-    if not check_project_access(db, current_user, learning_task_id):
+    if not check_learning_task_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     state = db.query(models.WorkflowState).filter(
@@ -54,7 +54,7 @@ def create_or_update_workflow_state(
         raise HTTPException(status_code=404, detail="Learning task not found")
     
     # 驗證用戶有權訪問此學習任務
-    if not check_project_access(db, current_user, learning_task_id):
+    if not check_learning_task_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     # 查找是否已存在狀態
@@ -123,7 +123,7 @@ def update_workflow_state(
 ):
     """部分更新 workflow 狀態"""
     # 驗證用戶有權訪問此學習任務
-    if not check_project_access(db, current_user, learning_task_id):
+    if not check_learning_task_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     state = db.query(models.WorkflowState).filter(
@@ -170,7 +170,7 @@ def get_task_state(
 ):
     """獲取當前用戶在指定學習任務中的簡化任務狀態"""
     # 驗證用戶有權訪問此學習任務
-    if not check_project_access(db, current_user, learning_task_id):
+    if not check_learning_task_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     state = db.query(models.TaskState).filter(
@@ -206,7 +206,7 @@ def save_task_state(
         raise HTTPException(status_code=404, detail="Learning task not found")
     
     # 驗證用戶有權訪問此學習任務
-    if not check_project_access(db, current_user, learning_task_id):
+    if not check_learning_task_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
 
     # 查找是否已存在狀態

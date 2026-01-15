@@ -34,7 +34,7 @@ async def chat(
         raise HTTPException(status_code=404, detail="Learning task not found")
     
     # 驗證用戶有權訪問此專案
-    if not check_project_access(db, current_user, learning_task_id):
+    if not check_learning_task_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     # 新架構：支援 "general" 作為通用節點 ID（不需要查找實際的 FlowNode）
@@ -225,7 +225,7 @@ def get_chat_history(
         raise HTTPException(status_code=404, detail="Learning task not found")
     
     # 驗證用戶有權訪問此專案
-    if not check_project_access(db, current_user, learning_task_id):
+    if not check_learning_task_access(db, current_user, learning_task_id):
         raise HTTPException(status_code=403, detail="Forbidden")
     
     # 查詢該用戶在該專案的所有對話記錄

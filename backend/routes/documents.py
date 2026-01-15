@@ -340,9 +340,9 @@ def bind_documents(
         raise HTTPException(status_code=400, detail="learning_task_id is required")
     
     # 驗證專案存在
-    project = db.query(models.Project).filter(models.Project.id == learning_task_id).first()
+    project = db.query(models.LearningTask).filter(models.LearningTask.id == learning_task_id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="Learning task not found")
     
     # 更新文檔的 learning_task_id
     updated = db.query(models.Document).filter(
