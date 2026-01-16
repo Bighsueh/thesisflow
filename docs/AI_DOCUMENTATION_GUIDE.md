@@ -34,7 +34,12 @@
    - 重構任務清單
    - 技術債務追蹤
 
-6. **SystemChangeVerificationGuide.md** - 系統變更驗證指南
+6. **TOUR_SYSTEM.md** - 導覽系統文檔
+   - 導覽功能設計
+   - 組件使用說明
+   - 配置與擴展指南
+
+7. **SystemChangeVerificationGuide.md** - 系統變更驗證指南
    - 變更驗證流程
    - 測試檢查清單
    - 部署前驗證步驟
@@ -382,5 +387,5 @@ command --option value
 
 ---
 
-**最後更新**：2026-01-05
+**最後更新**：2026-01-17
 **維護者**：AI Assistant

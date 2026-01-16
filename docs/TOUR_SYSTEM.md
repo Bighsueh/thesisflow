@@ -52,6 +52,22 @@ ThesisFlow 的導覽系統是**完全自製**的，不依賴任何第三方導�
 2. **中間步驟**：核心功能（逐一介紹主要面板和操作）
 3. **最後步驟**：進階技巧（收合面板、快捷鍵等）
 
+### 5. 目前導覽覆蓋範圍
+
+**學生端（已實現）：**
+- `/dashboard` - 學生儀表板導覽
+- `/literature` - 文獻庫導覽
+- `/projects` - 專案列表導覽
+- `/groups` - 群組管理導覽
+- `/student/project` - 學生專案介面導覽
+
+**教師端（尚未實現）：**
+- `/teacher/dashboard` - 教師儀表板
+- `/teacher/config` - 專案配置編輯器
+- `/teacher/cohorts/:cohortId` - 群組詳情頁
+
+教師端導覽可依需求未來擴展，遵循相同的配置模式即可新增。
+
 ---
 
 ## 設計系統一致性
@@ -473,22 +489,29 @@ export function MyPage() {
 ```typescript
 import { dashboardTour } from './dashboardTour';
 import { literatureTour } from './literatureTour';
+import { projectsTour } from './projectsTour';
+import { groupsTour } from './groupsTour';
+import { studentInterfaceTour } from './studentInterfaceTour';
 import { myPageTour } from './myPageTour';  // 新增
 
-export function getAllTours(): TourConfig[] {
-  return [
-    dashboardTour,
-    literatureTour,
-    myPageTour,  // 新增
-    // 其他導覽...
-  ];
-}
+// 所有導覽配置列表
+export const allTours: TourConfig[] = [
+  dashboardTour,
+  literatureTour,
+  projectsTour,
+  groupsTour,
+  studentInterfaceTour,
+  myPageTour,  // 新增
+];
 
 // 根據路由獲取導覽 ID
 export function getTourIdByPath(path: string): string | null {
   const tourMap: Record<string, string> = {
     '/dashboard': 'dashboard-intro',
     '/literature': 'literature-upload',
+    '/student/project': 'student-interface',
+    '/projects': 'projects-management',
+    '/groups': 'groups-join',
     '/my-page': 'my-page-intro',  // 新增
   };
   return tourMap[path] || null;
@@ -556,12 +579,16 @@ TourTooltip 更新內容和位置
   "thesisflow_tour_completed": [
     "dashboard-intro",
     "literature-upload",
-    "student-interface"
+    "student-interface",
+    "projects-management",
+    "groups-join"
   ],
   "thesisflow_tour_visited_pages": [
     "/dashboard",
     "/literature",
-    "/student/project"
+    "/student/project",
+    "/projects",
+    "/groups"
   ],
   "thesisflow_tour_first_login": "true"
 }
@@ -945,3 +972,8 @@ ThesisFlow 導覽系統是一個**完全自製、高度可定制、與設計系�
 4. 測試導覽（清除 localStorage，訪問頁面）
 
 遵循本指南，您可以輕鬆為 ThesisFlow 新增高質量的導覽體驗！🎉
+
+---
+
+**最後更新日期：** 2026-01-17
+**文檔版本：** 1.1

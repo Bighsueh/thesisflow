@@ -94,37 +94,41 @@ docker compose down -v      # Stop and reset database
 
 ### Key Files
 
-| File                                               | Purpose                                                   |
-| -------------------------------------------------- | --------------------------------------------------------- |
-| `frontend/store.ts`                                | Zustand global state - central hub for all frontend state |
-| `frontend/authStore.ts`                            | Authentication state (user, role, tokens)                 |
-| `frontend/types.ts`                                | TypeScript type definitions for entire app                |
-| `frontend/components/StudentInterface.tsx` (107KB) | Main student workspace - multi-panel layout               |
-| `frontend/components/TeacherInterface.tsx` (31KB)  | React Flow-based workflow designer                        |
-| `frontend/components/ChatMainPanel.tsx`            | AI assistant interface                                    |
-| `backend/models.py`                                | SQLAlchemy database models                                |
-| `backend/routes/`                                  | FastAPI route handlers                                    |
+| File                                                    | Purpose                                                   |
+| ------------------------------------------------------- | --------------------------------------------------------- |
+| `frontend/store.ts`                                     | Zustand global state - central hub for all frontend state |
+| `frontend/authStore.ts`                                 | Authentication state (user, role, tokens)                 |
+| `frontend/types.ts`                                     | TypeScript type definitions for entire app                |
+| `frontend/components/student/StudentInterface.tsx`      | Main student workspace - multi-panel layout               |
+| `frontend/components/teacher/ProjectConfigEditor.tsx`   | 專案配置編輯器（任務設定、學生群組管理）                    |
+| `frontend/pages/TeacherDashboard.tsx`                   | 教師儀表板（班級列表、學生管理）                           |
+| `frontend/components/ChatMainPanel.tsx`                 | AI assistant interface                                    |
+| `backend/models.py`                                     | SQLAlchemy database models                                |
+| `backend/routes/`                                       | FastAPI route handlers                                    |
 
 ### Frontend Routes (Student)
 
-| Route                    | Page Component                    | Description                    |
-| ------------------------ | --------------------------------- | ------------------------------ |
-| `/dashboard`             | `pages/Dashboard.tsx`             | 學生儀表板（專案列表、最近文獻） |
-| `/projects`              | `pages/ProjectsPage.tsx`          | 專案列表頁面                    |
-| `/literature`            | `pages/LiteraturePage.tsx`        | 文獻庫管理（上傳、列表、預覽）   |
-| `/groups`                | `pages/GroupsPage.tsx`            | 群組管理                        |
-| `/profile`               | `pages/ProfilePage.tsx`           | 個人資料                        |
-| `/student/project`       | `components/StudentInterface.tsx` | 專案工作區（多面板介面）         |
+| Route                    | Page Component                            | Description                    |
+| ------------------------ | ----------------------------------------- | ------------------------------ |
+| `/dashboard`             | `pages/Dashboard.tsx`                     | 學生儀表板（專案列表、最近文獻） |
+| `/projects`              | `pages/ProjectsPage.tsx`                  | 專案列表頁面                    |
+| `/literature`            | `pages/LiteraturePage.tsx`                | 文獻庫管理（上傳、列表、預覽）   |
+| `/groups`                | `pages/GroupsPage.tsx`                    | 群組管理                        |
+| `/profile`               | `pages/ProfilePage.tsx`                   | 個人資料                        |
+| `/student/project`       | `components/student/StudentInterface.tsx` | 專案工作區（多面板介面）         |
 
 **注意**: `pages/StudentHome.tsx` 目前未被路由使用，`/student` 會重導向至 `/dashboard`。
 
 ### Frontend Routes (Teacher)
 
-| Route                    | Page Component                    | Description                    |
-| ------------------------ | --------------------------------- | ------------------------------ |
-| `/teacher`               | `pages/TeacherHome.tsx`           | 教師首頁                        |
-| `/teacher/cohort/:id`    | `pages/TeacherCohort.tsx`         | 班級管理                        |
-| `/teacher/project/:id`   | `components/TeacherInterface.tsx` | 流程設計器（React Flow）        |
+| Route                       | Page Component                                | Description                          |
+| --------------------------- | --------------------------------------------- | ------------------------------------ |
+| `/teacher`                  | → 重導向至 `/teacher/dashboard`                | 教師首頁重導向                        |
+| `/teacher/dashboard`        | `pages/TeacherDashboard.tsx`                  | 教師儀表板（班級總覽）                 |
+| `/teacher/dashboard/:id`    | `pages/TeacherDashboard.tsx`                  | 特定班級儀表板                        |
+| `/teacher/cohorts/:id`      | `pages/TeacherCohort.tsx`                     | 班級詳細管理                          |
+| `/teacher/config`           | `components/teacher/ProjectConfigEditor.tsx`  | 新建專案配置                          |
+| `/teacher/config/:projectId`| `components/teacher/ProjectConfigEditor.tsx`  | 編輯專案配置（任務設定、學生群組）      |
 
 ### State Management Pattern
 

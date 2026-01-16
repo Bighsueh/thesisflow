@@ -15,11 +15,12 @@ ThesisFlow 是一個專為碩士論文文獻回顧設計的雙循環學習系統
 ### 核心特色
 
 - 🎯 **結構化學習流程**：基於 SALSA 框架設計的任務流程
-- 👨‍🏫 **教師端管理**：流程設計器、學生管理、群組管理
+- 👨‍🏫 **教師端管理**：專案配置編輯器、班級管理、學生管理、數據儀表板
 - 👨‍🎓 **學生端介面**：互動式文獻回顧工具、證據收集、AI 輔助寫作
 - 📄 **PDF 標註功能**：直接在 PDF 上標記和收集證據
 - 🤖 **AI 輔助寫作**：整合 Azure OpenAI，協助學生完成各階段寫作任務
 - 📊 **進度追蹤**：即時追蹤學生學習進度和使用情況
+- 🎓 **導覽系統**：互動式導覽幫助用戶了解系統功能
 
 ## 🏗️ 系統架構
 
@@ -245,19 +246,33 @@ docker compose up -d postgres
 thesisflow-ai-flow/
 ├── frontend/                # React 前端應用
 │   ├── components/         # React 組件
-│   │   ├── TeacherInterface.tsx # 教師流程設計器
-│   │   ├── StudentInterface.tsx # 學生學習介面
+│   │   ├── student/        # 學生端組件
+│   │   │   └── StudentInterface.tsx # 學生學習介面
+│   │   ├── teacher/        # 教師端組件
+│   │   │   ├── ProjectConfigEditor.tsx # 專案配置編輯器
+│   │   │   ├── TeacherLayout.tsx    # 教師端佈局
+│   │   │   └── TeacherSidebar.tsx   # 教師端側邊欄
+│   │   ├── dashboard/      # 數據儀表板組件
+│   │   ├── tour/           # 導覽系統組件
 │   │   ├── ChatMainPanel.tsx   # 聊天主面板
 │   │   └── widgets/        # 各種功能組件
 │   ├── pages/              # 頁面組件
-│   │   ├── LoginPage.tsx   # 登入頁面
-│   │   ├── TeacherHome.tsx # 教師首頁
-│   │   └── StudentHome.tsx # 學生首頁
+│   │   ├── LoginPage.tsx       # 登入頁面
+│   │   ├── LandingPage.tsx     # 首頁
+│   │   ├── TeacherHome.tsx     # 教師首頁
+│   │   ├── TeacherDashboard.tsx # 教師儀表板
+│   │   ├── TeacherCohort.tsx   # 班級管理
+│   │   ├── ProjectsPage.tsx    # 專案管理
+│   │   ├── StudentHome.tsx     # 學生首頁
+│   │   └── Dashboard.tsx       # 學生儀表板
 │   ├── services/           # API 服務層
 │   ├── hooks/              # 自定義 React Hooks
+│   ├── config/             # 配置檔案
+│   │   └── tours/          # 導覽系統配置
 │   ├── utils/              # 工具函數
 │   ├── store.ts            # Zustand 全局狀態
 │   ├── authStore.ts        # 認證狀態
+│   ├── tourStore.ts        # 導覽狀態
 │   ├── types.ts            # TypeScript 類型定義
 │   ├── package.json        # 前端依賴
 │   ├── Dockerfile          # 前端 Docker 配置
@@ -269,10 +284,13 @@ thesisflow-ai-flow/
 │   ├── services.py         # 業務邏輯服務
 │   ├── auth.py             # 認證相關
 │   ├── db.py               # 資料庫配置
+│   ├── routes/             # API 路由
 │   ├── requirements.txt    # Python 依賴
 │   └── Dockerfile          # 後端 Docker 配置
 ├── docs/                    # 文檔
 │   ├── DOCKER_DEPLOYMENT.md # Docker 部署詳細文檔
+│   ├── SITE_MAP.md         # 系統路由與頁面地圖
+│   ├── TOUR_SYSTEM.md      # 導覽系統說明
 │   └── AI_DOCUMENTATION_GUIDE.md # AI 文檔維護指南
 ├── docker-compose.yml      # Docker Compose 配置
 ├── package.json            # 根目錄工作區腳本
