@@ -154,7 +154,58 @@ class AzureOpenAIClient:
             ],
             "model": self.deployment,
             "temperature": 0.2,
-            "max_completion_tokens": 800,
+            "max_completion_tokens": 2048,
+        }
+        try:
+            data = await self._make_request(url, headers, payload)
+            return data["choices"][0]["message"]["content"]
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return f"Azure OpenAI 部署 '{self.deployment}' 不存在或無法訪問。請檢查部署名稱是否正確。"
+            elif e.response.status_code == 401:
+                return "Azure OpenAI API 金鑰無效或已過期。"
+            elif e.response.status_code == 403:
+                return "Azure OpenAI 權限不足，無法訪問該部署。"
+            else:
+                return f"Azure OpenAI 錯誤 ({e.response.status_code}): {e.response.text[:200] if e.response.text else '未知錯誤'}"
+        except Exception as e:
+            return f"Azure OpenAI 連線錯誤: {str(e)}"
+
+    async def chat_with_history(
+        self, 
+        system_prompt: str, 
+        messages: list[dict],
+        max_tokens: int = 2048
+    ) -> str:
+        """
+        使用對話歷史進行聊天
+        
+        Args:
+            system_prompt: 系統提示
+            messages: 對話歷史陣列 [{"role": "user/assistant", "content": "..."}]
+            max_tokens: 最大輸出 token 數
+            
+        Returns:
+            str: AI 的回應內容
+        """
+        if not self.is_ready():
+            return "Azure OpenAI 尚未設定 API KEY/ENDPOINT。"
+
+        url = f"{self.endpoint}/openai/deployments/{self.deployment}/chat/completions?api-version={self.api_version}"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+        
+        # 構建 messages 陣列：system prompt + 歷史訊息
+        full_messages = [{"role": "system", "content": system_prompt}]
+        full_messages.extend(messages)
+        
+        payload = {
+            "messages": full_messages,
+            "model": self.deployment,
+            "temperature": 0.2,
+            "max_completion_tokens": max_tokens,
         }
         try:
             data = await self._make_request(url, headers, payload)

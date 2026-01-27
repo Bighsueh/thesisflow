@@ -93,31 +93,39 @@ async def chat(
                     )
 
     # 構建系統提示
-    system_prompt_parts = [f"""你是論文寫作教練，正在指導學生完成「{node_label}」任務。
+    system_prompt_parts = ["""你是一位專業的論文閱讀助手，協助學生理解學術文獻。
 
-當前任務說明：{node_guidance}"""]
+【當前情境】"""]
+    
+    system_prompt_parts.append(f"- 任務：{node_label}")
+    system_prompt_parts.append(f"- 任務說明：{node_guidance}")
 
     # 加入當前文檔資訊
     if current_doc_title:
-        system_prompt_parts.append(f"\n當前討論文檔：《{current_doc_title}》")
+        system_prompt_parts.append(f"- 討論文檔：《{current_doc_title}》")
         if pdf_base64:
-            system_prompt_parts.append("\n你可以直接閱讀並分析這份 PDF 文檔的完整內容。")
+            system_prompt_parts.append("- 你可以直接閱讀並分析這份 PDF 文檔的完整內容")
+    else:
+        system_prompt_parts.append("- 討論文檔：（學生尚未選擇文檔）")
 
     system_prompt_parts.append("""
+【角色職責】
+1. 解答學生對論文內容的疑問
+2. 引導學生思考，而非直接給答案
+3. 引用論文中具體段落和頁碼支持回答
+4. 指出學生理解可能有誤的地方
 
-你的角色：
-1. 提供引導性問題，幫助學生思考
-2. 檢核學生的填寫是否符合要求（如是否有證據支持）
-3. 指出需要改進的地方，但不要直接代寫
-4. 根據學生的進度給予適當的鼓勵或提醒
-5. 引用文檔中具體的內容和頁碼來支持你的回答
+【回覆規範】
+- 使用繁體中文
+- 回覆控制在 300-500 字以內
+- 使用清晰的結構（標題、項目符號）
+- 語氣友善且專業
+- 避免過度讚美或空泛的鼓勵""")
 
-請用中文回覆，語氣友善且專業。""")
-
-    system_prompt = "".join(system_prompt_parts)
+    system_prompt = "\n".join(system_prompt_parts)
     
-    # 構建用戶提示
-    user_parts = [f"學生訊息：{payload.message}"]
+    # 構建當前用戶訊息（包含標記片段等上下文）
+    user_message_parts = [payload.message]
     
     # 處理標記片段信息
     if evidence_info:
@@ -135,26 +143,48 @@ async def chat(
 - 便條名稱: {info.get('name') or '（未命名）'}
 - 證據內容: {info.get('snippet', '')}
 - 頁碼: {info.get('page') or '（未指定）'}
-- 文檔名稱: {info.get('document_title', '未知文檔')}
-- 文檔URL: {document_url or '（無法獲取）'}"""
+- 文檔名稱: {info.get('document_title', '未知文檔')}"""
             evidence_details.append(evidence_detail)
         
         if evidence_details:
-            user_parts.append(f"\n\n學生在訊息中引用了 {len(evidence_details)} 則標記片段，詳細資訊如下：")
-            user_parts.extend(evidence_details)
+            user_message_parts.append(f"\n\n【學生引用的標記片段】共 {len(evidence_details)} 則：")
+            user_message_parts.extend(evidence_details)
     
     if evidence_ids and not evidence_info:
-        user_parts.append(f"\n學生已選擇 {len(evidence_ids)} 則證據。")
+        user_message_parts.append(f"\n【學生已選擇 {len(evidence_ids)} 則證據】")
     
     if widget_states:
-        user_parts.append(f"\n當前任務進度：{json.dumps(widget_states, ensure_ascii=False, indent=2)}")
+        user_message_parts.append(f"\n【當前任務進度】\n{json.dumps(widget_states, ensure_ascii=False, indent=2)}")
+    
+    current_user_message = "\n".join(user_message_parts)
+    
+    # 構建 messages 陣列（包含對話歷史）
+    # 限制歷史訊息數量為 8 條，並過濾掉 system/status 類型的訊息
+    CHAT_HISTORY_LIMIT = 8
+    messages_for_api = []
     
     if chat_history:
-        recent_history = chat_history[-5:]
-        history_text = "\n".join([f"{'學生' if m.get('role') == 'user' else '教練'}: {m.get('content', '')}" for m in recent_history])
-        user_parts.append(f"\n最近的對話歷史：\n{history_text}")
+        # 只取最近 8 條，並過濾掉非對話訊息
+        recent_history = [
+            msg for msg in chat_history[-CHAT_HISTORY_LIMIT:]
+            if msg.get('role') in ('user', 'coach', 'assistant')
+        ]
+        
+        for msg in recent_history:
+            role = msg.get('role', 'user')
+            # 將 'coach' 角色轉換為 OpenAI 的 'assistant' 角色
+            if role == 'coach':
+                role = 'assistant'
+            messages_for_api.append({
+                "role": role,
+                "content": msg.get('content', '')
+            })
     
-    user_prompt = "\n".join(user_parts)
+    # 添加當前用戶訊息
+    messages_for_api.append({
+        "role": "user",
+        "content": current_user_message
+    })
     
     # 儲存用戶訊息到資料庫
     user_message = models.ChatMessage(
@@ -172,21 +202,24 @@ async def chat(
     db.add(user_message)
     db.commit()
     
-    # 調用 Azure OpenAI（使用 Responses API 處理 PDF）
+    # 調用 Azure OpenAI
     if pdf_base64:
-        # 有 PDF 時使用 Responses API
+        # 有 PDF 時使用 Responses API（PDF 分析專用）
         azure = AzureResponsesAPIClient()
         response = await azure.chat_with_pdf(
             system_prompt=system_prompt,
-            user_prompt=user_prompt,
+            user_prompt=current_user_message,
             pdf_base64=pdf_base64,
             filename=current_doc.title
         )
     else:
-        # 無 PDF 時使用標準 Chat API（保留向後相容）
+        # 無 PDF 時使用標準 Chat API（支援對話歷史）
         from services import AzureOpenAIClient
         azure = AzureOpenAIClient()
-        response = await azure.chat(system_prompt, user_prompt)
+        response = await azure.chat_with_history(
+            system_prompt=system_prompt,
+            messages=messages_for_api
+        )
     
     # 儲存 AI 回覆到資料庫
     ai_message = models.ChatMessage(

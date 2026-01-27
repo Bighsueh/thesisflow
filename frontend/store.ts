@@ -706,7 +706,7 @@ export const useStore = create<AppState>((set, get) => ({
         evidence_ids: state.activeEvidenceIds,
         evidence_info: evidenceInfoMap, // 新增：傳遞標記片段的完整信息
         widget_states: state.currentWidgetState,
-        chat_history: state.chatTimeline.slice(-10), // 最近 10 條
+        chat_history: state.chatTimeline.slice(-8), // 最近 8 條（與後端同步）
         ...context,
       };
 
