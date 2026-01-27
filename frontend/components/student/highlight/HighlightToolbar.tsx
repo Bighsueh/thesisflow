@@ -6,28 +6,34 @@
 
 import { Copy, Edit2, GripVertical, Save, Tag, Trash2, X } from 'lucide-react';
 import React, { useState } from 'react';
-import { EVIDENCE_TYPES, EvidenceType, ExtendedHighlight } from '../types/highlight';
+import {
+  EVIDENCE_TYPES,
+  EvidenceType,
+  ExtendedHighlight,
+  LEARNING_MARK_TYPES,
+  LearningMarkType,
+} from '../types/highlight';
 
 // === HighlightFloatingToolbar 組件 ===
 
 interface HighlightFloatingToolbarProps {
   position: { x: number; y: number };
-  onSelectType: (type: EvidenceType) => void;
-  onEdit: () => void;
+  onSelectType: (type: LearningMarkType) => void;
   onClose: () => void;
 }
 
 /**
- * 浮動工具列
+ * 浮動工具列（新版學習型標記）
  *
  * 在使用者選取區域後顯示，允許快速選擇標記類型
  */
 export const HighlightFloatingToolbar: React.FC<HighlightFloatingToolbarProps> = ({
   position,
   onSelectType,
-  onEdit,
   onClose,
 }) => {
+  const [hoveredType, setHoveredType] = useState<string | null>(null);
+
   return (
     <div
       style={{
@@ -36,39 +42,62 @@ export const HighlightFloatingToolbar: React.FC<HighlightFloatingToolbarProps> =
         zIndex: 100,
         cursor: 'auto',
       }}
-      className="absolute transform -translate-y-full -translate-x-1/2 mt-[-10px] bg-white shadow-xl rounded-full p-1.5 flex items-center space-x-2 border border-slate-200 animate-bounce-in pointer-events-auto"
+      className="absolute transform -translate-y-full -translate-x-1/2 mt-[-10px] pointer-events-auto"
     >
-      {EVIDENCE_TYPES.map((typeDef) => (
+      <div className="bg-white shadow-xl rounded-2xl p-1.5 flex items-stretch gap-1 border border-slate-200 animate-bounce-in">
+        {LEARNING_MARK_TYPES.map((markType) => {
+          const Icon = markType.icon;
+          const isHovered = hoveredType === markType.type;
+
+          return (
+            <button
+              key={markType.type}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectType(markType.type);
+              }}
+              onMouseEnter={() => setHoveredType(markType.type)}
+              onMouseLeave={() => setHoveredType(null)}
+              className={`
+                relative flex flex-col items-center justify-center px-2.5 py-1.5 rounded-xl
+                ${markType.bg} ${markType.textColor} ${markType.border}
+                border hover:scale-105 active:scale-95 transition-all duration-150
+                min-w-[52px] group
+              `}
+            >
+              <div className="flex items-center gap-1">
+                <Icon size={13} />
+                <span className="text-[11px] font-semibold">{markType.shortLabel}</span>
+              </div>
+              <span className="text-[9px] opacity-60 mt-0.5 whitespace-nowrap">
+                {markType.subtitle}
+              </span>
+
+              {isHovered && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20">
+                  <div className="bg-slate-800 text-white text-[10px] px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
+                    {markType.tooltip}
+                  </div>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                </div>
+              )}
+            </button>
+          );
+        })}
+
+        <div className="w-px bg-slate-200 mx-0.5 self-stretch" />
+
         <button
-          key={typeDef.type}
           onClick={(e) => {
             e.stopPropagation();
-            onSelectType(typeDef.type);
+            onClose();
           }}
-          className={`w-6 h-6 rounded-full ${typeDef.color} border-2 border-white shadow-sm hover:scale-125 transition-transform`}
-          title={`標記為：${typeDef.label}`}
-        />
-      ))}
-      <div className="w-px h-4 bg-slate-200 mx-1"></div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onEdit();
-        }}
-        className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-full hover:bg-slate-100 transition-colors"
-        title="編輯詳情"
-      >
-        <Edit2 size={14} />
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
-        className="p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-slate-100 transition-colors"
-      >
-        <X size={14} />
-      </button>
+          className="p-2 text-slate-400 hover:text-red-500 rounded-xl hover:bg-slate-100 transition-colors self-center"
+          title="取消"
+        >
+          <X size={14} />
+        </button>
+      </div>
     </div>
   );
 };

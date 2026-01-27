@@ -36,7 +36,7 @@ export function Navigation() {
     },
     {
       path: '/literature',
-      label: '文獻',
+      label: '文獻庫',
       icon: <FileText size={18} />,
     },
   ];

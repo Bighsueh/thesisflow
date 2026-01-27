@@ -19,16 +19,19 @@ export function TeacherSidebar({ activeSection, onSectionChange }: TeacherSideba
       id: 'dashboard' as const,
       label: '學習儀表板',
       icon: <BarChart3 size={20} />,
+      path: '/teacher/dashboard',
     },
     {
       id: 'accounts' as const,
       label: '學生帳號管理',
       icon: <Users size={20} />,
+      path: '/teacher/home',
     },
     {
       id: 'groups' as const,
       label: '學生群組管理',
       icon: <Users size={20} />,
+      path: '/teacher/home',
     },
   ];
 
@@ -54,9 +57,10 @@ export function TeacherSidebar({ activeSection, onSectionChange }: TeacherSideba
             <button
               key={item.id}
               onClick={() => {
-                if (item.id === 'dashboard') {
-                  navigate('/teacher/dashboard');
-                } else {
+                // 先導航到正確的頁面
+                navigate(item.path);
+                // 然後更新 section 狀態（如果需要）
+                if (item.id !== 'dashboard') {
                   onSectionChange(item.id);
                 }
               }}
