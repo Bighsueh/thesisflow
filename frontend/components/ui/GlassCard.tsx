@@ -19,32 +19,35 @@ export function GlassCard({
       whileHover={
         hoverEffect
           ? {
-              y: -4,
-              boxShadow: '0 20px 40px -10px rgba(139, 92, 246, 0.15)',
+              y: -2,
+              scale: 1.01,
+              boxShadow: '0 20px 40px -10px rgba(139, 92, 246, 0.18)',
             }
           : {}
       }
+      whileTap={hoverEffect ? { scale: 0.99 } : {}}
       transition={{
         type: 'spring',
-        stiffness: 300,
-        damping: 20,
+        stiffness: 400,
+        damping: 25,
       }}
       onClick={onClick}
       {...rest}
       className={`
         relative overflow-hidden
-        bg-white/70 backdrop-blur-2xl 
+        bg-white/80 backdrop-blur-2xl 
         border border-white/80 
-        shadow-[0_8px_30px_rgb(0,0,0,0.06)]
+        shadow-[0_4px_20px_rgb(0,0,0,0.04)]
         shadow-violet-500/5
-        rounded-3xl
-        ${hoverEffect || onClick ? 'cursor-pointer' : ''}
+        rounded-2xl
+        transition-colors duration-200
+        ${hoverEffect || onClick ? 'cursor-pointer hover:border-violet-200/50' : ''}
         ${className}
       `}
     >
       {/* Subtle shine effect overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-white/20 to-transparent pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-t from-violet-50/20 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-violet-50/10 via-transparent to-transparent pointer-events-none" />
       <div className="relative z-10">{children}</div>
     </motion.div>
   );

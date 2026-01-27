@@ -144,10 +144,33 @@ export function LiteraturePage() {
     setIsDragging(false);
   };
 
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      handleFile(file);
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (files.length === 1) {
+      // 單檔案：使用原有的 modal 流程
+      handleFile(files[0]);
+    } else {
+      // 多檔案：批次上傳
+      setUploading(true);
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const title = file.name.replace(/\.(pdf|txt)$/i, '');
+          await uploadFileDocument(title, file);
+        }
+        await loadDocuments();
+        alert(`成功上傳 ${files.length} 個檔案！`);
+      } catch (err: any) {
+        alert(`批次上傳失敗：${err?.message || err || '未知錯誤'}`);
+      } finally {
+        setUploading(false);
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
     }
   };
 
@@ -338,6 +361,7 @@ export function LiteraturePage() {
                     ref={fileInputRef}
                     type="file"
                     accept=".txt,text/plain,.pdf,application/pdf"
+                    multiple
                     className="hidden"
                     onChange={handleFileInputChange}
                   />

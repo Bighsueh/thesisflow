@@ -97,6 +97,11 @@ class Highlight(Base):
     width = Column(Float, nullable=True)  # 相對寬度 0-1
     height = Column(Float, nullable=True)  # 相對高度 0-1
     evidence_type = Column(String, nullable=True)  # Purpose/Method/Findings/Limitation/Other (保留以向後相容)
+    # 新的學習型標記欄位
+    mark_type = Column(String, nullable=True)  # confused/important/question/reference/bookmark
+    note = Column(Text, nullable=True)  # 使用者筆記
+    ai_explanation = Column(Text, nullable=True)  # AI 解釋
+    is_resolved = Column(Boolean, default=False)  # 是否已理解（confused 類型用）
     created_at = Column(DateTime, default=datetime.utcnow)
 
     document = relationship("Document", back_populates="highlights")
@@ -253,4 +258,28 @@ class ChatMessage(Base):
 
     project = relationship("Project")
     user = relationship("User")
+
+
+class LearningHistory(Base):
+    """
+    學習歷程記錄
+    
+    記錄學生的閱讀互動記錄（標記、筆記、AI 解釋等）
+    """
+    __tablename__ = "learning_history"
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    project_id = Column(String, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    document_id = Column(String, ForeignKey("documents.id", ondelete="CASCADE"), nullable=True)
+    highlight_id = Column(String, ForeignKey("highlights.id", ondelete="SET NULL"), nullable=True)
+    event_type = Column(String, nullable=False)  # confused/important/question/reference/bookmark/ai_explain
+    content = Column(Text, nullable=True)  # 使用者筆記或標記的文字
+    ai_response = Column(Text, nullable=True)  # AI 的回應
+    is_resolved = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+    project = relationship("Project")
+    document = relationship("Document")
+    highlight = relationship("Highlight")
 

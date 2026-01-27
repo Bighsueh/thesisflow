@@ -107,6 +107,11 @@ export interface Highlight {
   width?: number; // 相對寬度 0-1
   height?: number; // 相對高度 0-1
   evidence_type?: string; // Purpose/Method/Findings/Limitation/Other (保留以向後相容)
+  // 新的學習型標記欄位
+  mark_type?: string; // confused/important/question/reference/bookmark
+  note?: string; // 使用者筆記
+  ai_explanation?: string; // AI 解釋
+  is_resolved?: boolean; // 是否已理解（confused 類型用）
   created_at: number;
 }
 

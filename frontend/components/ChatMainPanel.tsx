@@ -7,6 +7,9 @@ import {
   X,
   ChevronLeft,
   FileText,
+  Lightbulb,
+  MessageCircle,
+  Search,
 } from 'lucide-react';
 import React, { useRef, useEffect, useState } from 'react';
 import { getIncomers, getOutgoers } from 'reactflow';
@@ -604,6 +607,42 @@ export const ChatMainPanel: React.FC<ChatMainPanelProps> = ({ currentNode }) => 
 
       {/* 輸入區 */}
       <div className="border-t border-base-200 bg-white p-3">
+        {/* 快捷回應按鈕 - 當最後一則訊息是 AI 提問時顯示 */}
+        {chatTimeline.length > 0 && chatTimeline[chatTimeline.length - 1]?.role === 'coach' && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            <button
+              className="btn btn-xs btn-outline gap-1.5 text-purple-600 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+              onClick={() => {
+                setInputMessage('我完全沒概念，請直接告訴我');
+                inputRef.current?.focus();
+              }}
+            >
+              <Lightbulb size={12} />
+              直接告訴我
+            </button>
+            <button
+              className="btn btn-xs btn-outline gap-1.5 text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+              onClick={() => {
+                setInputMessage('我有一些想法，想跟你討論');
+                inputRef.current?.focus();
+              }}
+            >
+              <MessageCircle size={12} />
+              我想討論
+            </button>
+            <button
+              className="btn btn-xs btn-outline gap-1.5 text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300"
+              onClick={() => {
+                setInputMessage('幫我看看前後文有沒有線索');
+                inputRef.current?.focus();
+              }}
+            >
+              <Search size={12} />
+              找線索
+            </button>
+          </div>
+        )}
+
         <div className="flex gap-2 mb-2">
           <button
             className="btn btn-xs btn-outline btn-primary gap-1"

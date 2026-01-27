@@ -28,6 +28,11 @@ import {
   LayoutTemplate,
   LogOut,
   CheckCircle2,
+  HelpCircle,
+  Star as StarIcon,
+  MessageCircle as MessageCircleIcon,
+  BookOpen as BookOpenIcon,
+  Bookmark as BookmarkIcon,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Document as PdfDocument, Page } from 'react-pdf';
@@ -42,6 +47,7 @@ import { HelpButton } from '../tour/HelpButton';
 import { AppNode, Document, FieldWithEvidence } from '../types';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { EmptyProjectUploader } from './EmptyProjectUploader';
 import { TasksPanel } from './TasksPanel';
 import '../../utils/pdfConfig';
 
@@ -163,9 +169,10 @@ const FormField = ({
   );
 };
 
-// --- Evidence Type Definitions ---
+// --- Evidence Type Definitions (Legacy - 向後相容) ---
 type EvidenceType = 'Purpose' | 'Method' | 'Findings' | 'Limitation' | 'Other';
 
+// 舊的 EVIDENCE_TYPES 保留用於向後相容
 const EVIDENCE_TYPES: {
   type: EvidenceType;
   label: string;
@@ -210,28 +217,102 @@ const EVIDENCE_TYPES: {
   },
 ];
 
+// --- Learning Mark Type Definitions (新版學習型標記) ---
+type LearningMarkType = 'confused' | 'important' | 'question' | 'reference' | 'bookmark';
+
+const LEARNING_MARK_TYPES = [
+  {
+    type: 'confused' as LearningMarkType,
+    label: '不懂',
+    shortLabel: '不懂',
+    subtitle: '讓 AI 解釋',
+    tooltip: '標記看不懂的字詞或句子，AI 會引導你理解',
+    color: 'bg-purple-500',
+    bg: 'bg-purple-50',
+    border: 'border-purple-400',
+    textColor: 'text-purple-700',
+    icon: HelpCircle,
+    action: 'auto_ai',
+  },
+  {
+    type: 'important' as LearningMarkType,
+    label: '重點',
+    shortLabel: '重點',
+    subtitle: '做筆記',
+    tooltip: '標記重要內容並寫下你的理解或筆記',
+    color: 'bg-amber-500',
+    bg: 'bg-amber-50',
+    border: 'border-amber-400',
+    textColor: 'text-amber-700',
+    icon: StarIcon,
+    action: 'note',
+  },
+  {
+    type: 'question' as LearningMarkType,
+    label: '與 AI 討論',
+    shortLabel: '討論',
+    subtitle: '聊聊這段',
+    tooltip: '針對這段內容和 AI 進行深入討論',
+    color: 'bg-blue-500',
+    bg: 'bg-blue-50',
+    border: 'border-blue-400',
+    textColor: 'text-blue-700',
+    icon: MessageCircleIcon,
+    action: 'chat',
+  },
+  {
+    type: 'reference' as LearningMarkType,
+    label: '看 Reference',
+    shortLabel: 'Ref',
+    subtitle: '找相關文獻',
+    tooltip: '讓 AI 幫你找這段提到的參考文獻或相關資料',
+    color: 'bg-emerald-500',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-400',
+    textColor: 'text-emerald-700',
+    icon: BookOpenIcon,
+    action: 'reference',
+  },
+  {
+    type: 'bookmark' as LearningMarkType,
+    label: '書籤',
+    shortLabel: '書籤',
+    subtitle: '稍後再看',
+    tooltip: '單純標記起來，方便之後回顧',
+    color: 'bg-slate-500',
+    bg: 'bg-slate-50',
+    border: 'border-slate-400',
+    textColor: 'text-slate-700',
+    icon: BookmarkIcon,
+    action: 'none',
+  },
+];
+
 // Extended Highlight type with tag and note (backward compatible)
 interface ExtendedHighlight extends Highlight {
   tag?: string; // User defined short description
   note?: string; // Detailed note
-  type?: EvidenceType; // For convenience, maps from evidence_type
+  aiExplanation?: string; // AI explanation
+  isResolved?: boolean; // Whether understood
+  markType?: LearningMarkType; // New learning mark type
+  type?: EvidenceType; // For convenience, maps from evidence_type (legacy)
   docTitle?: string; // Document title for display
 }
 
 // --- Design Prototype Components ---
 
-// 1. Highlight Floating Toolbar
+// 1. Highlight Floating Toolbar (新版學習型標記)
 const HighlightFloatingToolbar = ({
   position,
   onSelectType,
-  onEdit,
   onClose,
 }: {
   position: { x: number; y: number };
-  onSelectType: (type: EvidenceType) => void;
-  onEdit: () => void;
+  onSelectType: (type: LearningMarkType) => void;
   onClose: () => void;
 }) => {
+  const [hoveredType, setHoveredType] = React.useState<string | null>(null);
+
   return (
     <div
       style={{
@@ -240,39 +321,62 @@ const HighlightFloatingToolbar = ({
         zIndex: 100,
         cursor: 'auto',
       }}
-      className="absolute transform -translate-y-full -translate-x-1/2 mt-[-10px] bg-white shadow-xl rounded-full p-1.5 flex items-center space-x-2 border border-slate-200 animate-bounce-in pointer-events-auto"
+      className="absolute transform -translate-y-full -translate-x-1/2 mt-[-10px] pointer-events-auto"
     >
-      {EVIDENCE_TYPES.map((typeDef) => (
+      <div className="bg-white shadow-xl rounded-2xl p-1.5 flex items-stretch gap-1 border border-slate-200 animate-bounce-in">
+        {LEARNING_MARK_TYPES.map((markType) => {
+          const Icon = markType.icon;
+          const isHovered = hoveredType === markType.type;
+
+          return (
+            <button
+              key={markType.type}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectType(markType.type);
+              }}
+              onMouseEnter={() => setHoveredType(markType.type)}
+              onMouseLeave={() => setHoveredType(null)}
+              className={`
+                relative flex flex-col items-center justify-center px-2.5 py-1.5 rounded-xl
+                ${markType.bg} ${markType.textColor} ${markType.border}
+                border hover:scale-105 active:scale-95 transition-all duration-150
+                min-w-[52px] group
+              `}
+            >
+              <div className="flex items-center gap-1">
+                <Icon size={13} />
+                <span className="text-[11px] font-semibold">{markType.shortLabel}</span>
+              </div>
+              <span className="text-[9px] opacity-60 mt-0.5 whitespace-nowrap">
+                {markType.subtitle}
+              </span>
+
+              {isHovered && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-20">
+                  <div className="bg-slate-800 text-white text-[10px] px-2.5 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
+                    {markType.tooltip}
+                  </div>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                </div>
+              )}
+            </button>
+          );
+        })}
+
+        <div className="w-px bg-slate-200 mx-0.5 self-stretch" />
+
         <button
-          key={typeDef.type}
           onClick={(e) => {
             e.stopPropagation();
-            onSelectType(typeDef.type);
+            onClose();
           }}
-          className={`w-6 h-6 rounded-full ${typeDef.color} border-2 border-white shadow-sm hover:scale-125 transition-transform`}
-          title={`標記為：${typeDef.label}`}
-        />
-      ))}
-      <div className="w-px h-4 bg-slate-200 mx-1"></div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onEdit();
-        }}
-        className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-full hover:bg-slate-100 transition-colors"
-        title="編輯詳情"
-      >
-        <Edit2 size={14} />
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
-        className="p-1.5 text-slate-400 hover:text-red-500 rounded-full hover:bg-slate-100 transition-colors"
-      >
-        <X size={14} />
-      </button>
+          className="p-2 text-slate-400 hover:text-red-500 rounded-xl hover:bg-slate-100 transition-colors self-center"
+          title="取消"
+        >
+          <X size={14} />
+        </button>
+      </div>
     </div>
   );
 };
@@ -1391,10 +1495,11 @@ const ReaderPanel = () => {
     }
   };
 
-  const handleQuickCreate = async (type: EvidenceType) => {
+  const handleQuickCreate = async (type: LearningMarkType) => {
     if (toolbarRect && currentDocId && pendingSelection) {
       await addHighlight(currentDocId, pendingSelection.text || '選取的內容', {
-        evidence_type: type,
+        mark_type: type,
+        evidence_type: 'Other', // 向後相容
         page: pendingSelection.page,
         x: pendingSelection.x,
         y: pendingSelection.y,
@@ -1404,12 +1509,6 @@ const ReaderPanel = () => {
       setToolbarRect(null);
       setCurrentRect(null);
       setPendingSelection(null);
-    }
-  };
-
-  const handleEditCreate = () => {
-    if (toolbarRect && pendingSelection) {
-      setIsCreateDialogOpen(true);
     }
   };
 
@@ -1709,7 +1808,7 @@ const ReaderPanel = () => {
         onMouseMove={handleMouseMove}
       >
         {!doc ? (
-          <div className="grid place-items-center h-full text-slate-400">請選擇文獻</div>
+          <EmptyProjectUploader onOpenLibrary={() => setLeftPanel('library')} />
         ) : (
           <div
             ref={pageRef}
@@ -1751,7 +1850,6 @@ const ReaderPanel = () => {
               <HighlightFloatingToolbar
                 position={{ x: toolbarRect.x, y: toolbarRect.y }}
                 onSelectType={handleQuickCreate}
-                onEdit={handleEditCreate}
                 onClose={() => {
                   setToolbarRect(null);
                   setCurrentRect(null);
@@ -1935,7 +2033,6 @@ const ReaderPanel = () => {
                       <HighlightFloatingToolbar
                         position={{ x: toolbarRect.x, y: toolbarRect.y }}
                         onSelectType={handleQuickCreate}
-                        onEdit={handleEditCreate}
                         onClose={() => {
                           setToolbarRect(null);
                           setCurrentRect(null);

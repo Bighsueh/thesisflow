@@ -16,6 +16,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import TeacherCohort from './pages/TeacherCohort';
 import TeacherDashboard from './pages/TeacherDashboard';
+import TeacherHome from './pages/TeacherHome';
 
 export function App() {
   const { hydrate, checkTokenExpiry } = useAuthStore();
@@ -138,6 +139,14 @@ export function App() {
             element={
               <ProtectedRoute requiredRole="teacher">
                 <Navigate to="/teacher/dashboard" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teacher/home"
+            element={
+              <ProtectedRoute requiredRole="teacher">
+                <TeacherHome />
               </ProtectedRoute>
             }
           />
