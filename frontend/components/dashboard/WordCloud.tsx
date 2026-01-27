@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import ReactWordcloud from 'react-wordcloud';
+import { WordCloud as ReactWordCloud } from '@isoterik/react-word-cloud';
+import { useEffect, useState } from 'react';
 import { analyticsService, WordCloudData } from '../../services/analyticsService';
 import { GlassCard } from '../ui/GlassCard';
 
@@ -49,13 +49,13 @@ export function WordCloud({ cohortId }: WordCloudProps) {
     <GlassCard className="p-6">
       <h3 className="text-lg font-bold text-gray-900 mb-4">學生對話關鍵詞</h3>
       {data && data.words.length > 0 ? (
-        <div style={{ height: 300 }}>
-          <ReactWordcloud
+        <div style={{ height: 300, width: '100%' }}>
+          <ReactWordCloud
             words={data.words}
             options={{
               rotations: 2,
-              rotationAngles: [-90, 0],
-              fontSizes: [12, 60],
+              rotationAngles: [-90, 0] as [number, number],
+              fontSizes: [12, 60] as [number, number],
               padding: 2,
             }}
           />

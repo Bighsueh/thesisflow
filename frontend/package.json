@@ -24,7 +24,7 @@
     "react-dom": "18.3.1",
     "react-pdf": "^7.6.0",
     "react-router-dom": "^7.0.2",
-    "react-wordcloud": "^1.2.7",
+    "@isoterik/react-word-cloud": "^1.3.0",
     "reactflow": "11.10.1",
     "recharts": "^3.6.0",
     "zustand": "4.4.7"
