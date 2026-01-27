@@ -12,7 +12,7 @@ export default function TeacherCohort() {
     return null;
   }
 
-  const handleSectionChange = (section: 'accounts' | 'groups') => {
+  const handleSectionChange = (_section: 'accounts' | 'groups') => {
     // 導向教師首頁
     navigate('/teacher');
   };

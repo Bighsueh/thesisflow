@@ -2,6 +2,7 @@
  * Device Performance Detection Utility
  * 根據設備硬體能力判斷效能等級，調整導覽動畫視覺效果
  */
+import { deviceLogger } from './logger';
 
 export type PerformanceLevel = 'high' | 'medium' | 'low';
 
@@ -31,9 +32,7 @@ export function getDevicePerformance(): PerformanceLevel {
 
   if (!supportsBackdropFilter) {
     // 不支援毛玻璃效果，降級為低性能模式
-    if (import.meta.env.DEV) {
-      console.log('[DeviceCapabilities] backdrop-filter not supported → low');
-    }
+    deviceLogger.log('backdrop-filter not supported → low');
     return 'low';
   }
 
@@ -105,9 +104,7 @@ export function getVisualConfig(performance: PerformanceLevel): VisualConfig {
 
   const config = configs[performance];
 
-  if (import.meta.env.DEV) {
-    console.log(`[DeviceCapabilities] Performance: ${performance}`, config);
-  }
+  deviceLogger.log(`Performance: ${performance}`, config);
 
   return config;
 }

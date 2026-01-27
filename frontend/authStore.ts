@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { authLogger } from './utils/logger';
 
 export interface AuthUser {
   id: string;
@@ -11,6 +12,7 @@ export interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   token: string | null;
+  isHydrated: boolean; // 標記 hydration 是否完成
   login: (payload: { email: string; password: string }) => Promise<void>;
   register: (payload: {
     email: string;
@@ -28,16 +30,20 @@ const API_BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   token: null,
+  isHydrated: false, // 初始為 false，hydrate 完成後設為 true
 
   hydrate: () => {
     const token = localStorage.getItem('thesisflow_token');
     const user = localStorage.getItem('thesisflow_user');
     if (token && user) {
-      set({ token, user: JSON.parse(user) });
+      set({ token, user: JSON.parse(user), isHydrated: true });
       // 延遲檢查 token 是否過期（確保 state 已更新）
       setTimeout(() => {
         get().checkTokenExpiry();
       }, 0);
+    } else {
+      // 即使沒有 token 也要標記 hydration 完成
+      set({ isHydrated: true });
     }
   },
 
@@ -86,7 +92,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // 解析 JWT token（標準 JWT 格式：header.payload.signature）
       const parts = token.split('.');
       if (parts.length !== 3) {
-        console.warn('[Auth] Invalid token format');
+        authLogger.warn('Invalid token format');
         get().logout();
         return false;
       }
@@ -97,13 +103,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (now > expiryTime) {
         // Token 已過期，自動登出
-        console.warn('[Auth] Token expired, logging out...');
+        authLogger.warn('Token expired, logging out...');
         get().logout();
         return false;
       }
       return true;
     } catch (error) {
-      console.error('[Auth] Failed to parse token:', error);
+      authLogger.error('Failed to parse token:', error);
       // Token 格式錯誤，視為無效
       get().logout();
       return false;

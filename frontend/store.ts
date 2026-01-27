@@ -23,6 +23,7 @@ import {
   CohortMember,
   UsageRecord,
 } from './types';
+import { storeLogger } from './utils/logger';
 
 interface AppState {
   projects: Project[];
@@ -178,7 +179,7 @@ const debouncedSave = (saveFn: () => Promise<void>, delay: number = 1000) => {
     clearTimeout(saveTimeout);
   }
   saveTimeout = setTimeout(() => {
-    saveFn().catch(console.error);
+    saveFn().catch((err: unknown) => storeLogger.error('自動保存失敗:', err));
     saveTimeout = null;
   }, delay);
 };
@@ -325,7 +326,7 @@ export const useStore = create<AppState>((set, get) => ({
       const chatHistory = await chatService.getChatHistory(projectId);
       set({ chatTimeline: chatHistory, chatMessages: chatHistory });
     } catch (error) {
-      console.error('載入對話歷史失敗:', error);
+      storeLogger.error('載入對話歷史失敗:', error);
       // 不拋出錯誤，繼續執行
     }
   },
@@ -809,7 +810,7 @@ export const useStore = create<AppState>((set, get) => ({
       };
       await projectService.saveTaskState(state.activeProjectId, payload);
     } catch (error) {
-      console.error('保存任務狀態失敗:', error);
+      storeLogger.error('保存任務狀態失敗:', error);
       // 不拋出錯誤，避免影響用戶體驗
     }
   },
@@ -817,7 +818,7 @@ export const useStore = create<AppState>((set, get) => ({
   loadTaskState: async (projectId: string) => {
     try {
       if (!projectService || typeof projectService.loadTaskState !== 'function') {
-        console.error('projectService.loadTaskState is not available');
+        storeLogger.error('projectService.loadTaskState is not available');
         return;
       }
       const taskState = await projectService.loadTaskState(projectId);
@@ -830,7 +831,7 @@ export const useStore = create<AppState>((set, get) => ({
         });
       }
     } catch (error) {
-      console.error('載入任務狀態失敗:', error);
+      storeLogger.error('載入任務狀態失敗:', error);
       // 不拋出錯誤，如果沒有保存的狀態就使用預設值
     }
   },

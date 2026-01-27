@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { SectionWriter } from '../widgets/SectionWriter';
-import { MatrixCompare } from '../widgets/MatrixCompare';
+import React, { useState } from 'react';
 import { TaskConfigSummary, TaskConfigComparison, FieldWithEvidence } from '../../types';
+import { MatrixCompare } from '../widgets/MatrixCompare';
+import { SectionWriter } from '../widgets/SectionWriter';
 
 interface StudentPreviewPanelProps {
   summaryConfig: TaskConfigSummary;
@@ -68,10 +68,7 @@ export const StudentPreviewPanel: React.FC<StudentPreviewPanelProps> = ({
   if (isCollapsed) {
     return (
       <div className="fixed right-4 top-32 z-10">
-        <button
-          className="btn btn-primary btn-sm gap-2"
-          onClick={() => setIsCollapsed(false)}
-        >
+        <button className="btn btn-primary btn-sm gap-2" onClick={() => setIsCollapsed(false)}>
           <Eye size={16} />
           顯示預覽
         </button>
@@ -88,18 +85,13 @@ export const StudentPreviewPanel: React.FC<StudentPreviewPanelProps> = ({
               <Eye size={18} className="text-blue-600" />
               <h3 className="font-bold text-sm text-blue-900">學生視角預覽</h3>
             </div>
-            <button
-              className="btn btn-ghost btn-xs"
-              onClick={() => setIsCollapsed(true)}
-            >
+            <button className="btn btn-ghost btn-xs" onClick={() => setIsCollapsed(true)}>
               <EyeOff size={14} />
             </button>
           </div>
 
           <div className="alert alert-info py-2 mb-3">
-            <div className="text-xs">
-              這是學生實際看到的介面樣式，包含部分範例填寫內容。
-            </div>
+            <div className="text-xs">這是學生實際看到的介面樣式，包含部分範例填寫內容。</div>
           </div>
 
           <div className="bg-base-100 rounded-lg p-3 max-h-[600px] overflow-y-auto">
@@ -139,15 +131,11 @@ export const StudentPreviewPanel: React.FC<StudentPreviewPanelProps> = ({
             )}
 
             {activeTab === 'summary' && !summaryConfig.enabled && (
-              <div className="text-center text-slate-400 py-8 text-sm">
-                摘要任務已停用
-              </div>
+              <div className="text-center text-slate-400 py-8 text-sm">摘要任務已停用</div>
             )}
 
             {activeTab === 'comparison' && !comparisonConfig.enabled && (
-              <div className="text-center text-slate-400 py-8 text-sm">
-                比較任務已停用
-              </div>
+              <div className="text-center text-slate-400 py-8 text-sm">比較任務已停用</div>
             )}
           </div>
         </div>

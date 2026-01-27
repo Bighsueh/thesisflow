@@ -1,6 +1,7 @@
 import { MessageSquare, User, Bot, Clock, Filter } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { analyticsService, ChatLogMessage } from '../../services/analyticsService';
+import { dashboardLogger } from '../../utils/logger';
 import { GlassCard } from '../ui/GlassCard';
 
 interface ChatLogsProps {
@@ -45,7 +46,7 @@ export const ChatLogs: React.FC<ChatLogsProps> = ({ cohortId }) => {
       setStudents(Array.from(uniqueStudents.entries()).map(([id, name]) => ({ id, name })));
       setProjects(Array.from(uniqueProjects.entries()).map(([id, title]) => ({ id, title })));
     } catch (err: any) {
-      console.error('載入對話記錄失敗:', err);
+      dashboardLogger.error('載入對話記錄失敗:', err);
       setError(err?.message || '載入對話記錄失敗');
     } finally {
       setLoading(false);

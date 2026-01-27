@@ -1,12 +1,11 @@
-import { Highlight } from '../../types';
+/**
+ * 類型定義重新導出（向後相容）
+ *
+ * 新程式碼請使用 './types/highlight' 導入
+ */
 
-// Evidence Type Definitions
-export type EvidenceType = 'Purpose' | 'Method' | 'Findings' | 'Limitation' | 'Other';
-
-// Extended Highlight type with tag and note (backward compatible)
-export interface ExtendedHighlight extends Highlight {
-  tag?: string; // User defined short description
-  note?: string; // Detailed note
-  type?: EvidenceType; // For convenience, maps from evidence_type
-  docTitle?: string; // Document title for display
-}
+export {
+  type EvidenceType,
+  type ExtendedHighlight,
+  type EvidenceTypeInfo,
+} from './types/highlight';

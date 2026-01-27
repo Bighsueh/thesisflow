@@ -4,6 +4,7 @@ import {
   analyticsService,
   DocumentUsage as DocumentUsageType,
 } from '../../services/analyticsService';
+import { dashboardLogger } from '../../utils/logger';
 import { GlassCard } from '../ui/GlassCard';
 
 interface DocumentUsageProps {
@@ -24,7 +25,7 @@ export function DocumentUsage({ cohortId }: DocumentUsageProps) {
       const result = await analyticsService.getDocumentUsage(cohortId);
       setData(result);
     } catch (error) {
-      console.error('Failed to load document usage:', error);
+      dashboardLogger.error('Failed to load document usage:', error);
     } finally {
       setLoading(false);
     }

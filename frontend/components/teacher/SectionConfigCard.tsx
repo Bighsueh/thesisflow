@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import { CheckCircle2, XCircle, ChevronUp, ChevronDown, Trash2, GripVertical } from 'lucide-react';
+import React, { useState } from 'react';
 import { TaskSectionConfig } from '../../types';
 
 interface SectionConfigCardProps {
@@ -52,9 +52,7 @@ export const SectionConfigCard: React.FC<SectionConfigCardProps> = ({
               {index + 1}. {section.label || '(未命名段落)'}
             </h4>
             {section.minEvidence && section.minEvidence > 0 && (
-              <span className="badge badge-xs badge-warning">
-                需 {section.minEvidence} 則標記
-              </span>
+              <span className="badge badge-xs badge-warning">需 {section.minEvidence} 則標記</span>
             )}
           </div>
           <div className="flex gap-1">

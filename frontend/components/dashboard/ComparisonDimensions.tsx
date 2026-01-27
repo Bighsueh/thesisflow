@@ -4,6 +4,7 @@ import {
   analyticsService,
   ComparisonDimensions as ComparisonDimensionsType,
 } from '../../services/analyticsService';
+import { dashboardLogger } from '../../utils/logger';
 import { GlassCard } from '../ui/GlassCard';
 
 interface ComparisonDimensionsProps {
@@ -24,7 +25,7 @@ export function ComparisonDimensions({ cohortId }: ComparisonDimensionsProps) {
       const result = await analyticsService.getComparisonDimensions(cohortId);
       setData(result);
     } catch (error) {
-      console.error('Failed to load comparison dimensions:', error);
+      dashboardLogger.error('Failed to load comparison dimensions:', error);
     } finally {
       setLoading(false);
     }

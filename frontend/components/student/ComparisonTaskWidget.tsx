@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useAutoSave } from '../../hooks/useAutoSave';
 import { useStore } from '../../store';
 import { TaskConfigComparison, Document, ComparisonRow } from '../../types';
-import { useAutoSave } from '../../hooks/useAutoSave';
-import { MatrixCompare } from '../widgets/MatrixCompare';
 import { ChecklistSubmit } from '../widgets/ChecklistSubmit';
+import { MatrixCompare } from '../widgets/MatrixCompare';
 
 interface ComparisonTaskWidgetProps {
   projectId: string;

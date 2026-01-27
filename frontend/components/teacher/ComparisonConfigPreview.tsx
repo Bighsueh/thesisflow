@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import { Plus, Trash2, Edit2 } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface ComparisonConfigPreviewProps {
   dimensions: string[];
@@ -65,9 +65,7 @@ export const ComparisonConfigPreview: React.FC<ComparisonConfigPreviewProps> = (
                 className="flex items-center justify-between p-3 bg-base-200 rounded-lg cursor-pointer hover:bg-base-300"
                 onClick={() => setEditingIndex(idx)}
               >
-                <span className="font-semibold text-sm">
-                  {dimension || '(未命名維度)'}
-                </span>
+                <span className="font-semibold text-sm">{dimension || '(未命名維度)'}</span>
                 <Edit2 size={14} className="text-slate-400" />
               </div>
             )}

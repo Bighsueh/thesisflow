@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useAutoSave } from '../../hooks/useAutoSave';
 import { useStore } from '../../store';
 import { TaskConfigSummary, FieldWithEvidence, Document } from '../../types';
-import { useAutoSave } from '../../hooks/useAutoSave';
-import { SectionWriter } from '../widgets/SectionWriter';
 import { ChecklistSubmit } from '../widgets/ChecklistSubmit';
+import { SectionWriter } from '../widgets/SectionWriter';
 
 interface SummaryTaskWidgetProps {
   projectId: string;
@@ -45,11 +45,12 @@ export default function SummaryTaskWidget({
 }: SummaryTaskWidgetProps) {
   const { currentWidgetState, updateWidgetState, submitTaskA, saveTaskState } = useStore();
   const autoSave = useAutoSave(1000);
-  
+
   const nodeId = 'summary'; // 固定使用 'summary' 作為節點 ID
-  const sections = config.sections && config.sections.length > 0 ? config.sections : DEFAULT_SECTIONS;
+  const sections =
+    config.sections && config.sections.length > 0 ? config.sections : DEFAULT_SECTIONS;
   const widgetState = currentWidgetState[nodeId] || {};
-  
+
   // 初始化值
   const values: Record<string, FieldWithEvidence> = {};
   sections.forEach((section) => {
@@ -72,12 +73,12 @@ export default function SummaryTaskWidget({
       alert('請先選擇目標文獻');
       return;
     }
-    
+
     const content: Record<string, FieldWithEvidence> = {};
     sections.forEach((section) => {
       content[section.key] = values[section.key];
     });
-    
+
     try {
       await submitTaskA(selectedDoc.id, content);
       // 提交成功後，保存任務狀態
@@ -88,11 +89,11 @@ export default function SummaryTaskWidget({
   };
 
   const checks = [
-    { 
-      id: 'doc', 
-      label: '已選擇目標文獻', 
-      checked: !!widgetState.selectedDocId, 
-      required: true 
+    {
+      id: 'doc',
+      label: '已選擇目標文獻',
+      checked: !!widgetState.selectedDocId,
+      required: true,
     },
     ...sections.map((section) => ({
       id: section.key,

@@ -1,4 +1,5 @@
 import { pdfjs } from 'react-pdf';
+import { pdfLogger } from './logger';
 
 // 配置 PDF.js worker
 // react-pdf 7.6.0 使用 pdfjs-dist 3.11.174
@@ -71,7 +72,7 @@ if (typeof window !== 'undefined') {
 
     // 过滤控制台警告（仅针对 PDF worker 相关）
     const originalConsoleWarn = console.warn;
-    console.warn = function (...args: any[]) {
+    console.warn = function (...args: unknown[]) {
       const message = args[0]?.toString() || '';
       // 只过滤 PDF worker 终止相关的警告
       if (
@@ -86,7 +87,7 @@ if (typeof window !== 'undefined') {
       if (typeof message === 'string' && message.includes('Setting up fake worker failed')) {
         // 如果 worker 设置失败，尝试重新配置
         setupPDFWorker();
-        console.warn('PDF worker 配置已重新设置，当前路径:', pdfjs.GlobalWorkerOptions.workerSrc);
+        pdfLogger.warn('PDF worker 配置已重新设置，当前路径:', pdfjs.GlobalWorkerOptions.workerSrc);
         return;
       }
       // 其他警告正常显示

@@ -43,14 +43,14 @@ export interface FlowNodePayload {
   type: AppNodeType;
   label: string;
   config?: TaskConfig;
-  position?: Record<string, any>;
+  position?: Record<string, unknown>;
 }
 
 export interface FlowEdgePayload {
   id: string;
   source: string;
   target: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 // 新的簡化任務配置結構
@@ -86,7 +86,7 @@ export interface Project {
   semester?: string;
   tags: string[];
   // 新的任務配置結構
-  task_config?: NewTaskConfig | Record<string, any>;
+  task_config?: NewTaskConfig | Record<string, unknown>;
   cohort_id?: string; // 新架構：專案屬於群組
   // 保留以向後相容
   nodes?: FlowNodePayload[];
@@ -148,7 +148,7 @@ export interface RagProcessingLog {
   stage: string;
   status: string;
   message?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: number;
 }
 
@@ -233,7 +233,7 @@ export interface TaskVersion {
   targetDocId?: string; // For Task A
   version: number;
   taskType: 'A' | 'B' | 'C';
-  content: TaskAContent | ComparisonRow[] | TaskCContent | any;
+  content: TaskAContent | ComparisonRow[] | TaskCContent | Record<string, unknown>;
   feedback?: string; // AI Feedback
   timestamp: number;
   isValid: boolean;
@@ -244,7 +244,7 @@ export interface LogEntry {
   id: string;
   timestamp: number;
   eventType: string;
-  details: any;
+  details: Record<string, unknown>;
 }
 
 export type MessageRole = 'ai' | 'user' | 'system' | 'coach' | 'widget' | 'evidence' | 'status';
@@ -263,7 +263,7 @@ export interface Message {
   timestamp: number;
   // 擴展欄位
   widgetType?: WidgetType;
-  widgetData?: any; // 根據 widgetType 不同而異
+  widgetData?: Record<string, unknown>; // 根據 widgetType 不同而異
   nodeId?: string; // 綁定的 workflow node
   evidenceIds?: string[]; // 引用的 evidence IDs
 }
@@ -272,7 +272,7 @@ export interface ChatContext {
   projectId: string;
   nodeId: string;
   evidenceIds: string[];
-  widgetStates: Record<string, any>;
+  widgetStates: Record<string, unknown>;
   chatHistory: Message[];
   currentNode?: AppNode;
 }
@@ -280,6 +280,6 @@ export interface ChatContext {
 export interface WidgetState {
   nodeId: string;
   widgetType: WidgetType;
-  data: any;
+  data: Record<string, unknown>;
   completed?: boolean;
 }

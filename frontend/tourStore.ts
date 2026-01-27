@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { tourLogger } from './utils/logger';
 
 // 導覽步驟類型
 export interface TourStep {
@@ -86,7 +87,7 @@ export const useTourStore = create<TourState>((set, get) => ({
         isFirstLogin,
       });
     } catch (error) {
-      console.error('[Tour] Failed to hydrate tour state:', error);
+      tourLogger.error('Failed to hydrate tour state:', error);
     }
   },
 
@@ -94,7 +95,7 @@ export const useTourStore = create<TourState>((set, get) => ({
   startTour: (tourId: string) => {
     const tour = allTours.find((t) => t.id === tourId);
     if (!tour) {
-      console.warn(`[Tour] Tour not found: ${tourId}`);
+      tourLogger.warn(`Tour not found: ${tourId}`);
       return;
     }
 

@@ -3,6 +3,7 @@ import {
   analyticsService,
   ActivityTimeline as ActivityTimelineType,
 } from '../../services/analyticsService';
+import { dashboardLogger } from '../../utils/logger';
 import { GlassCard } from '../ui/GlassCard';
 
 interface ActivityTimelineProps {
@@ -23,7 +24,7 @@ export function ActivityTimeline({ cohortId }: ActivityTimelineProps) {
       const result = await analyticsService.getActivityTimeline(cohortId);
       setData(result);
     } catch (error) {
-      console.error('Failed to load activity timeline:', error);
+      dashboardLogger.error('Failed to load activity timeline:', error);
     } finally {
       setLoading(false);
     }

@@ -1,21 +1,41 @@
+import { X, Plus } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { NewTaskConfig, TaskConfigSummary, TaskConfigComparison } from '../../types';
-import { useStore } from '../../store';
 import { projectService } from '../../services/projectService';
-import { X, Plus } from 'lucide-react';
-import { SectionConfigCard } from './SectionConfigCard';
+import { useStore } from '../../store';
+import { NewTaskConfig } from '../../types';
 import { ComparisonConfigPreview } from './ComparisonConfigPreview';
+import { SectionConfigCard } from './SectionConfigCard';
 import { StudentPreviewPanel } from './StudentPreviewPanel';
 
 const DEFAULT_TASK_CONFIG: NewTaskConfig = {
   summary: {
     enabled: true,
     sections: [
-      { key: 'a1_purpose', label: 'A1 研究目的 (Purpose)', placeholder: '研究問題為何？', minEvidence: 1 },
-      { key: 'a2_method', label: 'A2 研究方法 (Method)', placeholder: '如何進行研究？', minEvidence: 1 },
-      { key: 'a3_findings', label: 'A3 主要發現 (Findings)', placeholder: '研究發現為何？', minEvidence: 1 },
-      { key: 'a4_limits', label: 'A4 研究限制 (Limitations)', placeholder: '研究限制為何？', minEvidence: 1 },
+      {
+        key: 'a1_purpose',
+        label: 'A1 研究目的 (Purpose)',
+        placeholder: '研究問題為何？',
+        minEvidence: 1,
+      },
+      {
+        key: 'a2_method',
+        label: 'A2 研究方法 (Method)',
+        placeholder: '如何進行研究？',
+        minEvidence: 1,
+      },
+      {
+        key: 'a3_findings',
+        label: 'A3 主要發現 (Findings)',
+        placeholder: '研究發現為何？',
+        minEvidence: 1,
+      },
+      {
+        key: 'a4_limits',
+        label: 'A4 研究限制 (Limitations)',
+        placeholder: '研究限制為何？',
+        minEvidence: 1,
+      },
     ],
     guidance: '請仔細閱讀文獻後，針對以下四個面向撰寫摘要...',
   },
@@ -48,7 +68,7 @@ export default function ProjectConfigEditor() {
 
   useEffect(() => {
     if (projectId) {
-      const project = projects.find(p => p.id === projectId);
+      const project = projects.find((p) => p.id === projectId);
       if (project) {
         setMetadata({
           title: project.title || '',
@@ -194,7 +214,7 @@ export default function ProjectConfigEditor() {
               type="text"
               className="input input-bordered"
               value={metadata.title}
-              onChange={e => setMetadata({ ...metadata, title: e.target.value })}
+              onChange={(e) => setMetadata({ ...metadata, title: e.target.value })}
               placeholder="例：碩士論文文獻探討"
             />
           </div>
@@ -207,7 +227,7 @@ export default function ProjectConfigEditor() {
               type="text"
               className="input input-bordered"
               value={metadata.semester}
-              onChange={e => setMetadata({ ...metadata, semester: e.target.value })}
+              onChange={(e) => setMetadata({ ...metadata, semester: e.target.value })}
               placeholder="例：2024年秋季班"
             />
           </div>
@@ -221,10 +241,12 @@ export default function ProjectConfigEditor() {
                 <div key={i} className="badge badge-primary gap-2">
                   {tag}
                   <button
-                    onClick={() => setMetadata({
-                      ...metadata,
-                      tags: metadata.tags.filter((_, idx) => idx !== i),
-                    })}
+                    onClick={() =>
+                      setMetadata({
+                        ...metadata,
+                        tags: metadata.tags.filter((_, idx) => idx !== i),
+                      })
+                    }
                     className="btn btn-ghost btn-xs"
                   >
                     <X size={14} />
@@ -236,7 +258,7 @@ export default function ProjectConfigEditor() {
               type="text"
               className="input input-bordered"
               placeholder="輸入標籤後按 Enter"
-              onKeyPress={e => {
+              onKeyPress={(e) => {
                 if (e.key === 'Enter' && e.currentTarget.value) {
                   setMetadata({
                     ...metadata,
@@ -280,7 +302,7 @@ export default function ProjectConfigEditor() {
                     type="checkbox"
                     className="toggle toggle-primary"
                     checked={config.summary.enabled}
-                    onChange={e =>
+                    onChange={(e) =>
                       setConfig({
                         ...config,
                         summary: { ...config.summary, enabled: e.target.checked },
@@ -326,7 +348,7 @@ export default function ProjectConfigEditor() {
                       <textarea
                         className="textarea textarea-bordered w-full h-24"
                         value={config.summary.guidance || ''}
-                        onChange={e =>
+                        onChange={(e) =>
                           setConfig({
                             ...config,
                             summary: { ...config.summary, guidance: e.target.value },
@@ -351,7 +373,7 @@ export default function ProjectConfigEditor() {
                     type="checkbox"
                     className="toggle toggle-primary"
                     checked={config.comparison.enabled}
-                    onChange={e =>
+                    onChange={(e) =>
                       setConfig({
                         ...config,
                         comparison: { ...config.comparison, enabled: e.target.checked },
@@ -383,7 +405,7 @@ export default function ProjectConfigEditor() {
                       <textarea
                         className="textarea textarea-bordered w-full h-24"
                         value={config.comparison.guidance || ''}
-                        onChange={e =>
+                        onChange={(e) =>
                           setConfig({
                             ...config,
                             comparison: { ...config.comparison, guidance: e.target.value },
@@ -411,11 +433,7 @@ export default function ProjectConfigEditor() {
 
       {/* 操作按鈕 */}
       <div className="flex gap-2 justify-end mt-6">
-        <button
-          className="btn btn-ghost"
-          onClick={() => navigate('/teacher')}
-          disabled={saving}
-        >
+        <button className="btn btn-ghost" onClick={() => navigate('/teacher')} disabled={saving}>
           取消
         </button>
         <button

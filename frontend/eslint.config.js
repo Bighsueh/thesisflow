@@ -57,7 +57,8 @@ export default tseslint.config(
       'react/jsx-uses-vars': 'error',
       'react/jsx-key': 'error',
       'react/jsx-no-duplicate-props': 'error',
-      'react/no-unescaped-entities': 'warn',
+      // 關閉，因為中文內容經常使用引號，且這些警告不影響功能
+      'react/no-unescaped-entities': 'off',
 
       // React Hooks rules
       'react-hooks/rules-of-hooks': 'error',
@@ -75,7 +76,8 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      // 允許 non-null assertion，因為在某些情況下是必要的（如 DOM 操作）
+      '@typescript-eslint/no-non-null-assertion': 'off',
 
       // Import rules
       'import/order': [
@@ -92,7 +94,8 @@ export default tseslint.config(
       'import/no-duplicates': 'error',
 
       // General rules
-      'no-console': 'warn',
+      // 允許 console.warn 和 console.error（用於記錄生產環境中的重要資訊）
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
       'prefer-const': 'warn',
       'no-var': 'error',
       eqeqeq: ['error', 'always', { null: 'ignore' }],
