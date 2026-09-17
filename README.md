@@ -1,516 +1,199 @@
 # ThesisFlow
 
-<div align="center">
+English | [繁體中文](README.zh-TW.md)
 
-**基於 SALSA 框架的碩士論文文獻回顧雙循環學習系統**
+A literature-review workspace for master's students, where an AI reading coach asks before it explains and every sentence a student writes has to point back to something they highlighted in the paper.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![Student workspace: PDF reader with learning marks, AI reading coach, and evidence-backed writing tasks](docs/screenshots/student-workspace.png)
 
-</div>
+_The student workspace, running on demo data. Left: the student's marks. Centre: the PDF reader (paper text blurred on purpose). Right: the AI coach answering a "confused" question by asking first._
 
-## 📖 簡介
+## The problem
 
-ThesisFlow 是一個專為碩士論文文獻回顧設計的雙循環學習系統，基於 SALSA（Search, Appraisal, Synthesis, Analysis）框架。系統提供教師端和學生端雙重介面，幫助教師設計結構化的學習流程，並引導學生完成高品質的文獻回顧作業。
+First-year master's students are told to "go read the literature" and mostly end up with a folder of PDFs and a page of loosely paraphrased notes. Two things tend to go wrong:
 
-### 核心特色
+- They write summaries that cannot be traced back to the paper, so neither they nor their advisor can tell comprehension from guesswork.
+- When they get stuck they ask a chatbot, get a fluent answer, and skip the part where they were supposed to think.
 
-- 🎯 **結構化學習流程**：基於 SALSA 框架設計的任務流程
-- 👨‍🏫 **教師端管理**：專案配置編輯器、班級管理、學生管理、數據儀表板
-- 👨‍🎓 **學生端介面**：互動式文獻回顧工具、證據收集、AI 輔助寫作
-- 📄 **PDF 標註功能**：直接在 PDF 上標記和收集證據
-- 🤖 **AI 輔助寫作**：整合 Azure OpenAI，協助學生完成各階段寫作任務
-- 📊 **進度追蹤**：即時追蹤學生學習進度和使用情況
-- 🎓 **導覽系統**：互動式導覽幫助用戶了解系統功能
+ThesisFlow turns the [SALSA framework](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1538584/) (Search, Appraisal, Synthesis, Analysis) into a concrete workflow. A teacher configures the reading tasks for a class; students read, mark, discuss with an AI coach, and write, all in one screen; the teacher sees how the class is actually reading.
 
-## 🏗️ 系統架構
+It was deployed and used in a graduate course and research-lab setting. I built it as a solo developer between December 2025 and January 2026.
+
+## What it does
+
+### For students
+
+- **One workspace, side by side.** PDF reader, AI coach, writing tasks and the evidence list live in a single multi-panel screen, so reading and writing are not separate activities.
+- **Learning marks, not just highlights.** Dragging a region on the PDF offers five mark types: _confused_, _key point_, _discuss with AI_, _check reference_, and _bookmark_. Each mark is saved with its snippet, page and position, shows up in the evidence list, and can be dropped into the chat or attached to a writing field.
+- **Evidence-backed writing.** Two task types ship today: a single-paper summary (purpose, method, findings, limitations by default) and a two-paper comparison matrix. Every field stores its text together with the IDs of the marks that support it.
+- **Versioned submissions with AI feedback.** Each submission is saved as a new version and gets rubric-based feedback from the model.
+- **Auto-save** on a one-second debounce for writing and task state, plus guided product tours for first-time users.
+
+### For teachers
+
+- **Task configuration per project.** Turn the summary and comparison tasks on or off, edit the summary sections and comparison dimensions, write guidance, and set the minimum number of evidence items each section requires. A live preview shows what students will see.
+- **Class management.** Cohorts with join codes, single and bulk student account creation, and membership management.
+- **Learning analytics per cohort.** Task progress matrix, activity trend and timeline, evidence statistics, document usage, per-page reading heatmap, editing depth, a word cloud of what students write (segmented with jieba for Chinese), AI feedback summary, and the chat logs themselves.
+
+## Highlight 1: an AI coach that asks first
+
+The coach is not a general-purpose chatbot with a PDF attached. Its behaviour is a teaching decision, written into the system prompt in `backend/routes/chat.py`:
+
+1. **Ask first.** When a student marks something as confused or asks a question, the coach first asks what they think the passage means, in their own words.
+2. **Then explain.** Only if the student has no idea does it explain, starting from context clues inside the paper.
+3. **Check understanding** after explaining.
+4. **Cite the paper**: specific passages and page numbers.
+5. **Point out misreadings** gently.
+
+The prompt also carries explicit don'ts (do not hand over complete answers, do not think on the student's behalf), and a response budget so the coach does not lecture.
+
+What the model sees on each turn:
+
+| Context | Source |
+| --- | --- |
+| The task the student is working on and the teacher's guidance for it | Project configuration |
+| The full PDF currently open | Downloaded from object storage, sent as a file input (50 MB cap) |
+| The marks the student attached to the message: name, snippet, page, document | Evidence list |
+| The student's current draft | Task widget state |
+
+Every exchange is stored per user and project together with the document and marks it referred to. The teacher-side analytics are computed from these chat records, the marks, and saved task states.
+
+One honest caveat: when a PDF is attached, the request carries the PDF and the current message but not the prior turns. The recent-history window (last 8 messages) is only used on the no-PDF path. See [Known limitations](#known-limitations).
+
+## Highlight 2: the evidence chain
+
+The rule the product enforces is simple: you cannot submit a claim you have not tied to the text.
 
 ```mermaid
-graph TB
-    subgraph "前端 Frontend"
-        A[React + TypeScript + Vite]
-        B[教師介面 Teacher Interface]
-        C[學生介面 Student Interface]
+flowchart TD
+    A["Drag a region on the PDF"] --> B["Pick a mark type"]
+    B --> C["Mark saved with snippet, page, position"]
+    C --> E["Attach marks to a writing field"]
+    E --> G{"Enough evidence in every section?"}
+    G -- "No" --> E
+    G -- "Yes" --> H["Submit as a new version"]
+    H --> J["Rubric-based feedback from the model"]
+    J --> E
+```
+
+- The minimum evidence count is set by the teacher, per section or as a project default.
+- The checklist is visible the whole time, so students see exactly which section is still unsupported.
+- The feedback rubric itself checks for evidence. For the summary task, one of the five criteria is whether each field cites a specific passage.
+
+The gate currently lives in the client. The API stores what it receives and does not re-validate evidence counts; that is on the list below.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph CLIENT["Browser"]
+        UI["React 18 + TypeScript + Vite"]
+        STORE["Zustand stores"]
+        PDF["react-pdf reader and mark layer"]
     end
 
-    subgraph "後端 Backend"
-        D[FastAPI + Python]
-        E[PostgreSQL 資料庫]
-        F[認證服務 Auth Service]
+    subgraph SERVER["Backend"]
+        API["FastAPI"]
+        AUTH["JWT auth and role checks"]
+        ORM["SQLAlchemy 2.0"]
     end
 
-    subgraph "外部服務 External Services"
-        G[Azure OpenAI]
-        H[MinIO/S3 儲存]
+    subgraph DATA["Data"]
+        PG[("PostgreSQL 16")]
+        S3[("MinIO or S3")]
     end
 
-    A --> B
-    A --> C
-    B --> D
-    C --> D
-    D --> E
-    D --> F
-    D --> G
-    D --> H
+    LLM["Azure OpenAI"]
+
+    UI --> STORE
+    PDF --> STORE
+    STORE -- "REST + JWT" --> API
+    API --> AUTH
+    API --> ORM
+    ORM --> PG
+    API -- "store PDFs, sign download URLs" --> S3
+    UI -- "fetch PDFs via presigned URLs" --> S3
+    API -- "chat, PDF analysis, task feedback" --> LLM
 ```
 
-## 🛠️ 技術棧
+- **Frontend:** React 18, TypeScript, Vite, Zustand, Tailwind CSS, react-pdf, Recharts, Framer Motion. API calls go through a service layer into the store; components read from the store.
+- **Backend:** FastAPI on Python 3.11, SQLAlchemy 2.0, PostgreSQL 16, JWT auth with two roles (teacher, student). Around 65 endpoints across 12 routers.
+- **Storage:** PDFs are uploaded through the API into MinIO/S3. The reader fetches them straight from the object store with short-lived presigned URLs.
+- **Deployment:** three containers via Docker Compose (nginx-served frontend, backend, postgres).
 
-### 前端
+## How it was built
 
-- **React 18.3** - UI 框架
-- **TypeScript** - 類型安全
-- **Vite** - 建置工具
-- **React Flow** - 流程圖視覺化
-- **React PDF** - PDF 檢視與標註
-- **Zustand** - 狀態管理
-- **React Router** - 路由管理
+I built this with Claude Code as the implementer and myself as the person who decides what gets built and what is allowed. Many commits in the history carry a Claude co-author trailer; I would rather explain the method than hide it.
 
-### 後端
+What I owned:
 
-- **FastAPI** - Web 框架
-- **Python 3.11** - 程式語言
-- **PostgreSQL 16** - 關聯式資料庫
-- **SQLAlchemy** - ORM
-- **JWT** - 身份驗證
-- **Boto3** - S3/MinIO 整合
+- **The product and teaching decisions.** The ask-first coaching strategy, the five mark types, which tasks exist and what their rubrics check, and the late-January rework of the marking and coaching flow in response to feedback.
+- **The architecture calls**, including reversing one of my own (see the RAG row below).
+- **The constraints the AI works under**, all checked into the repo:
+  - [`CLAUDE.md`](CLAUDE.md) describes the architecture and sets git guardrails: no merge, push or force-push without my explicit consent.
+  - [`docs/AI_DOCUMENTATION_GUIDE.md`](docs/AI_DOCUMENTATION_GUIDE.md) defines how docs must be kept in sync with code.
+  - ESLint, Prettier and a Husky pre-commit hook gate every commit, human or AI.
+  - Feature branches and pull requests for the larger changes (monorepo restructure, lint setup, RAG, tour system).
 
-### 部署與基礎設施
+What this taught me is mostly visible in [Known limitations](#known-limitations): AI-assisted speed makes it easy to leave a superseded architecture lying around, and guardrails on git did not substitute for tests.
 
-- **Docker** - 容器化
-- **Docker Compose** - 多容器編排
-- **Nginx** - 前端靜態檔案服務
-- **PostgreSQL 16** - 關聯式資料庫
-- **MinIO/S3** - 物件儲存服務
+## Technical decisions
 
-## 🚀 快速開始
+| Decision | Why | Cost |
+| --- | --- | --- |
+| Built a RAG pipeline (ChromaDB, embeddings, chunking), then removed it ten days later and sent the whole PDF to the model instead | The coach is scoped to the paper that is open, and the model can read a PDF directly. Dropping retrieval removed a vector store, an embedding deployment and a processing-status UI, and left less to maintain | 50 MB per-file cap, higher per-request token cost, no cross-paper retrieval. The original staged plan is kept in [`docs/system-refactor-plan.md`](docs/system-refactor-plan.md) |
+| Presigned URLs for reading PDFs | The reader streams files straight from the object store instead of proxying them through the API | The browser needs network access to the object store. Uploads still go through the API as multipart |
+| Replaced the free-form workflow canvas with two fixed, configurable tasks | Setup became a form with a live student preview, and students got a fixed task panel instead of node-by-node navigation | Less flexible; the old canvas code is still in the tree |
+| One main Zustand store plus small auth and tour stores | One place to look for state in a small team of one | `store.ts` is over 800 lines and due for slicing |
+| Hand-written SQL migrations plus `create_all` at startup | Fast to get going without Alembic | No migration history or downgrade path |
+| `tenacity` retries on connect and read timeouts to the model API | A transient network error should not surface to a student as a failed conversation | Retries can stack latency on a slow request |
 
-### 前置需求
+## Engineering practices
 
-- **Docker 20.10+** 和 **Docker Compose 2.0+**（推薦方式）
-- Node.js 18+（僅本地開發需要）
-- Python 3.11+（僅本地開發需要）
-- 至少 2GB 可用記憶體
+What is actually in place:
 
-### 使用 Docker Compose（推薦）
+- ESLint (typescript-eslint, react-hooks, import ordering) and Prettier, enforced by Husky + lint-staged on commit.
+- Conventional commit messages and PR-based merges for larger changes.
+- Centralised FastAPI exception handlers that return generic 500s in production and tracebacks only when `DEBUG=true`.
+- Environment-driven CORS: localhost is allowed in development; production origins come from configuration.
+- Health checks for the database container and health endpoints for frontend and backend.
+- Documentation that tracks the code: [site map](docs/SITE_MAP.md), [tour system](docs/TOUR_SYSTEM.md), [deployment](docs/DOCKER_DEPLOYMENT.md), [change verification checklist](docs/SystemChangeVerificationGuide.md).
 
-這是最簡單的部署方式，所有服務都會自動配置並啟動。
+## Known limitations
 
-#### 1. 複製環境變數檔案
+Things you will find if you read the code, and what I would do about them:
+
+- **No automated tests and no CI.** Verification was manual, guided by a written checklist. If I restarted, I would begin with API tests around submissions and chat context, and a Playwright path through mark → evidence → submit.
+- **The evidence gate is client-side only.** The API records every submission as valid. Server-side validation against the project's configuration is the first fix I would make.
+- **Mark types stop at the UI.** The data model has columns for mark type, note, AI explanation and a resolved flag, plus a `learning_history` table, but no endpoint writes them yet. Whichever of the five types a student picks, the mark is stored as generic evidence.
+- **Chat with a PDF attached has no memory of earlier turns.** The PDF path and the history path use different API calls and were never merged.
+- **The chat panel shows raw Markdown.** The coach answers in Markdown and the panel prints it as plain text, which you can see in the screenshot above.
+- **Leftovers from superseded designs.** An older copy of the student interface, the React Flow canvas nodes, an earlier chat panel with quick-reply buttons and a synthesis task widget are still in the tree but not routed. RAG tables, a RAG log endpoint, and the `chromadb` and `pymupdf` requirements also remain. One unused frontend dependency (`@google/genai`) should go.
+- **`StudentInterface.tsx` is close to 3,000 lines.** Hooks and sub-components have started moving out into `components/student/`, but the split is unfinished.
+- **Registration is open and accepts a role.** Anyone who can reach the API can sign up as a teacher. Fine for a closed deployment, not for a public one.
+- **Object deletion is a stub.** Deleting an upload returns success without removing the object from storage.
+- **The backend container runs as root.**
+
+## Status
+
+Main development ran from December 2025 to January 2026. The project is not under active development; I keep it public as a record of how I design and ship an AI-centred product end to end.
+
+## Running it
+
+You need Docker with the Compose plugin, an Azure OpenAI deployment, and an S3-compatible bucket (MinIO works).
 
 ```bash
-cp .env.example .env
-```
-
-#### 2. 配置環境變數
-
-編輯 `.env` 檔案，填入必要的配置。**開發環境**可以只填寫基本配置：
-
-```env
-# 前端配置（開發環境可留空，使用預設值）
-VITE_API_BASE=http://localhost:8000
-FRONTEND_DOMAIN=
-FRONTEND_PORT=3000
-
-# 後端配置（開發環境可留空，使用預設值）
-BACKEND_DOMAIN=
-BACKEND_PORT=8000
-
-# 必須配置的服務
-AZURE_OPENAI_ENDPOINT=https://your-endpoint.cognitiveservices.azure.com
-AZURE_OPENAI_API_KEY=your_api_key
-AZURE_OPENAI_DEPLOYMENT=gpt-4.1-mini
-AZURE_OPENAI_API_VERSION=2025-01-01-preview
-
-MINIO_ENDPOINT=your-minio-endpoint:9000
-MINIO_ACCESS_KEY=your_access_key
-MINIO_SECRET_KEY=your_secret_key
-MINIO_BUCKET=your-bucket-name
-MINIO_USE_SSL=false
-
-JWT_SECRET=your-strong-secret-key-change-this
-```
-
-> 💡 **提示**：開發環境不需要填寫 `FRONTEND_DOMAIN` 和 `BACKEND_DOMAIN`，系統會自動使用 localhost。生產環境才需要填寫這些值。
-
-#### 3. 啟動服務
-
-```bash
-# 建置並啟動所有服務（背景執行）
-docker compose up -d
-
-# 查看服務狀態
-docker compose ps
-
-# 查看日誌
-docker compose logs -f
-```
-
-#### 4. 訪問應用
-
-- **前端**：http://localhost:3000
-- **後端 API**：http://localhost:8000
-- **API 文檔**：http://localhost:8000/docs
-- **健康檢查**：
-  - 前端：http://localhost:3000/health
-  - 後端：http://localhost:8000/health
-
-#### 5. 停止服務
-
-```bash
-# 停止服務（保留資料）
-docker compose down
-
-# 停止服務並刪除所有資料（包括資料庫）
-docker compose down -v
-```
-
-#### Docker 服務說明
-
-系統包含三個 Docker 服務：
-
-| 服務       | 端口 | 說明                         |
-| ---------- | ---- | ---------------------------- |
-| `frontend` | 3000 | React 前端應用（nginx 服務） |
-| `backend`  | 8000 | FastAPI 後端服務             |
-| `postgres` | 5432 | PostgreSQL 16 資料庫         |
-
-所有服務都在 `thesisflow-network` 網路中，可以透過服務名稱互相訪問。
-
-### 本地開發
-
-如果您想在本地進行開發（不使用 Docker），可以分別啟動前端和後端。
-
-#### 前置準備
-
-1. **啟動資料庫**（仍可使用 Docker）：
-
-```bash
-# 只啟動資料庫服務
-docker compose up -d postgres
-```
-
-#### 前端開發
-
-```bash
-# 從根目錄（推薦方式）
-npm run install:frontend  # 安裝前端依賴
-npm run dev               # 啟動前端開發伺服器
-
-# 或直接進入 frontend 目錄
-cd frontend
-npm install               # 安裝依賴
-npm run dev               # 啟動開發伺服器（預設 port 3000）
-```
-
-前端會自動連接到後端 API（根據 `VITE_API_BASE` 環境變數）。
-
-#### 後端開發
-
-```bash
-cd backend
-
-# 安裝依賴（建議使用虛擬環境）
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# 配置環境變數
-cp env.example env.local
-# 編輯 env.local 填入實際值
-# 注意：DATABASE_URL 應使用 localhost:5432 或 docker 服務名稱
-
-# 初始化資料庫（如果使用本地 postgres，需要先創建資料庫）
-python init_db.py
-
-# 啟動開發伺服器（支援熱重載）
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-#### 混合模式開發
-
-您也可以只使用 Docker 運行部分服務：
-
-```bash
-# 只啟動資料庫和後端（前端本地開發）
-docker compose up -d postgres backend
-
-# 只啟動資料庫（前後端都本地開發）
-docker compose up -d postgres
-```
-
-> 📖 **詳細部署說明**：請參考 [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) 了解完整的部署配置、生產環境設定和故障排除指南。
-
-## 📁 項目結構
-
-```
-thesisflow-ai-flow/
-├── frontend/                # React 前端應用
-│   ├── components/         # React 組件
-│   │   ├── student/        # 學生端組件
-│   │   │   └── StudentInterface.tsx # 學生學習介面
-│   │   ├── teacher/        # 教師端組件
-│   │   │   ├── ProjectConfigEditor.tsx # 專案配置編輯器
-│   │   │   ├── TeacherLayout.tsx    # 教師端佈局
-│   │   │   └── TeacherSidebar.tsx   # 教師端側邊欄
-│   │   ├── dashboard/      # 數據儀表板組件
-│   │   ├── tour/           # 導覽系統組件
-│   │   ├── ChatMainPanel.tsx   # 聊天主面板
-│   │   └── widgets/        # 各種功能組件
-│   ├── pages/              # 頁面組件
-│   │   ├── LoginPage.tsx       # 登入頁面
-│   │   ├── LandingPage.tsx     # 首頁
-│   │   ├── TeacherHome.tsx     # 教師首頁
-│   │   ├── TeacherDashboard.tsx # 教師儀表板
-│   │   ├── TeacherCohort.tsx   # 班級管理
-│   │   ├── ProjectsPage.tsx    # 專案管理
-│   │   ├── StudentHome.tsx     # 學生首頁
-│   │   └── Dashboard.tsx       # 學生儀表板
-│   ├── services/           # API 服務層
-│   ├── hooks/              # 自定義 React Hooks
-│   ├── config/             # 配置檔案
-│   │   └── tours/          # 導覽系統配置
-│   ├── utils/              # 工具函數
-│   ├── store.ts            # Zustand 全局狀態
-│   ├── authStore.ts        # 認證狀態
-│   ├── tourStore.ts        # 導覽狀態
-│   ├── types.ts            # TypeScript 類型定義
-│   ├── package.json        # 前端依賴
-│   ├── Dockerfile          # 前端 Docker 配置
-│   └── nginx.conf          # Nginx 配置檔案
-├── backend/                 # FastAPI 後端服務
-│   ├── main.py             # 主應用入口
-│   ├── models.py           # 資料庫模型
-│   ├── schemas.py          # Pydantic 模式
-│   ├── services.py         # 業務邏輯服務
-│   ├── auth.py             # 認證相關
-│   ├── db.py               # 資料庫配置
-│   ├── routes/             # API 路由
-│   ├── requirements.txt    # Python 依賴
-│   └── Dockerfile          # 後端 Docker 配置
-├── docs/                    # 文檔
-│   ├── DOCKER_DEPLOYMENT.md # Docker 部署詳細文檔
-│   ├── SITE_MAP.md         # 系統路由與頁面地圖
-│   ├── TOUR_SYSTEM.md      # 導覽系統說明
-│   └── AI_DOCUMENTATION_GUIDE.md # AI 文檔維護指南
-├── docker-compose.yml      # Docker Compose 配置
-├── package.json            # 根目錄工作區腳本
-├── .env.example            # 環境變數範例（Docker）
-└── README.md               # 本文件
-```
-
-## ⚙️ 環境變數配置
-
-### Docker 環境變數（`.env` 檔案）
-
-使用 Docker Compose 時，在專案根目錄的 `.env` 檔案中配置所有環境變數。
-
-#### 前端環境變數
-
-| 變數名稱          | 說明                                | 預設值                  | 範例                                                    |
-| ----------------- | ----------------------------------- | ----------------------- | ------------------------------------------------------- |
-| `VITE_API_BASE`   | 後端 API 基礎 URL（建置時注入）     | `http://localhost:8000` | `http://localhost:8000` 或 `https://api.yourdomain.com` |
-| `FRONTEND_DOMAIN` | 前端域名（用於 CORS，生產環境必填） | -                       | `https://yourdomain.com`                                |
-| `FRONTEND_PORT`   | 前端服務端口                        | `3000`                  | `3000`                                                  |
-
-#### 後端環境變數
-
-| 變數名稱                   | 說明                                   | 預設值                                                    | 範例                                      |
-| -------------------------- | -------------------------------------- | --------------------------------------------------------- | ----------------------------------------- |
-| `DATABASE_URL`             | PostgreSQL 連接字串（Docker 自動設定） | `postgresql://postgres:postgres@postgres:5432/thesisflow` | -                                         |
-| `BACKEND_DOMAIN`           | 後端域名（用於 CORS，生產環境可填）    | -                                                         | `https://api.yourdomain.com`              |
-| `BACKEND_PORT`             | 後端服務端口                           | `8000`                                                    | `8000`                                    |
-| `AZURE_OPENAI_ENDPOINT`    | Azure OpenAI 端點                      | -                                                         | `https://xxx.cognitiveservices.azure.com` |
-| `AZURE_OPENAI_API_KEY`     | Azure OpenAI API 金鑰                  | -                                                         | `your_api_key`                            |
-| `AZURE_OPENAI_DEPLOYMENT`  | 部署名稱                               | -                                                         | `gpt-4.1-mini`                            |
-| `AZURE_OPENAI_API_VERSION` | API 版本                               | -                                                         | `2025-01-01-preview`                      |
-| `MINIO_ENDPOINT`           | MinIO 服務端點                         | -                                                         | `localhost:9000`                          |
-| `MINIO_ACCESS_KEY`         | MinIO Access Key                       | -                                                         | `your_access_key`                         |
-| `MINIO_SECRET_KEY`         | MinIO Secret Key                       | -                                                         | `your_secret_key`                         |
-| `MINIO_BUCKET`             | MinIO Bucket 名稱                      | -                                                         | `your-bucket-name`                        |
-| `MINIO_USE_SSL`            | 是否使用 SSL                           | `false`                                                   | `true` 或 `false`                         |
-| `JWT_SECRET`               | JWT 簽名密鑰                           | `change-me`                                               | `your-strong-secret-key`                  |
-
-### 本地開發環境變數
-
-#### 前端（`.env.local` 或 `.env`）
-
-```env
-VITE_API_BASE=http://localhost:8000
-```
-
-#### 後端（`backend/env.local`）
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/thesisflow
-# 其他變數與 Docker 環境相同
-```
-
-### 環境變數範例檔案
-
-- **根目錄** `.env.example` - Docker Compose 環境變數範例
-- **後端** `backend/env.example` - 本地開發環境變數範例
-
-### 開發環境 vs 生產環境
-
-**開發環境**：
-
-- 不需要填寫 `FRONTEND_DOMAIN` 和 `BACKEND_DOMAIN`
-- 系統自動使用 `localhost` 和預設端口
-- CORS 自動允許 localhost 來源
-
-**生產環境**：
-
-- 必須填寫 `FRONTEND_DOMAIN` 和 `BACKEND_DOMAIN`（如果使用 Cloudflare Tunnel 等）
-- 建議使用 HTTPS
-- 使用強密碼的 `JWT_SECRET`
-
-## 📚 API 文檔
-
-啟動後端服務後，可訪問：
-
-- **Swagger UI**：http://localhost:8000/docs
-- **ReDoc**：http://localhost:8000/redoc
-
-## 🔐 安全注意事項
-
-### 環境變數安全
-
-- ⚠️ **絕不要**將 `.env`、`.env.local` 或 `backend/env.local` 提交到版本控制
-- ⚠️ 使用 `.gitignore` 確保敏感檔案不會被提交
-- ⚠️ 生產環境請使用強密碼的 `JWT_SECRET`（至少 32 字元）
-
-### 生產環境安全
-
-- ⚠️ **必須使用 HTTPS** 部署生產環境
-- ⚠️ 限制資料庫端口對外暴露（僅內部網路可訪問）
-- ⚠️ 定期更新 Docker 映像和依賴套件以修補安全漏洞
-- ⚠️ 使用強密碼和適當的資源限制
-- ⚠️ 設定適當的備份策略
-
-### Docker 安全
-
-- 定期更新基礎映像（`python:3.11-slim`、`node:20-alpine`、`postgres:16`）
-- 不要在容器中以 root 用戶運行應用（目前後端使用 root，可進一步優化）
-- 使用 Docker secrets 管理敏感資訊（生產環境建議）
-
-## 🤝 貢獻指南
-
-歡迎貢獻！請遵循以下步驟：
-
-1. Fork 本專案
-2. 創建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 開啟 Pull Request
-
-## 📝 常見問題
-
-### Docker 相關問題
-
-#### Q: Docker 建置失敗，提示找不到 package-lock.json？
-
-A: 這通常是因為 `.dockerignore` 排除了 `package-lock.json`。請確認 `.dockerignore` 中沒有排除此檔案，或執行：
-
-```bash
-docker compose build --no-cache frontend
-```
-
-#### Q: 啟動時提示 `.env` 檔案不存在？
-
-A: `.env` 檔案是可選的。如果沒有 `.env` 檔案，Docker Compose 會使用環境變數的預設值。若要自訂配置：
-
-```bash
-cp .env.example .env
-# 編輯 .env 填入實際值
-```
-
-#### Q: 端口已被占用？
-
-A: 修改 `.env` 檔案中的端口配置：
-
-```env
-FRONTEND_PORT=3001  # 改用其他端口
-BACKEND_PORT=8001   # 改用其他端口
-```
-
-然後重新啟動：
-
-```bash
-docker compose down
+cp .env.example .env      # fill in Azure OpenAI, MinIO and JWT_SECRET
 docker compose up -d
 ```
 
-#### Q: 如何查看服務日誌？
+- Frontend: http://localhost:3000
+- API docs: http://localhost:8000/docs
 
-A: 使用以下命令：
+Tables are created on first start. Register a teacher account, create a cohort and a project, then join as a student with the cohort code.
 
-```bash
-# 查看所有服務日誌
-docker compose logs -f
+Local development without Docker, the full environment variable reference and troubleshooting are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
-# 查看特定服務日誌
-docker compose logs -f backend
-docker compose logs -f frontend
-docker compose logs -f postgres
-```
+## License
 
-#### Q: 如何重置資料庫？
-
-A: 停止服務並刪除資料卷：
-
-```bash
-docker compose down -v
-docker compose up -d
-```
-
-### 應用程式問題
-
-#### Q: 前端無法連接到後端？
-
-A: 檢查以下項目：
-
-- 確認 `VITE_API_BASE` 環境變數正確設定（Docker 環境在 `.env` 中）
-- 確認後端服務正在運行：`docker compose ps`
-- 檢查瀏覽器控制台的錯誤訊息
-- 確認 CORS 設定正確（開發環境自動允許 localhost）
-
-#### Q: 資料庫連接失敗？
-
-A: 確認：
-
-- PostgreSQL 服務正在運行：`docker compose ps postgres`
-- Docker 環境中 `DATABASE_URL` 應使用服務名稱 `postgres` 而非 `localhost`
-- 檢查資料庫健康狀態：`docker compose logs postgres`
-
-#### Q: CORS 錯誤？
-
-A:
-
-- **開發環境**：不需要配置，系統自動允許 localhost
-- **生產環境**：必須在 `.env` 中填寫 `FRONTEND_DOMAIN`，例如：`FRONTEND_DOMAIN=https://yourdomain.com`
-
-### 更多問題
-
-詳細的故障排除指南請參考 [docs/DOCKER_DEPLOYMENT.md](docs/DOCKER_DEPLOYMENT.md) 的「常見問題」章節。
-
-## 📄 許可證
-
-本專案採用 [MIT License](LICENSE) 許可證。
-
-## 🙏 致謝
-
-- [SALSA Framework](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1538584/) - 文獻回顧方法論
-- [FastAPI](https://fastapi.tiangolo.com/) - 現代化的 Python Web 框架
-- [React Flow](https://reactflow.dev/) - 流程圖視覺化庫
-
-## 📧 聯絡方式
-
-如有問題或建議，請開啟 [Issue](https://github.com/Bighsueh/thesisflow/issues)。
-
----
-
-<div align="center">
-
-Made with ❤️ for academic research
-
-</div>
+[MIT](LICENSE)
